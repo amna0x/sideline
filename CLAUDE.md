@@ -103,6 +103,37 @@ server/
 - Create new top-level folders without flagging it.
 - Run destructive git commands (`reset --hard`, `branch -D`, `push --force`) without explicit user OK.
 
+## COMPACT Command & Token Failsafe
+
+If the user types `COMPACT`, or conversation history reaches 85–90% capacity, trigger this protocol immediately to facilitate a model handoff.
+
+**Output format:**
+
+```
+🔄 CONTEXT HANDOFF
+
+1. Core Objective: [Briefly state the ultimate goal of this session]
+
+2. Current Progress: [List what has been completed and the current status of the active task]
+
+3. Next Immediate Steps:
+   [ ] [Step 1]
+   [ ] [Step 2]
+
+4. Technical Stack & Context:
+   - Stack: [Languages, Frameworks, Libraries]
+   - Key Files: [Filenames currently in focus]
+
+5. Critical Logic / Code Snapshot:
+   // Most relevant code or logic constants needed for the next AI to continue
+
+6. Resolved Hurdles: [List errors or approaches that failed to prevent the next AI from repeating them]
+
+7. Active Constraints: [Any specific rules, tone, or formatting requirements currently in place]
+```
+
+Keep summary high-density and strictly functional. Prioritize context that would be lost without a summary (the "why" behind specific code choices).
+
 ## When the user asks for a feature
 
 1. Confirm which package(s) it touches (client / server / both).
