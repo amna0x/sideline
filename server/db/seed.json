@@ -1,0 +1,63 @@
+{
+  "matches": [
+    {
+      "id": "m_dortmund_bayern_md12",
+      "home_team": "Borussia Dortmund",
+      "away_team": "FC Bayern München",
+      "home_score": 0, "away_score": 0,
+      "minute": 0, "status": "upcoming",
+      "stadium": "Signal Iduna Park",
+      "matchday": 12,
+      "started_at": "2026-04-25T18:30:00Z"
+    },
+    {
+      "id": "m_leverkusen_leipzig_md13",
+      "home_team": "Bayer 04 Leverkusen",
+      "away_team": "RB Leipzig",
+      "home_score": 0, "away_score": 0,
+      "minute": 0, "status": "upcoming",
+      "stadium": "BayArena",
+      "matchday": 13,
+      "started_at": "2026-04-26T15:30:00Z"
+    }
+  ],
+  "predictions": [
+    {
+      "id": "p_seed_dortmund_1",
+      "match_id": "m_dortmund_bayern_md12",
+      "type": "goal_scorer",
+      "question": "Who scores first?",
+      "options": ["Guirassy", "Kane", "Adeyemi", "Musiala"],
+      "opens_at": "2026-04-25T18:25:00Z",
+      "closes_at": "2026-04-25T18:35:00Z",
+      "correct_answer": null, "resolved_at": null
+    },
+    {
+      "id": "p_seed_leverkusen_1",
+      "match_id": "m_leverkusen_leipzig_md13",
+      "type": "yellow_card",
+      "question": "First booking before 30'?",
+      "options": ["Yes", "No"],
+      "opens_at": "2026-04-26T15:25:00Z",
+      "closes_at": "2026-04-26T15:30:00Z",
+      "correct_answer": null, "resolved_at": null
+    }
+  ],
+  "vault_items": [
+    { "id": "vi_frame_olive", "name": "Olive Drab Frame", "type": "profile_frame", "tier": "common", "total_supply": 5000, "remaining_supply": 4892, "image_url": "", "points_cost": 200 },
+    { "id": "vi_badge_streak", "name": "10-Win Streak", "type": "badge", "tier": "rare", "total_supply": 1000, "remaining_supply": 612, "image_url": "", "points_cost": 800 },
+    { "id": "vi_card_brandt_md12", "name": "Brandt 89' Winner", "type": "adidas_card", "tier": "epic", "total_supply": 500, "remaining_supply": 500, "image_url": "", "points_cost": 1500 },
+    { "id": "vi_card_adeyemi_md12", "name": "Adeyemi Strike", "type": "adidas_card", "tier": "legendary", "total_supply": 100, "remaining_supply": 100, "image_url": "", "points_cost": 4000 },
+    { "id": "vi_card_mythic_md12", "name": "Match-Winner Mythic", "type": "collectible", "tier": "mythic", "total_supply": 10, "remaining_supply": 10, "image_url": "", "points_cost": 10000 },
+    { "id": "vi_frame_floral", "name": "Floral White Frame", "type": "profile_frame", "tier": "epic", "total_supply": 250, "remaining_supply": 250, "image_url": "", "points_cost": 2000 }
+  ],
+  "quiz_questions": [
+    { "id": "qq_1", "match_id": "m_dortmund_bayern_md12", "question": "Who is BVB's all-time top scorer?", "options": ["Lewandowski", "Aubameyang", "Reus", "Haaland"], "correct_answer": "Lewandowski", "fun_fact": "Lewy bagged 103 BVB goals before moving to Bayern in 2014.", "difficulty": "medium" },
+    { "id": "qq_2", "match_id": "m_dortmund_bayern_md12", "question": "Bayern's record league titles?", "options": ["28", "30", "32", "34"], "correct_answer": "32", "fun_fact": "Bayern won 11 in a row from 2012/13 to 2022/23.", "difficulty": "easy" },
+    { "id": "qq_3", "match_id": "m_dortmund_bayern_md12", "question": "Year of the first Klassiker?", "options": ["1965", "1971", "1987", "1992"], "correct_answer": "1965", "fun_fact": "Bayern beat Dortmund 2-0 on April 17, 1965.", "difficulty": "hard" },
+    { "id": "qq_4", "match_id": "m_dortmund_bayern_md12", "question": "Capacity of Signal Iduna Park?", "options": ["75,000", "81,365", "90,200", "70,500"], "correct_answer": "81,365", "fun_fact": "The Yellow Wall (Südtribüne) holds 24,454 standing fans.", "difficulty": "medium" },
+    { "id": "qq_5", "match_id": "m_dortmund_bayern_md12", "question": "Who manages Bayern in 2026?", "options": ["Tuchel", "Kompany", "Nagelsmann", "Flick"], "correct_answer": "Kompany", "fun_fact": "Kompany succeeded Tuchel after the 23/24 season.", "difficulty": "easy" },
+    { "id": "qq_6", "match_id": "m_leverkusen_leipzig_md13", "question": "Year Leverkusen won their first Bundesliga title?", "options": ["1988", "2002", "2024", "1998"], "correct_answer": "2024", "fun_fact": "Xabi Alonso's side went unbeaten — Die Werkself, finally.", "difficulty": "easy" },
+    { "id": "qq_7", "match_id": "m_leverkusen_leipzig_md13", "question": "RB Leipzig joined Bundesliga in?", "options": ["2013", "2016", "2009", "2018"], "correct_answer": "2016", "fun_fact": "RB jumped from Regionalliga to Bundesliga in 7 years.", "difficulty": "medium" }
+  ]
+}

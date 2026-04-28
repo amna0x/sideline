@@ -1,0 +1,46 @@
+{
+  "match": {
+    "id": "m_dortmund_bayern_md12",
+    "home_team": "Borussia Dortmund",
+    "away_team": "FC Bayern München",
+    "stadium": "Signal Iduna Park",
+    "matchday": 12,
+    "started_at": "2026-04-25T18:30:00Z"
+  },
+  "events": [
+    { "minute": 4, "type": "corner", "team": "home", "player_name": "Brandt" },
+    { "minute": 7, "type": "yellow_card", "team": "away", "player_name": "Kim" },
+    { "minute": 11, "type": "corner", "team": "away", "player_name": "Sané" },
+    { "minute": 14, "type": "goal", "team": "home", "player_name": "Guirassy",
+      "rarity": "EPIC", "is_rare": false,
+      "opens_prediction": { "type": "goal_scorer", "question": "Next scorer?", "options": ["Adeyemi", "Kane", "Musiala", "Reus"] }
+    },
+    { "minute": 22, "type": "var", "team": "away", "player_name": "Offside review" },
+    { "minute": 26, "type": "substitution", "team": "home", "player_name": "Reus → Adeyemi" },
+    { "minute": 31, "type": "goal", "team": "away", "player_name": "Kane",
+      "rarity": "RARE", "is_rare": false,
+      "resolves_prediction": { "id": "p_m_dortmund_bayern_md12_14", "correct_answer": "Kane" }
+    },
+    { "minute": 38, "type": "yellow_card", "team": "home", "player_name": "Can" },
+    { "minute": 45, "type": "corner", "team": "home", "player_name": "Brandt",
+      "opens_prediction": { "type": "corner", "question": "Corner outcome?", "options": ["Goal", "Header on target", "Cleared", "Foul"] }
+    },
+    { "minute": 47, "type": "var", "team": "home", "player_name": "Penalty check" },
+    { "minute": 52, "type": "goal", "team": "home", "player_name": "Adeyemi",
+      "rarity": "LEGENDARY", "is_rare": true,
+      "resolves_prediction": { "id": "p_m_dortmund_bayern_md12_45", "correct_answer": "Goal" }
+    },
+    { "minute": 58, "type": "substitution", "team": "away", "player_name": "Goretzka → Pavlović" },
+    { "minute": 63, "type": "yellow_card", "team": "away", "player_name": "Upamecano" },
+    { "minute": 71, "type": "goal", "team": "away", "player_name": "Musiala",
+      "rarity": "EPIC", "is_rare": false,
+      "opens_prediction": { "type": "goal_scorer", "question": "Final scorer?", "options": ["Guirassy", "Kane", "Sané", "Brandt"] }
+    },
+    { "minute": 79, "type": "corner", "team": "home" },
+    { "minute": 84, "type": "yellow_card", "team": "home", "player_name": "Adeyemi" },
+    { "minute": 89, "type": "goal", "team": "home", "player_name": "Brandt",
+      "rarity": "MYTHIC", "is_rare": true,
+      "resolves_prediction": { "id": "p_m_dortmund_bayern_md12_71", "correct_answer": "Brandt" }
+    }
+  ]
+}
