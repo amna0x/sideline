@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { supabase, supabaseReady } from '../lib/supabase.js'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
+import { saveGuestSession, loadGuestSession, clearGuestSession } from '../lib/session.js'
 
 export function useAuth() {
   const setSession = useStore((s) => s.setSession)
@@ -13,7 +14,16 @@ export function useAuth() {
   const isGuest = useStore((s) => s.isGuest)
 
   useEffect(() => {
-    if (!supabaseReady) { setSession(null); return }
+    if (!supabaseReady) {
+      const cached = loadGuestSession()
+      if (cached?.user) {
+        setSession({ user: cached.user })
+        useStore.getState().setGuest(true)
+      } else {
+        setSession(null)
+      }
+      return
+    }
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => setSession(sess))
     return () => sub.subscription.unsubscribe()
@@ -44,7 +54,17 @@ export function useAuth() {
   }
 
   async function signInAsGuest() {
-    if (!supabaseReady) throw new Error('Supabase not configured')
+    if (!supabaseReady) {
+      const guest = {
+        id: `guest_${Math.random().toString(36).slice(2, 10)}`,
+        email: 'guest@sideline.local',
+        user_metadata: { username: 'Guest' }
+      }
+      saveGuestSession(guest)
+      useStore.getState().setSession({ user: guest })
+      useStore.getState().setGuest(true)
+      return { user: guest }
+    }
     const { data, error } = await supabase.auth.signInAnonymously()
     if (error) throw error
     useStore.getState().setGuest(true)
@@ -53,6 +73,7 @@ export function useAuth() {
 
   async function signOut() {
     if (supabaseReady) await supabase.auth.signOut()
+    clearGuestSession()
     clearAuth()
   }
 

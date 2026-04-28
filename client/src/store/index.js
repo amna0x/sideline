@@ -31,5 +31,9 @@ export const useStore = create((set) => ({
 
   // UI
   toast: null,
-  showToast: (msg) => set({ toast: msg })
+  showToast: (msg) => set({ toast: msg }),
+
+  // Theme
+  theme: 'default',
+  setTheme: (theme) => set({ theme })
 }))

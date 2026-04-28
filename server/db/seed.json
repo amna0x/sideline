@@ -26,10 +26,30 @@
       "id": "p_seed_dortmund_1",
       "match_id": "m_dortmund_bayern_md12",
       "type": "goal_scorer",
-      "question": "Who scores first?",
+      "question": "Who scores next?",
       "options": ["Guirassy", "Kane", "Adeyemi", "Musiala"],
-      "opens_at": "2026-04-25T18:25:00Z",
-      "closes_at": "2026-04-25T18:35:00Z",
+      "opens_at": "2024-01-01T00:00:00Z",
+      "closes_at": "2030-01-01T00:00:00Z",
+      "correct_answer": null, "resolved_at": null
+    },
+    {
+      "id": "p_seed_dortmund_2",
+      "match_id": "m_dortmund_bayern_md12",
+      "type": "yellow_card",
+      "question": "Next booking — which side?",
+      "options": ["Dortmund", "Bayern"],
+      "opens_at": "2024-01-01T00:00:00Z",
+      "closes_at": "2030-01-01T00:00:00Z",
+      "correct_answer": null, "resolved_at": null
+    },
+    {
+      "id": "p_seed_dortmund_3",
+      "match_id": "m_dortmund_bayern_md12",
+      "type": "corner",
+      "question": "Total corners by full-time?",
+      "options": ["Under 8", "8-12", "Over 12"],
+      "opens_at": "2024-01-01T00:00:00Z",
+      "closes_at": "2030-01-01T00:00:00Z",
       "correct_answer": null, "resolved_at": null
     },
     {
@@ -38,8 +58,8 @@
       "type": "yellow_card",
       "question": "First booking before 30'?",
       "options": ["Yes", "No"],
-      "opens_at": "2026-04-26T15:25:00Z",
-      "closes_at": "2026-04-26T15:30:00Z",
+      "opens_at": "2024-01-01T00:00:00Z",
+      "closes_at": "2030-01-01T00:00:00Z",
       "correct_answer": null, "resolved_at": null
     }
   ],

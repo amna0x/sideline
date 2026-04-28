@@ -36,8 +36,8 @@ function TopBar({ title, points }) {
   const user = useStore((s) => s.user)
   return (
     <header className="sticky top-0 z-40 flex justify-between items-center px-4 h-14 bg-[#11120D] text-[#D8CFBC] border-b border-[#565449]">
-      <Link to="/settings" className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-container-highest" aria-label="Menu">
-        <span className="material-symbols-outlined text-[20px]">menu</span>
+      <Link to="/settings" className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-container-highest" aria-label="Settings">
+        <span className="material-symbols-outlined text-[20px]">settings</span>
       </Link>
       <div className="flex items-center gap-2">
         <span className="font-black text-base tracking-tighter">{title}</span>
