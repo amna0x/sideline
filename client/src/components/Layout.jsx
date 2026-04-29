@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useStore } from '../store/index.js'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
+import Avatar from './Avatar.jsx'
 
 export default function Layout({ children, hideNav = false, title = 'SIDELINE_PRO' }) {
   const points = useStore((s) => s.points)
@@ -44,10 +45,8 @@ function TopBar({ title, points }) {
       </div>
       <div className="flex items-center gap-2">
         <span className="font-label-caps text-label-caps text-primary-container tabular-nums">{(points || 0).toLocaleString()} XP</span>
-        <Link to="/profile" className="w-8 h-8 rounded-full bg-surface-container border border-outline-variant overflow-hidden flex items-center justify-center">
-          {user?.profile?.avatar_url
-            ? <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover" />
-            : <span className="material-symbols-outlined text-sm text-outline">person</span>}
+        <Link to="/profile" className="rounded-full overflow-hidden border border-outline-variant" aria-label="Profile">
+          <Avatar url={user?.profile?.avatar_url} name={user?.profile?.username || user?.email} size={32} />
         </Link>
       </div>
     </header>

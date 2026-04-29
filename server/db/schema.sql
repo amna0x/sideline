@@ -187,3 +187,8 @@ create trigger on_auth_user_created after insert on auth.users
 
 -- Avatars storage bucket (run separately in Storage UI):
 --   create bucket: avatars (public)
+-- Avatar uploads route through the server (service role) so the bucket only
+-- needs a public-read policy. The route validates MIME + 5MB cap, so direct
+-- client writes are not required and are intentionally not granted.
+-- create policy "avatars public read" on storage.objects for select
+--   using (bucket_id = 'avatars');

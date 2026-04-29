@@ -24,6 +24,16 @@ async function request(path, opts = {}) {
   return res.json()
 }
 
+async function upload(path, formData) {
+  const headers = { ...(await authHeader()) }
+  const res = await fetch(`${BASE}${path}`, { method: 'POST', body: formData, headers })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`${res.status} ${res.statusText} ${text}`.trim())
+  }
+  return res.json()
+}
+
 export const api = {
   get: (p) => request(p),
   post: (p, body) => request(p, { method: 'POST', body: JSON.stringify(body) }),
@@ -43,6 +53,11 @@ export const api = {
   // Users
   user: (id) => request(`/api/users/${id}`),
   updateUser: (id, body) => request(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  uploadAvatar: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return upload(`/api/users/${id}/avatar`, fd)
+  },
 
   // Vault
   vaultItems: () => request('/api/vault/items'),

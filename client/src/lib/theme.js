@@ -8,6 +8,21 @@ export const THEMES = {
     id: 'mint',
     name: 'Mint Edge',
     swatches: ['#020202', '#00f6ac', '#ffffff']
+  },
+  inferno: {
+    id: 'inferno',
+    name: 'Inferno',
+    swatches: ['#0a0204', '#ff3b6b', '#ffe9d6']
+  },
+  cobalt: {
+    id: 'cobalt',
+    name: 'Cobalt',
+    swatches: ['#020611', '#5aa8ff', '#e8f0ff']
+  },
+  solar: {
+    id: 'solar',
+    name: 'Solar Flare',
+    swatches: ['#0d0a02', '#ffc94a', '#fff5d6']
   }
 }
 
