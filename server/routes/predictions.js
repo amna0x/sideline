@@ -1,8 +1,18 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { supabase, ready } from '../db/supabase.js'
 import { db } from '../db/memory.js'
+import { requireAuth } from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { writeLimiter } from '../middleware/rateLimit.js'
 
 const r = Router()
+
+const submitSchema = z.object({
+  prediction_id: z.string().min(1).max(64),
+  selected_option: z.string().min(1).max(64),
+  speed_ms: z.number().int().nonnegative().max(600000).optional()
+})
 
 r.get('/active', async (req, res, next) => {
   try {
@@ -40,10 +50,10 @@ r.get('/upcoming/:matchId', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-r.post('/submit', async (req, res, next) => {
+r.post('/submit', writeLimiter, requireAuth, validate({ body: submitSchema }), async (req, res, next) => {
   try {
-    const { user_id, prediction_id, selected_option, speed_ms } = req.body || {}
-    if (!user_id || !prediction_id || !selected_option) return res.status(400).json({ error: 'missing fields' })
+    const userId = req.user.id
+    const { prediction_id, selected_option, speed_ms } = req.body
 
     let prediction
     if (ready) {
@@ -58,7 +68,7 @@ r.post('/submit', async (req, res, next) => {
     const speedBonus = speed_ms != null && speed_ms < 30000 ? 1.5 : 1
     const record = {
       id: cryptoId(),
-      user_id, prediction_id, selected_option,
+      user_id: userId, prediction_id, selected_option,
       submitted_at: new Date().toISOString(),
       points_earned: null, is_correct: null,
       speed_ms: speed_ms || null, speed_bonus: speedBonus
@@ -68,7 +78,7 @@ r.post('/submit', async (req, res, next) => {
       const { error } = await supabase.from('user_predictions').insert(record)
       if (error) throw error
     } else {
-      const existing = db.user_predictions.find((u) => u.user_id === user_id && u.prediction_id === prediction_id)
+      const existing = db.user_predictions.find((u) => u.user_id === userId && u.prediction_id === prediction_id)
       if (existing) return res.status(400).json({ error: 'already submitted' })
       db.user_predictions.push(record)
     }

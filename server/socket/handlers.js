@@ -1,11 +1,27 @@
 // Socket.io event registration + helper emitters consumed by the simulator/engine.
 
+import { supabase, ready } from '../db/supabase.js'
+
+async function authenticateSocket(socket) {
+  const auth = socket.handshake.auth || {}
+  if (!ready) {
+    return auth.userId ? { id: String(auth.userId), guest: true } : null
+  }
+  if (!auth.token) return null
+  const { data, error } = await supabase.auth.getUser(auth.token)
+  if (error || !data?.user) return null
+  return { id: data.user.id, email: data.user.email }
+}
+
 export function registerSocketHandlers(io) {
-  io.on('connection', (socket) => {
-    console.log(`[socket] + ${socket.id}`)
+  io.on('connection', async (socket) => {
+    const user = await authenticateSocket(socket)
+    socket.data.user = user
+    if (user?.id) socket.join(`user:${user.id}`)
+    console.log(`[socket] + ${socket.id}${user?.id ? ` user=${user.id}` : ' (anon)'}`)
 
     socket.on('match:join', (matchId) => {
-      socket.join(`match:${matchId}`)
+      if (typeof matchId === 'string' && matchId.length < 64) socket.join(`match:${matchId}`)
     })
 
     socket.on('disconnect', () => console.log(`[socket] - ${socket.id}`))
@@ -22,4 +38,9 @@ export const emit = {
   leaderboardUpdate: (io) => io.emit('leaderboard:update'),
   vaultMinted: (io, record) => io.emit('vault:minted', record),
   vaultSupply: (io, payload) => io.emit('vault:supply_update', payload)
+}
+
+export function emitToUser(io, userId, event, payload) {
+  if (!userId) return
+  io.to(`user:${userId}`).emit(event, payload)
 }

@@ -17,8 +17,9 @@ Claude reads this file at start of every session (per `CLAUDE.md` first-action r
 
 _What is the current focus? Update this each session._
 
-- (no active branch — last commit on `master`: `ed0f6ee hello`)
-- Next: TBD
+- **Branch:** `chore/auth-middleware-foundation` (PR0 of a 6-PR roadmap)
+- **In progress:** server-side auth foundation — Supabase JWT verification middleware, zod validation, express-rate-limit, per-user socket rooms, Vitest + `node --test` test scaffolding. Locked previously open mutation routes (`predictions/submit`, `users PATCH/DELETE`, `vault/redeem`) behind `requireAuth` + `requireSelf`.
+- **Next PRs in order:** PR1 avatars + more themes → PR2 OAuth (Google/GitHub) → PR3 friends graph (open DMs by privacy toggle) → PR4 notifications + Web Push → PR5 chat (1:1, profanity-filtered, attachment-ready). Each branched off `master`, one concern per PR.
 
 ## Decisions log
 
@@ -29,6 +30,9 @@ _Non-obvious choices that future sessions should not relitigate._
 - In-memory fallback in `server/db/` so demos work without Supabase env vars.
 - Service-role key is server-only — never import under `client/`.
 - Adidas card generation uses HTML Canvas (FOUC tradeoff accepted for hackathon).
+- Test stacks: Vitest + jsdom (client), `node --test` + supertest (server). No Jest.
+- Auth verification on the server uses `supabase.auth.getUser(token)` — no separate JWT lib. Memory mode trusts `x-user-id` header / `user_id` body field for demos only.
+- DM model (decided 2026-04-29): open-by-default with a per-user privacy toggle (`open` / `requests` / `friends`); content runs through a profanity filter before persist.
 
 ## Open questions / unknowns
 
@@ -51,4 +55,5 @@ _Non-obvious choices that future sessions should not relitigate._
 
 _Append a one-liner per session. Keep newest at top. Trim entries older than ~30 days._
 
+- _2026-04-29 — Merged PR1 themes/session/settings-cog. Started PR0 foundation (auth middleware, validation, rate limit, socket auth, tests)._
 - _2026-04-28 — Initial CLAUDE.md, .claude/settings.json, CONTEXT.md scaffolded._

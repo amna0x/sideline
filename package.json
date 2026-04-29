@@ -9,7 +9,8 @@
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
     "simulate": "npm --prefix server run simulate",
-    "build": "npm --prefix client run build"
+    "build": "npm --prefix client run build",
+    "test": "npm --prefix client test && npm --prefix server test"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"

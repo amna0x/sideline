@@ -1,8 +1,21 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { supabase, ready } from '../db/supabase.js'
 import { db } from '../db/memory.js'
+import { requireAuth, requireSelf } from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { writeLimiter } from '../middleware/rateLimit.js'
 
 const r = Router()
+
+const patchSchema = z.object({
+  username: z.string().min(2).max(32).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
+  avatar_url: z.string().url().max(512).optional(),
+  prediction_title: z.string().max(64).optional(),
+  tier: z.enum(['fan', 'expert', 'pro', 'legend']).optional(),
+  notifications_enabled: z.boolean().optional(),
+  strava_connected: z.boolean().optional()
+}).strict()
 
 r.get('/:id', async (req, res, next) => {
   try {
@@ -10,7 +23,6 @@ r.get('/:id', async (req, res, next) => {
     if (ready) {
       const { data, error } = await supabase.from('users').select('*').eq('id', id).single()
       if (error && error.code !== 'PGRST116') throw error
-      // attach owned vault
       const { data: vault } = await supabase.from('user_vault').select('*, vault_items(*)').eq('user_id', id)
       return res.json({ ...(data || {}), vault: (vault || []).map((v) => ({ ...v.vault_items, ...v })) })
     }
@@ -21,12 +33,10 @@ r.get('/:id', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-r.patch('/:id', async (req, res, next) => {
+r.patch('/:id', writeLimiter, requireAuth, requireSelf('id'), validate({ body: patchSchema }), async (req, res, next) => {
   try {
     const id = req.params.id
-    const allowed = ['username', 'avatar_url', 'prediction_title', 'tier', 'notifications_enabled', 'strava_connected']
-    const patch = {}
-    for (const k of allowed) if (req.body[k] !== undefined) patch[k] = req.body[k]
+    const patch = req.body
     if (ready) {
       const { data, error } = await supabase.from('users').update(patch).eq('id', id).select().single()
       if (error) throw error
@@ -39,13 +49,12 @@ r.patch('/:id', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-r.delete('/:id', async (req, res, next) => {
+r.delete('/:id', writeLimiter, requireAuth, requireSelf('id'), async (req, res, next) => {
   try {
     const id = req.params.id
     if (ready) {
       const { error } = await supabase.from('users').delete().eq('id', id)
       if (error) throw error
-      // rely on Supabase Auth admin delete client-side
       return res.status(204).end()
     }
     db.users.delete(id)
@@ -61,7 +70,6 @@ r.get('/:id/history', async (req, res, next) => {
       if (error && error.code !== 'PGRST202') throw error
       return res.json(data || [])
     }
-    // memory: aggregate from user_predictions
     const rows = db.user_predictions.filter((u) => u.user_id === id)
     const byMatch = new Map()
     for (const row of rows) {
