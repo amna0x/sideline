@@ -1,19 +1,32 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getSocket } from '../lib/socket.js'
 
 export function useSocket(events = {}) {
   const handlers = useRef(events)
   handlers.current = events
+  const [socket, setSocket] = useState(null)
 
   useEffect(() => {
-    const s = getSocket()
-    const wrapped = {}
-    for (const ev of Object.keys(handlers.current)) {
-      wrapped[ev] = (...args) => handlers.current[ev]?.(...args)
-      s.on(ev, wrapped[ev])
+    let cancelled = false
+    let bound = []
+    let s
+
+    getSocket().then((sock) => {
+      if (cancelled) return
+      s = sock
+      setSocket(sock)
+      for (const ev of Object.keys(handlers.current)) {
+        const fn = (...args) => handlers.current[ev]?.(...args)
+        sock.on(ev, fn)
+        bound.push([ev, fn])
+      }
+    })
+
+    return () => {
+      cancelled = true
+      if (s) for (const [ev, fn] of bound) s.off(ev, fn)
     }
-    return () => { for (const ev of Object.keys(wrapped)) s.off(ev, wrapped[ev]) }
   }, [])
 
-  return getSocket()
+  return socket
 }
