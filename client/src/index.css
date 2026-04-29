@@ -56,3 +56,36 @@ body {
     box-shadow: 0 0 80px rgba(216, 207, 188, 0.05), 0 0 0 1px #2a2a25;
   }
 }
+
+/* === Theme: Mint Edge === */
+[data-theme="mint"] body { background-color: #000; color: #ffffff; }
+[data-theme="mint"] .mobile-frame { background-color: #020202; }
+[data-theme="mint"] .tactical-grid {
+  background-image:
+    linear-gradient(to right, #1f1f1f 1px, transparent 1px),
+    linear-gradient(to bottom, #1f1f1f 1px, transparent 1px);
+}
+[data-theme="mint"] .text-primary-container,
+[data-theme="mint"] .text-primary { color: #00f6ac !important; }
+[data-theme="mint"] .bg-primary-container,
+[data-theme="mint"] .bg-primary { background-color: #00f6ac !important; color: #020202 !important; }
+[data-theme="mint"] .border-primary-container,
+[data-theme="mint"] .border-primary { border-color: #00f6ac !important; }
+[data-theme="mint"] .text-on-background { color: #ffffff !important; }
+[data-theme="mint"] .text-on-surface { color: #ffffff !important; }
+[data-theme="mint"] .text-on-surface-variant { color: #b8b8b8 !important; }
+[data-theme="mint"] .text-outline { color: #6e6e6e !important; }
+[data-theme="mint"] .text-outline-variant { color: #2a2a2a !important; }
+[data-theme="mint"] .bg-background { background-color: #020202 !important; }
+[data-theme="mint"] .bg-surface,
+[data-theme="mint"] .bg-surface-dim { background-color: #020202 !important; }
+[data-theme="mint"] .bg-surface-container-lowest { background-color: #050505 !important; }
+[data-theme="mint"] .bg-surface-container-low { background-color: #0a0a0a !important; }
+[data-theme="mint"] .bg-surface-container { background-color: #0e0e0e !important; }
+[data-theme="mint"] .bg-surface-container-high { background-color: #141414 !important; }
+[data-theme="mint"] .bg-surface-container-highest { background-color: #1a1a1a !important; }
+[data-theme="mint"] .bg-surface-bright { background-color: #1a1a1a !important; }
+[data-theme="mint"] .border-outline-variant { border-color: #1f1f1f !important; }
+[data-theme="mint"] .border-outline { border-color: #2a2a2a !important; }
+[data-theme="mint"] header { background-color: #000 !important; color: #00f6ac !important; border-color: #1f1f1f !important; }
+[data-theme="mint"] nav { background-color: rgba(0,0,0,0.85) !important; border-color: #1f1f1f !important; }

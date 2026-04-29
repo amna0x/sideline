@@ -5,22 +5,25 @@ import { useStore } from '../store/index.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { api } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
+import { THEMES } from '../lib/theme.js'
 
 export default function Settings() {
   const user = useStore((s) => s.user)
   const setUserProfile = useStore((s) => s.setUserProfile)
   const showToast = useStore((s) => s.showToast)
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
   const { signOut } = useAuth()
   const nav = useNavigate()
   const profile = user?.profile || {}
   const [editingName, setEditingName] = useState(false)
   const [name, setName] = useState(profile.username || '')
   const [notif, setNotif] = useState(profile.notifications_enabled ?? false)
-  const [dark, setDark] = useState(localStorage.getItem('theme') !== 'light')
+  const [dark, setDark] = useState(localStorage.getItem('darkmode') !== 'light')
   const [strava, setStrava] = useState(profile.strava_connected ?? false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  useEffect(() => { document.documentElement.classList.toggle('dark', dark); localStorage.setItem('theme', dark ? 'dark' : 'light') }, [dark])
+  useEffect(() => { document.documentElement.classList.toggle('dark', dark); localStorage.setItem('darkmode', dark ? 'dark' : 'light') }, [dark])
   useEffect(() => setName(profile.username || ''), [profile.username])
 
   async function saveName() {
@@ -90,6 +93,26 @@ export default function Settings() {
           <Row icon="dark_mode" title="Tactical Interface" sub="Dark mode">
             <Toggle on={dark} onClick={() => setDark(!dark)} />
           </Row>
+        </Group>
+
+        <Group title="THEMES">
+          <div className="p-4 grid grid-cols-2 gap-3">
+            {Object.values(THEMES).map((t) => {
+              const active = theme === t.id
+              return (
+                <button key={t.id} onClick={() => setTheme(t.id)}
+                  className={`text-left rounded-DEFAULT border p-3 transition-all ${active ? 'border-primary-container shadow-[0_0_15px_rgba(216,207,188,0.25)]' : 'border-[#565449] hover:border-primary-container/60'}`}>
+                  <div className="flex gap-1 mb-2">
+                    {t.swatches.map((c) => (
+                      <span key={c} className="w-6 h-6 rounded-full border border-black/40" style={{ background: c }} />
+                    ))}
+                  </div>
+                  <div className="font-body-md text-on-surface">{t.name}</div>
+                  <div className="font-label-caps text-[10px] text-outline">{active ? 'ACTIVE' : 'TAP TO APPLY'}</div>
+                </button>
+              )
+            })}
+          </div>
         </Group>
 
         <Group title="INTEGRATIONS">
