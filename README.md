@@ -2,38 +2,6 @@
 
 Real-time second-screen companion for Bundesliga matches. Mobile-first (390px), React + Vite frontend, Node + Express + Socket.io backend, Supabase persistence, replay simulator for hackathon demos.
 
-## Quick start (no Supabase — in-memory demo)
-
-```bash
-npm install
-npm install --prefix client
-npm install --prefix server
-
-# Terminal 1 — server (with simulator auto-start)
-AUTO_SIMULATE=1 npm --prefix server run dev
-
-# Terminal 2 — client
-npm --prefix client run dev
-```
-
-Open http://localhost:5173 — the simulator replays a Dortmund vs Bayern timeline at 30× speed (90' in ~3 minutes), so live events, predictions, leaderboard updates, and the Adidas Drop modal all fire on cue.
-
-Without Supabase, auth is bypassed (Login redirect skipped), and writes go to in-memory store — predictions, points, vault all work end-to-end for one session.
-
-## Full setup (with Supabase + auth)
-
-1. Create a Supabase project at https://app.supabase.com.
-2. SQL Editor → paste `server/db/schema.sql` → Run.
-3. Storage → create public bucket `avatars`.
-4. Project Settings → API → copy URL + anon key + service-role key.
-5. Copy `.env.example` → `client/.env` and `server/.env`, fill in:
-   ```
-   VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY  (client)
-   SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY  (server)
-   ```
-6. Seed: `npm --prefix server run seed`
-7. Run as above.
-
 ## Layout
 
 ```
@@ -72,12 +40,6 @@ Socket events emitted by the simulator (or production match feed):
 ## Match simulator
 
 `server/simulator/match_demo.json` is a 90-minute event timeline. The engine ticks at 1Hz and projects minutes at `speed`× realtime (default 30×). Goals trigger Adidas drops; mythic goals auto-mint a Vault collectible to the most recent predictor. Add more matches by dropping new JSON files and pointing `startSimulator(io, { file })` at them.
-
-## Deploy
-
-- Frontend → Vercel: import `client/`, set `VITE_*` env vars.
-- Backend → Railway: import `server/`, set `SUPABASE_*` + `CORS_ORIGIN` to the Vercel URL.
-- Simulator runs in-process when `AUTO_SIMULATE=1`.
 
 ## Known gaps / hackathon tradeoffs
 
