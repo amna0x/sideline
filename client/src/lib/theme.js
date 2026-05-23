@@ -1,28 +1,28 @@
 export const THEMES = {
   default: {
     id: 'default',
-    name: 'Tactical Olive',
-    swatches: ['#13140f', '#d8cfbc', '#00F6AC']
+    name: 'Spiderverse',
+    swatches: ['#000000', '#ff2d7b', '#00f0ff']
   },
   mint: {
     id: 'mint',
     name: 'Mint Edge',
-    swatches: ['#020202', '#00f6ac', '#ffffff']
+    swatches: ['#000000', '#00f6ac', '#ffffff']
   },
   inferno: {
     id: 'inferno',
     name: 'Inferno',
-    swatches: ['#0a0204', '#ff3b6b', '#ffe9d6']
+    swatches: ['#000000', '#ff3b6b', '#ffe9d6']
   },
   cobalt: {
     id: 'cobalt',
     name: 'Cobalt',
-    swatches: ['#020611', '#5aa8ff', '#e8f0ff']
+    swatches: ['#000000', '#5aa8ff', '#e8f0ff']
   },
   solar: {
     id: 'solar',
     name: 'Solar Flare',
-    swatches: ['#0d0a02', '#ffc94a', '#fff5d6']
+    swatches: ['#000000', '#ffc94a', '#fff5d6']
   }
 }
 

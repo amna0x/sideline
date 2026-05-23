@@ -1,12 +1,18 @@
 import { supabase } from './supabase.js'
+import { loadGuestSession } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 async function authHeader() {
-  if (!supabase) return {}
-  const { data } = await supabase.auth.getSession()
-  const token = data?.session?.access_token
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  if (supabase) {
+    const { data } = await supabase.auth.getSession()
+    const token = data?.session?.access_token
+    if (token) return { Authorization: `Bearer ${token}` }
+  }
+  // Memory/guest mode — send user ID via header
+  const guest = loadGuestSession()
+  if (guest?.user?.id) return { 'x-user-id': guest.user.id }
+  return {}
 }
 
 async function request(path, opts = {}) {

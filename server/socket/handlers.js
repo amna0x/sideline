@@ -5,12 +5,19 @@ import { supabase, ready } from '../db/supabase.js'
 async function authenticateSocket(socket) {
   const auth = socket.handshake.auth || {}
   if (!ready) {
-    return auth.userId ? { id: String(auth.userId), guest: true } : null
+    if (!auth.userId) return null
+    const id = String(auth.userId)
+    return { id, guest: true, username: auth.username || `Guest_${id.slice(0, 4)}`, avatar_url: null }
   }
   if (!auth.token) return null
   const { data, error } = await supabase.auth.getUser(auth.token)
   if (error || !data?.user) return null
-  return { id: data.user.id, email: data.user.email }
+  return {
+    id: data.user.id,
+    email: data.user.email,
+    username: data.user.user_metadata?.username || data.user.email?.split('@')[0] || 'User',
+    avatar_url: data.user.user_metadata?.avatar_url || null
+  }
 }
 
 export function registerSocketHandlers(io) {

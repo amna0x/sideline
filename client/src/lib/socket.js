@@ -12,7 +12,7 @@ async function buildAuth() {
     if (data?.session?.access_token) return { token: data.session.access_token }
   }
   const guest = loadGuestSession()
-  if (guest?.user?.id) return { userId: guest.user.id }
+  if (guest?.user?.id) return { userId: guest.user.id, username: guest.user.user_metadata?.username || 'Guest' }
   return {}
 }
 

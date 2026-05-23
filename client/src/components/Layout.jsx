@@ -3,8 +3,9 @@ import { useStore } from '../store/index.js'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
 import Avatar from './Avatar.jsx'
+import Notifications from './Notifications.jsx'
 
-export default function Layout({ children, hideNav = false, title = 'SIDELINE_PRO' }) {
+export default function Layout({ children, hideNav = false, title = 'SIDELINE' }) {
   const points = useStore((s) => s.points)
   const toast = useStore((s) => s.toast)
   const showToast = useStore((s) => s.showToast)
@@ -16,16 +17,19 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE_PR
   }, [toast, showToast])
 
   return (
-    <div className="mobile-frame text-on-background pb-28 font-body">
+    <div className="mobile-frame text-on-background pb-28 font-body halftone relative">
       <TopBar title={title} points={points} />
-      <main className="relative">{children}</main>
+      <Notifications />
+      <main className="relative z-10">{children}</main>
       {!hideNav && <BottomNav />}
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
-            transition={{ type: 'spring', damping: 22 }}
-            className="fixed bottom-28 left-1/2 -translate-x-1/2 bg-primary-container text-background px-4 py-2 rounded-full font-label-caps text-label-caps shadow-[0_0_20px_rgba(216,207,188,0.5)] z-50 w-max max-w-[340px]"
+            initial={{ y: 80, opacity: 0, scale: 0.8 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 80, opacity: 0, scale: 0.8 }}
+            transition={{ type: 'spring', damping: 18, stiffness: 300 }}
+            className="fixed bottom-28 left-1/2 -translate-x-1/2 bg-[var(--sv-accent)] text-black px-5 py-2.5 rounded-full font-comic text-base shadow-[0_0_20px_var(--sv-accent)] chromatic-box z-50 w-max max-w-[340px]"
           >{toast}</motion.div>
         )}
       </AnimatePresence>
@@ -36,16 +40,21 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE_PR
 function TopBar({ title, points }) {
   const user = useStore((s) => s.user)
   return (
-    <header className="sticky top-0 z-40 flex justify-between items-center px-4 h-14 bg-[#11120D] text-[#D8CFBC] border-b border-[#565449]">
-      <Link to="/settings" className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-container-highest" aria-label="Settings">
-        <span className="material-symbols-outlined text-[20px]">settings</span>
+    <header className="sticky top-0 z-40 flex justify-between items-center px-4 h-14 bg-black/95 backdrop-blur-md text-white border-b border-white/[0.06]">
+      <Link to="/settings" className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-white/5 transition-transform hover:scale-110 active:scale-95" aria-label="Settings">
+        <span className="material-symbols-outlined text-[20px] text-white/60">settings</span>
       </Link>
       <div className="flex items-center gap-2">
-        <span className="font-black text-base tracking-tighter">{title}</span>
+        <span className="font-comic text-xl tracking-tight chromatic" data-text={title}>{title}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="font-label-caps text-label-caps text-primary-container tabular-nums">{(points || 0).toLocaleString()} XP</span>
-        <Link to="/profile" className="rounded-full overflow-hidden border border-outline-variant" aria-label="Profile">
+        <motion.span
+          key={points}
+          initial={{ scale: 1.3, color: 'var(--sv-accent)' }}
+          animate={{ scale: 1, color: '' }}
+          className="font-comic text-sm text-[var(--sv-accent)] tabular-nums"
+        >{(points || 0).toLocaleString()} XP</motion.span>
+        <Link to="/profile" className="rounded-full overflow-hidden border-2 border-[var(--sv-accent)]/40 hover:border-[var(--sv-accent)] transition-all hover:scale-110 active:scale-95 chromatic-box" aria-label="Profile">
           <Avatar url={user?.profile?.avatar_url} name={user?.profile?.username || user?.email} size={32} />
         </Link>
       </div>
@@ -56,22 +65,38 @@ function TopBar({ title, points }) {
 const NAV = [
   { to: '/', icon: 'radar', label: 'PULSE' },
   { to: '/predict', icon: 'analytics', label: 'PREDICT' },
+  { to: '/squad', icon: 'groups', label: 'SQUAD' },
   { to: '/vault', icon: 'inventory_2', label: 'VAULT' },
-  { to: '/leaderboard', icon: 'grid_view', label: 'BOARD' },
-  { to: '/quiz', icon: 'psychology', label: 'IQ' }
+  { to: '/leaderboard', icon: 'grid_view', label: 'BOARD' }
 ]
 
 function BottomNav() {
   const { pathname } = useLocation()
   return (
-    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center h-16 px-2 bg-[#11120D]/85 backdrop-blur-xl border border-[#565449] rounded-full w-[90%] max-w-[360px] shadow-[inset_0_1px_2px_rgba(216,207,188,0.2),0_8px_24px_rgba(0,0,0,0.6)]">
+    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center h-16 px-2 bg-black/90 backdrop-blur-xl border border-white/[0.06] rounded-full w-[92%] max-w-[370px] shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
       {NAV.map((n) => {
         const active = pathname === n.to || (n.to !== '/' && pathname.startsWith(n.to))
         return (
           <Link key={n.to} to={n.to}
-            className={`relative flex items-center justify-center w-11 h-11 rounded-full transition-all ${active ? 'bg-[#D8CFBC] text-[#11120D] shadow-[0_0_15px_rgba(216,207,188,0.4)]' : 'text-[#565449] hover:text-[#D8CFBC]'}`}
+            className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all"
             aria-label={n.label}>
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>{n.icon}</span>
+            <motion.div
+              animate={active ? { scale: 1, y: -2 } : { scale: 0.9, y: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                active
+                  ? 'bg-[var(--sv-accent)] text-black shadow-[0_0_12px_var(--sv-accent)]'
+                  : 'text-white/30 hover:text-white/60'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>{n.icon}</span>
+            </motion.div>
+            {active && (
+              <motion.span
+                layoutId="nav-label"
+                className="font-comic text-[9px] text-[var(--sv-accent)] mt-0.5"
+              >{n.label}</motion.span>
+            )}
           </Link>
         )
       })}

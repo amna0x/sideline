@@ -7,6 +7,7 @@ import usersRouter from './routes/users.js'
 import vaultRouter from './routes/vault.js'
 import leaderboardRouter from './routes/leaderboard.js'
 import quizRouter from './routes/quiz.js'
+import squadRouter from './routes/squad.js'
 import { apiLimiter } from './middleware/rateLimit.js'
 
 export function createApp() {
@@ -24,6 +25,7 @@ export function createApp() {
   app.use('/api/vault', vaultRouter)
   app.use('/api/leaderboard', leaderboardRouter)
   app.use('/api/quiz', quizRouter)
+  app.use('/api/squad', squadRouter)
 
   app.use((err, _req, res, _next) => {
     console.error(err)

@@ -13,6 +13,7 @@ import Leaderboard from './screens/Leaderboard.jsx'
 import Profile from './screens/Profile.jsx'
 import Quiz from './screens/Quiz.jsx'
 import Settings from './screens/Settings.jsx'
+import Squad from './screens/Squad.jsx'
 import AdidasDropOverlay from './screens/AdidasDrop.jsx'
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Protected session={session}><Home /></Protected>} />
           <Route path="/predict" element={<Protected session={session}><Predict /></Protected>} />
+          <Route path="/squad" element={<Protected session={session}><Squad /></Protected>} />
           <Route path="/vault" element={<Protected session={session}><Vault /></Protected>} />
           <Route path="/leaderboard" element={<Protected session={session}><Leaderboard /></Protected>} />
           <Route path="/profile" element={<Protected session={session}><Profile /></Protected>} />
