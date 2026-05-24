@@ -44,6 +44,7 @@ call :kill_port 5173
 
 REM --- Default env ---
 set AUTO_SIMULATE=1
+set DEV_TOOLS=1
 
 echo.
 echo Starting dev servers (Client + Server)...

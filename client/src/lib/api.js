@@ -65,6 +65,7 @@ export const api = {
   vaultItems: () => request('/api/vault/items'),
   userVault: (id) => request(`/api/vault/user/${id}`),
   redeem: (body) => request('/api/vault/redeem', { method: 'POST', body: JSON.stringify(body) }),
+  purchaseVault: (vaultItemId) => request('/api/vault/purchase', { method: 'POST', body: JSON.stringify({ vault_item_id: vaultItemId }) }),
 
   // Leaderboard
   leaderboard: (scope, matchId) => {

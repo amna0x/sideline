@@ -8,11 +8,13 @@ import { useStore } from '../store/index.js'
 const TIERS = ['all', 'common', 'rare', 'epic', 'legendary', 'mythic']
 
 export default function Vault() {
-  const { items, owned, loading, redeem } = useVault()
+  const { items, owned, loading, redeem, purchase } = useVault()
   const points = useStore((s) => s.points)
   const showToast = useStore((s) => s.showToast)
   const [tier, setTier] = useState('all')
   const [modal, setModal] = useState(null)
+  const [confirmBuy, setConfirmBuy] = useState(null)
+  const [buying, setBuying] = useState(false)
 
   const ownedById = useMemo(() => Object.fromEntries((owned || []).map((o) => [o.vault_item_id, o])), [owned])
   const filtered = useMemo(
@@ -30,12 +32,32 @@ export default function Vault() {
         } catch (e) { showToast(e.message || 'redeem failed') }
       } else setModal({ item, code: o.code, alreadyRedeemed: true })
     } else {
-      if (points < (item.points_cost || 0)) {
-        showToast(`Need ${(item.points_cost - points).toLocaleString()} more XP`)
+      const cost = item.points_cost || 0
+      if (points < cost) {
+        showToast(`Need ${(cost - points).toLocaleString()} more XP`)
+      } else if ((item.remaining_supply ?? 0) <= 0) {
+        showToast('Sold out')
       } else {
-        showToast('Earn this drop by predicting correctly')
+        setConfirmBuy(item)
       }
     }
+  }
+
+  async function confirmPurchase() {
+    if (!confirmBuy) return
+    setBuying(true)
+    try {
+      await purchase(confirmBuy.id)
+      const item = confirmBuy
+      setConfirmBuy(null)
+      showToast(`${item.name} unlocked`)
+    } catch (e) {
+      const msg = e.message || ''
+      if (msg.includes('insufficient_points')) showToast('Not enough XP')
+      else if (msg.includes('already_owned')) showToast('Already owned')
+      else if (msg.includes('sold_out')) showToast('Sold out')
+      else showToast(msg || 'purchase failed')
+    } finally { setBuying(false) }
   }
 
   return (
@@ -83,6 +105,7 @@ export default function Vault() {
 
       <AnimatePresence>
         {modal && <RedeemModal {...modal} onClose={() => setModal(null)} />}
+        {confirmBuy && <PurchaseModal item={confirmBuy} points={points} busy={buying} onCancel={() => setConfirmBuy(null)} onConfirm={confirmPurchase} />}
       </AnimatePresence>
     </Layout>
   )
@@ -115,6 +138,34 @@ function RedeemModal({ item, code, alreadyRedeemed, onClose }) {
           {code || '—'}
         </div>
         <button onClick={onClose} className="w-full py-3 bg-primary-container text-background rounded-full font-label-caps text-label-caps">CLOSE</button>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function PurchaseModal({ item, points, busy, onCancel, onConfirm }) {
+  const cost = item.points_cost || 0
+  const after = points - cost
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={busy ? undefined : onCancel}>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', damping: 26 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[340px] bg-surface-container-low border border-primary-container rounded-3xl p-6 shadow-[0_0_30px_rgba(216,207,188,0.25)] flex flex-col">
+        <h2 className="font-h2 text-h2 text-primary-container text-center">UNLOCK?</h2>
+        <p className="text-center text-on-surface-variant mb-4">{item.name}</p>
+        <div className="bg-background border border-outline rounded-DEFAULT p-4 mb-4 space-y-2">
+          <div className="flex justify-between text-sm"><span className="text-outline">Cost</span><span className="text-on-surface tabular-nums">{cost.toLocaleString()} XP</span></div>
+          <div className="flex justify-between text-sm"><span className="text-outline">Balance</span><span className="text-on-surface tabular-nums">{points.toLocaleString()} XP</span></div>
+          <div className="h-px bg-outline-variant my-1" />
+          <div className="flex justify-between text-sm"><span className="text-outline">After</span><span className="text-primary-container tabular-nums">{after.toLocaleString()} XP</span></div>
+        </div>
+        <div className="flex gap-2">
+          <button disabled={busy} onClick={onCancel} className="flex-1 py-3 border border-outline rounded-full font-label-caps text-label-caps text-on-surface-variant disabled:opacity-50">CANCEL</button>
+          <button disabled={busy} onClick={onConfirm} className="flex-1 py-3 bg-primary-container text-background rounded-full font-label-caps text-label-caps disabled:opacity-50">{busy ? 'UNLOCKING…' : 'UNLOCK'}</button>
+        </div>
       </motion.div>
     </motion.div>
   )

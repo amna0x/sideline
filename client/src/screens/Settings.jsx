@@ -216,6 +216,30 @@ function DevPanel() {
     pushNotification({ type: 'xp', title: 'XP EARNED', message: 'Prediction correct!', points: pts, icon: '⚡', duration: 3500 })
   }
 
+  async function grantBigXP() {
+    const pts = 25000
+    const user = useStore.getState().user
+    if (!user?.id) { pushNotification({ type: 'goal', title: 'NO USER', message: 'Sign in first', duration: 3000 }); return }
+    try {
+      const r = await api.post('/api/dev/grant', { user_id: user.id, points: pts })
+      useStore.getState().setPoints(r.points_total)
+      pushNotification({ type: 'xp', title: '+25,000 XP', message: `Total ${r.points_total.toLocaleString()}`, points: pts, icon: '🪙', duration: 4000 })
+    } catch (e) {
+      pushNotification({ type: 'goal', title: 'GRANT FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+    }
+  }
+
+  async function grantAllVault() {
+    const user = useStore.getState().user
+    if (!user?.id) { pushNotification({ type: 'goal', title: 'NO USER', message: 'Sign in first', duration: 3000 }); return }
+    try {
+      const r = await api.post('/api/dev/grant', { user_id: user.id, vault_all: true })
+      pushNotification({ type: 'vault', title: 'VAULT UNLOCKED', message: `${r.granted_count} items granted`, icon: '🗝️', duration: 4000 })
+    } catch (e) {
+      pushNotification({ type: 'goal', title: 'GRANT FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+    }
+  }
+
   function triggerVaultDrop() {
     pushNotification({ type: 'vault', title: 'MYTHIC DROP', message: 'Legendary card unlocked!', icon: '💎', duration: 6000 })
   }
@@ -280,6 +304,8 @@ function DevPanel() {
     { label: '⚽ GOAL', fn: triggerGoal, bg: '#ff2d7b' },
     { label: '🎯 PREDICT', fn: triggerPrediction, bg: '#00f0ff' },
     { label: '⚡ +XP', fn: triggerXP, bg: '#39ff14' },
+    { label: '🪙 +25K XP', fn: grantBigXP, bg: '#ffe14d' },
+    { label: '🗝️ ALL VAULT', fn: grantAllVault, bg: '#FFD6A5' },
     { label: '💎 DROP', fn: triggerVaultDrop, bg: '#ffe14d' },
     { label: '⚔️ DUEL IN', fn: triggerDuelChallenge, bg: '#b44dff' },
     { label: '🏆 RESULT', fn: triggerDuelResult, bg: '#b44dff' },

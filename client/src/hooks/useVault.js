@@ -40,5 +40,12 @@ export function useVault() {
     return r
   }
 
-  return { items, owned, loading, error, reload: load, redeem }
+  async function purchase(vaultItemId) {
+    const r = await api.purchaseVault(vaultItemId)
+    if (r?.user_vault) setOwned((cur) => cur.find((x) => x.id === r.user_vault.id) ? cur : [...cur, r.user_vault])
+    if (typeof r?.points_total === 'number') useStore.getState().setPoints(r.points_total)
+    return r
+  }
+
+  return { items, owned, loading, error, reload: load, redeem, purchase }
 }
