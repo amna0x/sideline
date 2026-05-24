@@ -119,8 +119,13 @@ r.get('/:id/history', async (req, res, next) => {
 })
 
 function autoCreateUser(id) {
-  const u = { id, username: `op_${id.slice(0, 6)}`, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' }
+  const u = { id, username: `op_${id.slice(0, 6)}`, tier: 'fan', points_total: 9999, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' }
   db.users.set(id, u)
+  
+  // Pre-unlock a badge and a card by default in memory mode for easy API testing
+  db.user_vault.push({ id: `uv_seed1_${id}`, user_id: id, vault_item_id: 'vi_badge_streak', earned_at: new Date().toISOString(), redeemed: false, code: null })
+  db.user_vault.push({ id: `uv_seed2_${id}`, user_id: id, vault_item_id: 'vi_card_brandt_md12', earned_at: new Date().toISOString(), redeemed: false, code: null })
+  
   return u
 }
 
