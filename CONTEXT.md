@@ -55,5 +55,6 @@ _Non-obvious choices that future sessions should not relitigate._
 
 _Append a one-liner per session. Keep newest at top. Trim entries older than ~30 days._
 
+- _2026-04-29 — PR0 (foundation) merged. PR1 (avatars + 3 more themes) opened: server avatar route w/ MIME+5MB cap, multer, Storage upload via service role, memory-mode data-URL fallback; Avatar+AvatarUpload components w/ initials fallback; Inferno/Cobalt/Solar themes._
 - _2026-04-29 — Merged PR1 themes/session/settings-cog. Started PR0 foundation (auth middleware, validation, rate limit, socket auth, tests)._
 - _2026-04-28 — Initial CLAUDE.md, .claude/settings.json, CONTEXT.md scaffolded._

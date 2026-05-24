@@ -11,6 +11,7 @@ export function usePredictions(matchId) {
   const [error, setError] = useState(null)
   const addPoints = useStore((s) => s.addPoints)
   const showToast = useStore((s) => s.showToast)
+  const pushNotification = useStore((s) => s.pushNotification)
 
   const load = useCallback(async () => {
     if (!matchId) return
@@ -29,14 +30,30 @@ export function usePredictions(matchId) {
   useEffect(() => { load() }, [load])
 
   useSocket({
-    'prediction:new': (p) => setActive((cur) => (cur.find((x) => x.id === p.id) ? cur : [...cur, p])),
+    'prediction:new': (p) => {
+      setActive((cur) => (cur.find((x) => x.id === p.id) ? cur : [...cur, p]))
+      pushNotification({
+        type: 'prediction',
+        title: 'NEW PREDICTION',
+        message: p.question,
+        icon: '🎯',
+        duration: 5000
+      })
+    },
     'prediction:resolved': ({ prediction_id, correct_answer, awards }) => {
       setActive((cur) => cur.map((p) => p.id === prediction_id ? { ...p, correct_answer, resolved_at: Date.now() } : p))
       if (awards && Array.isArray(awards)) {
         const mine = awards.find((a) => a.user_id === useStore.getState().user?.id)
         if (mine?.points_earned) {
           addPoints(mine.points_earned)
-          showToast(`+${mine.points_earned} XP — correct!`)
+          pushNotification({
+            type: 'xp',
+            title: 'PREDICTION CORRECT',
+            message: `Answer: ${correct_answer}`,
+            points: mine.points_earned,
+            icon: '⚡',
+            duration: 4000
+          })
         }
       }
     }

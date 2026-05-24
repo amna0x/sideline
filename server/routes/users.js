@@ -4,7 +4,8 @@ import { supabase, ready } from '../db/supabase.js'
 import { db } from '../db/memory.js'
 import { requireAuth, requireSelf } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
-import { writeLimiter } from '../middleware/rateLimit.js'
+import { writeLimiter, makeLimiter } from '../middleware/rateLimit.js'
+import { handleAvatarUpload, extForMime } from '../middleware/upload.js'
 
 const r = Router()
 
@@ -16,6 +17,8 @@ const patchSchema = z.object({
   notifications_enabled: z.boolean().optional(),
   strava_connected: z.boolean().optional()
 }).strict()
+
+const avatarLimiter = makeLimiter({ windowMs: 60 * 1000, max: 10 })
 
 r.get('/:id', async (req, res, next) => {
   try {
@@ -59,6 +62,34 @@ r.delete('/:id', writeLimiter, requireAuth, requireSelf('id'), async (req, res, 
     }
     db.users.delete(id)
     res.status(204).end()
+  } catch (e) { next(e) }
+})
+
+r.post('/:id/avatar', avatarLimiter, requireAuth, requireSelf('id'), handleAvatarUpload, async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'missing_file' })
+    const userId = req.params.id
+    const ext = extForMime(req.file.mimetype)
+    const path = `${userId}/${Date.now()}.${ext}`
+
+    if (ready) {
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, req.file.buffer, {
+        contentType: req.file.mimetype, upsert: true, cacheControl: '3600'
+      })
+      if (upErr) return res.status(500).json({ error: 'storage_upload_failed', detail: upErr.message })
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
+      const avatarUrl = pub?.publicUrl
+      if (!avatarUrl) return res.status(500).json({ error: 'storage_url_unavailable' })
+      const { error: updErr } = await supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', userId)
+      if (updErr) throw updErr
+      return res.json({ ok: true, avatar_url: avatarUrl })
+    }
+
+    const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+    const u = db.users.get(userId) || autoCreateUser(userId)
+    u.avatar_url = dataUrl
+    db.users.set(userId, u)
+    res.json({ ok: true, avatar_url: dataUrl })
   } catch (e) { next(e) }
 })
 

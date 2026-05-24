@@ -9,6 +9,7 @@ export function useMatch() {
   const pushEvent = useStore((s) => s.pushEvent)
   const setPulse = useStore((s) => s.setPulse)
   const setPendingDrop = useStore((s) => s.setPendingDrop)
+  const pushNotification = useStore((s) => s.pushNotification)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -26,12 +27,33 @@ export function useMatch() {
 
   useSocket({
     'match:update': (payload) => setMatch(payload),
-    'match:event': (ev) => pushEvent(ev),
+    'match:event': (ev) => {
+      pushEvent(ev)
+      if (ev.type === 'goal') {
+        pushNotification({
+          type: 'goal',
+          title: `GOAL! ${ev.player_name}`,
+          message: `${ev.minute}' — ${ev.team === 'home' ? 'Home' : 'Away'} scores!`,
+          icon: '⚽',
+          duration: 5000
+        })
+      }
+    },
     'match:pulse': (zones) => setPulse(zones),
-    'match:goal': (drop) => setPendingDrop(drop)
+    'match:goal': (drop) => {
+      setPendingDrop(drop)
+      if (drop.is_rare) {
+        pushNotification({
+          type: 'vault',
+          title: 'RARE DROP UNLOCKED',
+          message: `${drop.player_name} ${drop.minute}' — ${drop.rarity}`,
+          icon: '💎',
+          duration: 6000
+        })
+      }
+    }
   })
 
-  // poll every 30s as fallback
   useEffect(() => {
     const t = setInterval(() => { if (match?.id) api.match(match.id).then(setMatch).catch(() => {}) }, 30000)
     return () => clearInterval(t)

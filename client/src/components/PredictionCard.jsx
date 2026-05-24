@@ -4,39 +4,47 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
   const resolved = !!prediction.correct_answer
   const opts = prediction.options || []
   return (
-    <div className="relative" style={{ perspective: 1000 }}>
+    <div className="relative" style={{ perspective: 1200 }}>
       <motion.div
         animate={{ rotateY: resolved ? 180 : 0 }}
-        transition={{ duration: 0.7, type: 'spring', damping: 14 }}
+        transition={{ duration: 0.8, type: 'spring', damping: 12, stiffness: 100 }}
         style={{ transformStyle: 'preserve-3d' }}
         className="relative"
       >
         {/* Front */}
-        <div className="bg-surface-container-low border border-[#565449] rounded-2xl p-5 shadow-2xl" style={{ backfaceVisibility: 'hidden' }}>
+        <div className="comic-panel p-5 ink-splat" style={{ backfaceVisibility: 'hidden' }}>
           <div className="flex items-center gap-2 mb-2">
-            <span className="material-symbols-outlined text-primary-container text-[16px]">radar</span>
-            <span className="font-label-caps text-label-caps text-primary-container">{(prediction.type || 'PREDICTION').replace('_', ' ').toUpperCase()}</span>
+            <span className="material-symbols-outlined text-[var(--sv-accent)] text-[18px]">radar</span>
+            <span className="font-comic text-sm text-[var(--sv-accent)] tracking-wide">{(prediction.type || 'PREDICTION').replace('_', ' ').toUpperCase()}</span>
           </div>
-          <h3 className="font-h3 text-h3 text-on-surface mb-4">{prediction.question}</h3>
+          <h3 className="font-comic text-2xl text-on-surface mb-4 leading-tight">{prediction.question}</h3>
           <div className="grid grid-cols-2 gap-3">
             {opts.map((opt) => {
               const isSel = selected === opt
               return (
-                <button
+                <motion.button
                   key={opt}
                   disabled={locked}
                   onClick={() => onSelect?.(opt)}
-                  className={`relative rounded-xl p-3 text-center transition-all border ${
+                  whileHover={!locked ? { scale: 1.03, rotate: 0.5 } : {}}
+                  whileTap={!locked ? { scale: 0.97 } : {}}
+                  className={`relative rounded-xl p-3 text-center transition-all border-2 ${
                     isSel
-                      ? 'border-primary-container bg-primary-container/10 text-primary-container shadow-[0_0_15px_rgba(216,207,188,0.3)]'
+                      ? 'border-[var(--sv-accent)] bg-[var(--sv-accent)]/10 text-[var(--sv-accent)] shadow-neon-sm'
                       : locked
                         ? 'border-outline-variant bg-surface-container text-on-surface-variant opacity-50'
-                        : 'border-outline-variant bg-surface-container hover:border-primary-container/50 text-on-surface'
+                        : 'border-outline-variant bg-surface-container hover:border-[var(--sv-accent)]/50 text-on-surface shadow-comic-sm'
                   }`}
                 >
                   <span className="block font-body-lg text-body-lg font-medium">{opt}</span>
-                  {isSel && <span className="material-symbols-outlined absolute top-1 right-1 text-primary-container text-[16px]">check_circle</span>}
-                </button>
+                  {isSel && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="material-symbols-outlined absolute top-1 right-1 text-[var(--sv-accent)] text-[16px] fill-icon"
+                    >check_circle</motion.span>
+                  )}
+                </motion.button>
               )
             })}
           </div>
@@ -46,14 +54,18 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
           </div>
         </div>
         {/* Back (reveal) */}
-        <div className="absolute inset-0 bg-surface-container-low border border-primary-container rounded-2xl p-5 shadow-[0_0_30px_rgba(216,207,188,0.3)] flex flex-col justify-center text-center"
+        <div className="absolute inset-0 comic-panel p-5 flex flex-col justify-center text-center border-2 border-[var(--sv-accent)] shadow-neon"
              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-          <span className="font-label-caps text-label-caps text-primary-container mb-2">CORRECT ANSWER</span>
-          <h3 className="font-h2 text-h2 text-primary mb-4">{prediction.correct_answer}</h3>
+          <span className="font-comic text-sm text-[var(--sv-accent)] mb-2 tracking-wide">CORRECT ANSWER</span>
+          <h3 className="font-comic text-4xl text-primary chromatic mb-4" data-text={prediction.correct_answer}>{prediction.correct_answer}</h3>
           {selected && (
-            <span className={`font-label-caps text-label-caps ${selected === prediction.correct_answer ? 'text-primary-container' : 'text-error'}`}>
-              {selected === prediction.correct_answer ? 'YOU GOT IT' : `YOU PICKED ${selected}`}
-            </span>
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className={`font-comic text-lg ${selected === prediction.correct_answer ? 'text-[#00f6ac]' : 'text-error'}`}
+            >
+              {selected === prediction.correct_answer ? '✓ NAILED IT' : `✗ YOU PICKED ${selected}`}
+            </motion.span>
           )}
         </div>
       </motion.div>

@@ -4,6 +4,7 @@ import { Server as SocketServer } from 'socket.io'
 
 import { createApp } from './app.js'
 import { registerSocketHandlers } from './socket/handlers.js'
+import { registerSquadHandlers } from './socket/squad.js'
 import { startSimulator } from './simulator/engine.js'
 
 const app = createApp()
@@ -13,10 +14,12 @@ const io = new SocketServer(server, {
 })
 
 registerSocketHandlers(io)
+registerSquadHandlers(io)
 app.set('io', io)
 
 const PORT = process.env.PORT || 4000
-server.listen(PORT, () => {
-  console.log(`[sideline] http+ws on :${PORT}`)
+const HOST = process.env.HOST || '0.0.0.0'
+server.listen(PORT, HOST, () => {
+  console.log(`[sideline] http+ws on ${HOST}:${PORT}`)
   if (process.env.AUTO_SIMULATE === '1') startSimulator(io)
 })

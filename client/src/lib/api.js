@@ -1,12 +1,18 @@
 import { supabase } from './supabase.js'
+import { loadGuestSession } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 async function authHeader() {
-  if (!supabase) return {}
-  const { data } = await supabase.auth.getSession()
-  const token = data?.session?.access_token
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  if (supabase) {
+    const { data } = await supabase.auth.getSession()
+    const token = data?.session?.access_token
+    if (token) return { Authorization: `Bearer ${token}` }
+  }
+  // Memory/guest mode — send user ID via header
+  const guest = loadGuestSession()
+  if (guest?.user?.id) return { 'x-user-id': guest.user.id }
+  return {}
 }
 
 async function request(path, opts = {}) {
@@ -21,6 +27,16 @@ async function request(path, opts = {}) {
     throw new Error(`${res.status} ${res.statusText} ${text}`.trim())
   }
   if (res.status === 204) return null
+  return res.json()
+}
+
+async function upload(path, formData) {
+  const headers = { ...(await authHeader()) }
+  const res = await fetch(`${BASE}${path}`, { method: 'POST', body: formData, headers })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`${res.status} ${res.statusText} ${text}`.trim())
+  }
   return res.json()
 }
 
@@ -43,6 +59,11 @@ export const api = {
   // Users
   user: (id) => request(`/api/users/${id}`),
   updateUser: (id, body) => request(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  uploadAvatar: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return upload(`/api/users/${id}/avatar`, fd)
+  },
 
   // Vault
   vaultItems: () => request('/api/vault/items'),

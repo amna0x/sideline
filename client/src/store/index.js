@@ -32,8 +32,30 @@ export const useStore = create((set) => ({
   // UI
   toast: null,
   showToast: (msg) => set({ toast: msg }),
+  notifications: [],
+  pushNotification: (n) => set((s) => ({
+    notifications: [{ ...n, id: Date.now() + Math.random() }, ...s.notifications].slice(0, 8)
+  })),
+  removeNotification: (id) => set((s) => ({
+    notifications: s.notifications.filter((n) => n.id !== id)
+  })),
 
   // Theme
   theme: 'default',
-  setTheme: (theme) => set({ theme })
+  setTheme: (theme) => set({ theme }),
+
+  // Squad
+  squad: null,
+  squadMembers: [],
+  reactions: [],
+  activeDuel: null,
+  setSquad: (squad) => set({ squad }),
+  setSquadMembers: (members) => set({ squadMembers: members }),
+  addReaction: (r) => set((s) => ({ reactions: [...s.reactions.slice(-19), { ...r, id: Date.now() + Math.random() }] })),
+  clearReactions: () => set({ reactions: [] }),
+  setActiveDuel: (duel) => set({ activeDuel: duel }),
+  updateDuel: (update) => set((s) => ({
+    activeDuel: s.activeDuel ? { ...s.activeDuel, ...update } : null
+  })),
+  clearDuel: () => set({ activeDuel: null })
 }))
