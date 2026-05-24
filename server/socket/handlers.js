@@ -1,23 +1,31 @@
 // Socket.io event registration + helper emitters consumed by the simulator/engine.
+// Authentication uses AWS Cognito JWTs (or guest userId in memory mode).
 
-import { supabase, ready } from '../db/supabase.js'
+import { verifyToken, cognitoReady } from '../middleware/cognito.js'
 
 async function authenticateSocket(socket) {
   const auth = socket.handshake.auth || {}
-  if (!ready) {
-    if (!auth.userId) return null
+  if (cognitoReady && auth.token) {
+    const user = await verifyToken(auth.token)
+    if (user) {
+      return {
+        id: user.id,
+        email: user.email,
+        username: user.username || (user.email ? user.email.split('@')[0] : 'User'),
+        avatar_url: user.metadata?.avatar_url || null
+      }
+    }
+  }
+  if (auth.userId) {
     const id = String(auth.userId)
-    return { id, guest: true, username: auth.username || `Guest_${id.slice(0, 4)}`, avatar_url: null }
+    return {
+      id,
+      guest: true,
+      username: auth.username || `Guest_${id.slice(0, 4)}`,
+      avatar_url: null
+    }
   }
-  if (!auth.token) return null
-  const { data, error } = await supabase.auth.getUser(auth.token)
-  if (error || !data?.user) return null
-  return {
-    id: data.user.id,
-    email: data.user.email,
-    username: data.user.user_metadata?.username || data.user.email?.split('@')[0] || 'User',
-    avatar_url: data.user.user_metadata?.avatar_url || null
-  }
+  return null
 }
 
 export function registerSocketHandlers(io) {
@@ -31,16 +39,34 @@ export function registerSocketHandlers(io) {
       if (typeof matchId === 'string' && matchId.length < 64) socket.join(`match:${matchId}`)
     })
 
+    socket.on('match:leave', (matchId) => {
+      if (typeof matchId === 'string') socket.leave(`match:${matchId}`)
+    })
+
     socket.on('disconnect', () => console.log(`[socket] - ${socket.id}`))
   })
 }
 
+function room(matchId) { return matchId ? `match:${matchId}` : null }
+
 export const emit = {
-  matchUpdate: (io, _matchId, payload) => io.emit('match:update', payload),
-  matchEvent: (io, _matchId, ev) => io.emit('match:event', ev),
-  matchPulse: (io, _matchId, zones) => io.emit('match:pulse', zones),
+  matchUpdate: (io, matchId, payload) => {
+    const r = room(matchId)
+    r ? io.to(r).emit('match:update', payload) : io.emit('match:update', payload)
+  },
+  matchEvent: (io, matchId, ev) => {
+    const r = room(matchId)
+    r ? io.to(r).emit('match:event', ev) : io.emit('match:event', ev)
+  },
+  matchPulse: (io, matchId, zones) => {
+    const r = room(matchId)
+    r ? io.to(r).emit('match:pulse', zones) : io.emit('match:pulse', zones)
+  },
   matchGoal: (io, drop) => io.emit('match:goal', drop),
-  predictionNew: (io, p) => io.emit('prediction:new', p),
+  predictionNew: (io, p) => {
+    const r = room(p?.match_id)
+    r ? io.to(r).emit('prediction:new', p) : io.emit('prediction:new', p)
+  },
   predictionResolved: (io, payload) => io.emit('prediction:resolved', payload),
   leaderboardUpdate: (io) => io.emit('leaderboard:update'),
   vaultMinted: (io, record) => io.emit('vault:minted', record),

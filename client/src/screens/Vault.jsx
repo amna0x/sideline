@@ -103,19 +103,18 @@ function Stat({ label, value, sub }) {
 function RedeemModal({ item, code, alreadyRedeemed, onClose }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={onClose}>
+                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: 'spring', damping: 26 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[390px] bg-surface-container-low border-t border-primary-container rounded-t-3xl p-6 shadow-[0_-10px_40px_rgba(216,207,188,0.15)]">
-        <div className="w-12 h-1 bg-outline-variant rounded-full mx-auto mb-4" />
+        className="w-full max-w-[340px] bg-surface-container-low border border-primary-container rounded-3xl p-6 shadow-[0_0_30px_rgba(216,207,188,0.25)] flex flex-col">
         <h2 className="font-h2 text-h2 text-primary-container text-center">{alreadyRedeemed ? 'CODE' : 'REDEEMED'}</h2>
         <p className="text-center text-on-surface-variant mb-4">{item.name}</p>
-        <div className="bg-background border border-primary-container rounded-DEFAULT p-4 text-center font-mono text-h3 text-primary tracking-widest">
+        <div className="bg-background border border-primary-container rounded-DEFAULT p-4 text-center font-mono text-h3 text-primary tracking-widest mb-4">
           {code || '—'}
         </div>
-        <button onClick={onClose} className="w-full mt-4 py-3 bg-primary-container text-background rounded-full font-label-caps text-label-caps">CLOSE</button>
+        <button onClick={onClose} className="w-full py-3 bg-primary-container text-background rounded-full font-label-caps text-label-caps">CLOSE</button>
       </motion.div>
     </motion.div>
   )

@@ -4,12 +4,13 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth.js'
 
 export default function Login() {
-  const { signIn, signUp, signInAsGuest } = useAuth()
+  const { signIn, signUp, signInAsGuest, confirmSignUp, resendConfirmation } = useAuth()
   const nav = useNavigate()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [code, setCode] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -18,9 +19,22 @@ export default function Login() {
     e.preventDefault()
     setBusy(true); setError(null)
     try {
-      if (mode === 'login') await signIn(email, password)
-      else await signUp(email, password, username || email.split('@')[0])
-      nav('/', { replace: true })
+      if (mode === 'login') {
+        await signIn(email, password)
+        nav('/', { replace: true })
+      } else if (mode === 'signup') {
+        const result = await signUp(email, password, username || email.split('@')[0])
+        if (result?.userConfirmed) {
+          await signIn(email, password)
+          nav('/', { replace: true })
+        } else {
+          setMode('confirm')
+        }
+      } else if (mode === 'confirm') {
+        await confirmSignUp(email, code.trim())
+        await signIn(email, password)
+        nav('/', { replace: true })
+      }
     } catch (err) { setError(err.message || String(err)) }
     finally { setBusy(false) }
   }
@@ -30,6 +44,12 @@ export default function Login() {
     try { await signInAsGuest(); nav('/', { replace: true }) }
     catch (err) { setError(err.message || String(err)) }
     finally { setBusy(false) }
+  }
+
+  async function onResend() {
+    setError(null)
+    try { await resendConfirmation(email); setError('Code sent') }
+    catch (err) { setError(err.message || String(err)) }
   }
 
   return (
@@ -74,20 +94,31 @@ export default function Login() {
                        className="w-full bg-black border border-white/10 rounded-xl p-3 text-white placeholder-white/20 focus:outline-none focus:border-[var(--sv-accent)] transition-colors" />
               </Field>
             )}
-            <Field label="EMAIL" icon="mail">
-              <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="user@sideline.pro"
-                     className="w-full bg-black border border-white/10 rounded-xl p-3 text-white placeholder-white/20 focus:outline-none focus:border-[var(--sv-accent)] transition-colors" />
-            </Field>
-            <Field label="PASSWORD" icon="lock">
-              <div className="relative">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                       type={showPw ? 'text' : 'password'} placeholder="••••••••"
-                       className="w-full bg-black border border-white/10 rounded-xl p-3 pr-10 text-white placeholder-white/20 focus:outline-none focus:border-[var(--sv-accent)] transition-colors" />
-                <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
-                  <span className="material-symbols-outlined text-[18px]">{showPw ? 'visibility_off' : 'visibility'}</span>
-                </button>
-              </div>
-            </Field>
+            {mode !== 'confirm' && (
+              <>
+                <Field label="EMAIL" icon="mail">
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="user@sideline.pro"
+                         className="w-full bg-black border border-white/10 rounded-xl p-3 text-white placeholder-white/20 focus:outline-none focus:border-[var(--sv-accent)] transition-colors" />
+                </Field>
+                <Field label="PASSWORD" icon="lock">
+                  <div className="relative">
+                    <input value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8}
+                           type={showPw ? 'text' : 'password'} placeholder="••••••••"
+                           className="w-full bg-black border border-white/10 rounded-xl p-3 pr-10 text-white placeholder-white/20 focus:outline-none focus:border-[var(--sv-accent)] transition-colors" />
+                    <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
+                      <span className="material-symbols-outlined text-[18px]">{showPw ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  </div>
+                </Field>
+              </>
+            )}
+            {mode === 'confirm' && (
+              <Field label="CONFIRMATION CODE" icon="mark_email_read">
+                <input value={code} onChange={(e) => setCode(e.target.value)} required pattern="[0-9]{6}" placeholder="123456"
+                       className="w-full bg-black border border-white/10 rounded-xl p-3 text-white placeholder-white/20 focus:outline-none focus:border-[var(--sv-accent)] transition-colors tracking-widest text-center font-comic" />
+                <button type="button" onClick={onResend} className="text-xs font-comic text-[var(--sv-cyan)] mt-2">RESEND CODE</button>
+              </Field>
+            )}
 
             {error && <div className="text-red-400 text-sm font-medium">{error}</div>}
 
@@ -97,7 +128,7 @@ export default function Login() {
               type="submit"
               className="w-full bg-[var(--sv-accent)] text-black font-comic text-base py-3.5 rounded-xl shadow-[0_0_20px_var(--sv-accent)] hover:shadow-[0_0_30px_var(--sv-accent)] transition-all flex justify-center items-center gap-2 disabled:opacity-50"
             >
-              {busy ? 'CONNECTING…' : (mode === 'login' ? 'ENTER' : 'CREATE ACCOUNT')}
+              {busy ? 'CONNECTING…' : (mode === 'login' ? 'ENTER' : mode === 'signup' ? 'CREATE ACCOUNT' : 'CONFIRM EMAIL')}
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </motion.button>
 

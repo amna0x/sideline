@@ -5,7 +5,7 @@ import Layout from '../components/Layout.jsx'
 import { useStore } from '../store/index.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { api } from '../lib/api.js'
-import { supabase } from '../lib/supabase.js'
+import { cognitoReady, changePassword as cogChangePassword, deleteCurrentUser as cogDeleteUser } from '../lib/cognito.js'
 import { THEMES } from '../lib/theme.js'
 import { getSocket } from '../lib/socket.js'
 
@@ -34,11 +34,17 @@ export default function Settings() {
   }
 
   async function changePassword() {
-    const pw = window.prompt('New password (min 6 chars):')
-    if (!pw || pw.length < 6) return
-    if (!supabase) return
-    const { error } = await supabase.auth.updateUser({ password: pw })
-    showToast(error ? error.message : 'Password updated')
+    if (!cognitoReady) { showToast('Auth not configured'); return }
+    const oldPw = window.prompt('Current password:')
+    if (!oldPw) return
+    const pw = window.prompt('New password (min 8 chars, with number + symbol):')
+    if (!pw || pw.length < 8) return
+    try {
+      await cogChangePassword(oldPw, pw)
+      showToast('Password updated')
+    } catch (err) {
+      showToast(err.message || 'Password change failed')
+    }
   }
 
   async function toggleNotif() {
@@ -52,10 +58,14 @@ export default function Settings() {
   }
 
   async function deleteAccount() {
-    if (!supabase || !user?.id) return
-    await api.delete(`/api/users/${user.id}`)
-    await supabase.auth.signOut()
-    nav('/login', { replace: true })
+    if (!user?.id) return
+    try {
+      await api.delete(`/api/users/${user.id}`)
+      if (cognitoReady) await cogDeleteUser().catch(() => {})
+    } finally {
+      await signOut()
+      nav('/login', { replace: true })
+    }
   }
 
   return (

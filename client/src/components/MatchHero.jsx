@@ -25,7 +25,7 @@ export default function MatchHero({ match }) {
 
       <div className="comic-panel p-5 speed-lines">
         <div className="flex items-center justify-between relative z-10">
-          <TeamLabel name={match.home_team} />
+          <TeamLabel name={match.home_team} logoUrl={match.home_team_logo} />
           <motion.div
             key={`${match.home_score}-${match.away_score}`}
             initial={{ scale: 2, opacity: 0, rotate: -5 }}
@@ -34,7 +34,7 @@ export default function MatchHero({ match }) {
             className="font-comic text-[64px] leading-none text-primary-container chromatic drop-shadow-[0_0_20px_rgba(216,207,188,0.3)] tabular-nums"
             data-text={`${match.home_score}–${match.away_score}`}
           >{match.home_score}–{match.away_score}</motion.div>
-          <TeamLabel name={match.away_team} align="right" />
+          <TeamLabel name={match.away_team} logoUrl={match.away_team_logo} align="right" />
         </div>
         <p className="mt-3 text-center text-xs text-on-surface-variant font-marker">{match.stadium}</p>
       </div>
@@ -42,15 +42,19 @@ export default function MatchHero({ match }) {
   )
 }
 
-function TeamLabel({ name, align = 'left' }) {
+function TeamLabel({ name, logoUrl, align = 'left' }) {
   return (
     <div className={`flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
       <motion.div
         whileHover={{ scale: 1.1, rotate: align === 'right' ? 3 : -3 }}
         whileTap={{ scale: 0.95 }}
-        className="w-14 h-14 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center font-comic text-lg text-primary-container shadow-comic-sm"
+        className="w-14 h-14 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center font-comic text-lg text-primary-container shadow-comic-sm overflow-hidden"
       >
-        {name?.slice(0, 3).toUpperCase()}
+        {logoUrl ? (
+          <img src={logoUrl} alt={name} className="w-9 h-9 object-contain" />
+        ) : (
+          name?.slice(0, 3).toUpperCase()
+        )}
       </motion.div>
       <span className="font-label-caps text-label-caps text-on-surface-variant mt-1.5 truncate max-w-[100px]">{name}</span>
     </div>

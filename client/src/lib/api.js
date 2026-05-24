@@ -1,15 +1,11 @@
-import { supabase } from './supabase.js'
+import { getIdToken } from './cognito.js'
 import { loadGuestSession } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 async function authHeader() {
-  if (supabase) {
-    const { data } = await supabase.auth.getSession()
-    const token = data?.session?.access_token
-    if (token) return { Authorization: `Bearer ${token}` }
-  }
-  // Memory/guest mode — send user ID via header
+  const token = await getIdToken().catch(() => null)
+  if (token) return { Authorization: `Bearer ${token}` }
   const guest = loadGuestSession()
   if (guest?.user?.id) return { 'x-user-id': guest.user.id }
   return {}
@@ -79,5 +75,8 @@ export const api = {
 
   // Quiz
   quiz: (matchId) => request(`/api/quiz/${matchId}`),
-  submitQuiz: (body) => request('/api/quiz/answer', { method: 'POST', body: JSON.stringify(body) })
+  submitQuiz: (body) => request('/api/quiz/answer', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Share
+  shareCard: (body) => request('/api/share/card', { method: 'POST', body: JSON.stringify(body) })
 }

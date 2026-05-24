@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store/index.js'
 import { generateDropCard, shareDropCard } from '../lib/canvas.js'
+import { api } from '../lib/api.js'
 
 export default function AdidasDropOverlay() {
   const drop = useStore((s) => s.pendingDrop)
@@ -9,14 +10,15 @@ export default function AdidasDropOverlay() {
   const user = useStore((s) => s.user)
   const showToast = useStore((s) => s.showToast)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [hostedUrl, setHostedUrl] = useState(null)
   const blobRef = useRef(null)
 
   useEffect(() => {
-    if (!drop) { setPreviewUrl(null); blobRef.current = null; return }
+    if (!drop) { setPreviewUrl(null); setHostedUrl(null); blobRef.current = null; return }
     const accuracy = user?.profile?.predictions_made
       ? Math.round((user.profile.predictions_correct / user.profile.predictions_made) * 100)
       : 0
-    generateDropCard({
+    const payload = {
       player: drop.player_name || 'Unknown',
       minute: drop.minute || 0,
       team: drop.team || '',
@@ -24,10 +26,20 @@ export default function AdidasDropOverlay() {
       accuracy,
       rarity: drop.rarity || 'EPIC',
       isRare: !!drop.is_rare
-    }).then((blob) => {
+    }
+    generateDropCard(payload).then((blob) => {
       blobRef.current = blob
       setPreviewUrl(URL.createObjectURL(blob))
     })
+    api.shareCard({
+      player: payload.player,
+      minute: payload.minute,
+      team: payload.team,
+      username: payload.username,
+      accuracy: payload.accuracy,
+      rarity: payload.rarity,
+      is_rare: payload.isRare
+    }).then((r) => { if (r?.url) setHostedUrl(r.url) }).catch(() => {})
   }, [drop, user])
 
   if (!drop) return null
@@ -67,8 +79,17 @@ export default function AdidasDropOverlay() {
 
           <div className="mt-4 flex flex-col gap-2">
             <button onClick={async () => {
+              const text = `GOAL ${drop.player_name} ${drop.minute}'`
+              if (hostedUrl) {
+                try {
+                  if (navigator.share) await navigator.share({ url: hostedUrl, text, title: 'Sideline Drop Moment' })
+                  else await navigator.clipboard.writeText(hostedUrl)
+                  showToast('Shared')
+                  return
+                } catch { /* fall through to blob */ }
+              }
               if (!blobRef.current) return
-              const ok = await shareDropCard(blobRef.current, `GOAL ${drop.player_name} ${drop.minute}'`)
+              const ok = await shareDropCard(blobRef.current, text)
               if (ok) showToast('Shared / copied to clipboard')
             }} className="w-full py-3 bg-primary-container text-background font-label-caps text-label-caps rounded-full shadow-[0_0_20px_rgba(216,207,188,0.2)] flex items-center justify-center gap-2">
               <span className="material-symbols-outlined fill-icon">share</span> SHARE DROP

@@ -25,11 +25,11 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE' }
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ y: 80, opacity: 0, scale: 0.8 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 80, opacity: 0, scale: 0.8 }}
-            transition={{ type: 'spring', damping: 18, stiffness: 300 }}
-            className="fixed bottom-28 left-1/2 -translate-x-1/2 bg-[var(--sv-accent)] text-black px-5 py-2.5 rounded-full font-comic text-base shadow-[0_0_20px_var(--sv-accent)] chromatic-box z-50 w-max max-w-[340px]"
+            initial={{ y: "-40%", x: "-50%", opacity: 0, scale: 0.9 }}
+            animate={{ y: "-50%", x: "-50%", opacity: 1, scale: 1 }}
+            exit={{ y: "-40%", x: "-50%", opacity: 0, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="fixed top-1/2 left-1/2 bg-[var(--sv-accent)] text-black px-6 py-3.5 rounded-2xl font-comic text-base shadow-[0_0_30px_rgba(255,59,107,0.3)] chromatic-box z-[100] w-[80%] max-w-[300px] text-center"
           >{toast}</motion.div>
         )}
       </AnimatePresence>
