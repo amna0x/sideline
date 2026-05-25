@@ -77,7 +77,7 @@ export default function Profile() {
   return (
     <Layout title="PROFILE">
       <section className="flex flex-col items-center text-center px-4 pt-6">
-        <div className="mb-3">
+        <div className="mb-3 relative">
           <AvatarUpload
             userId={user?.id}
             currentUrl={profile.avatar_url}
@@ -229,7 +229,10 @@ function FriendsTab({ friends, requests, searchQuery, searchResults, onSearch, o
               className="w-full flex items-center gap-3 bg-white border border-[#e0e0e0] rounded-xl px-3 py-2.5 text-left">
               <Avatar url={f.avatar_url} name={f.username} size={40} />
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-[#1a1a1a] font-medium truncate">{f.username}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm text-[#1a1a1a] font-medium truncate">{f.username}</span>
+                  <AdminBadge username={f.username} />
+                </div>
                 <div className="text-[10px] text-[#999]">{f.tier?.toUpperCase()} · {(f.points_total || 0).toLocaleString()} XP</div>
               </div>
               <span className="material-symbols-outlined text-[#ccc] text-[18px]">chevron_right</span>
@@ -253,12 +256,16 @@ function FriendModal({ friend, onClose, onRemove }) {
         {/* Header */}
         <div className="bg-[#f8f8f8] p-6 flex flex-col items-center text-center">
           <Avatar url={friend.avatar_url} name={friend.username} size={72} />
-          <h2 className="font-comic text-xl text-[#1a1a1a] mt-3">{friend.username}</h2>
+          <h2 className="font-comic text-xl text-[#1a1a1a] mt-3 flex items-center gap-2">{friend.username} <AdminBadge username={friend.username} /></h2>
           <p className="text-xs text-[#999] mt-1">{friend.tier?.toUpperCase()} · {(friend.points_total || 0).toLocaleString()} XP</p>
         </div>
 
         {/* Actions */}
         <div className="p-4 space-y-2">
+          <a href={`/profile/${friend.id}`}
+            className="w-full py-2.5 bg-[var(--sv-accent)] text-white rounded-xl text-sm font-comic text-center block">
+            View Profile
+          </a>
           <button onClick={() => onRemove(friend.id)}
             className="w-full py-2.5 border border-red-200 text-red-500 rounded-xl text-sm font-comic hover:bg-red-50 transition-colors">
             Remove Friend

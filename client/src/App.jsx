@@ -11,6 +11,7 @@ import Predict from './screens/Predict.jsx'
 import Vault from './screens/Vault.jsx'
 import Leaderboard from './screens/Leaderboard.jsx'
 import Profile from './screens/Profile.jsx'
+import UserProfile from './screens/UserProfile.jsx'
 import Quiz from './screens/Quiz.jsx'
 import Settings from './screens/Settings.jsx'
 import Squad from './screens/Squad.jsx'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/vault" element={<Protected session={session}><Vault /></Protected>} />
           <Route path="/leaderboard" element={<Protected session={session}><Leaderboard /></Protected>} />
           <Route path="/profile" element={<Protected session={session}><Profile /></Protected>} />
+          <Route path="/profile/:userId" element={<Protected session={session}><UserProfile /></Protected>} />
           <Route path="/quiz" element={<Protected session={session}><Quiz /></Protected>} />
           <Route path="/settings" element={<Protected session={session}><Settings /></Protected>} />
           <Route path="*" element={<Navigate to="/" replace />} />

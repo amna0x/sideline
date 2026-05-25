@@ -107,7 +107,12 @@ r.get('/lookup/email/:username', async (req, res, next) => {
 
 async function autoCreateUser(id, req) {
   const email = req?.user?.email || null
-  const username = req?.user?.username || `op_${id.slice(0, 6)}`
+  // Use preferred_username from Cognito, or email prefix, or short ID
+  let username = req?.user?.username || null
+  // If username looks like an email or UUID, derive a better one
+  if (!username || username.includes('@') || username.length > 30) {
+    username = email ? email.split('@')[0] : `op_${id.slice(0, 6)}`
+  }
   const u = { id, username, email, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' }
   return await createUser(u)
 }

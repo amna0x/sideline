@@ -29,9 +29,9 @@ export async function verifyToken(token) {
     return {
       id: payload.sub,
       email: payload.email || null,
-      username: payload['cognito:username'] || payload.username || (payload.email ? payload.email.split('@')[0] : null),
+      username: payload.preferred_username || payload['cognito:username'] || payload.username || (payload.email ? payload.email.split('@')[0] : null),
       metadata: {
-        username: payload['cognito:username'] || payload.username || null,
+        username: payload.preferred_username || payload['cognito:username'] || payload.username || null,
         email: payload.email || null
       }
     }
