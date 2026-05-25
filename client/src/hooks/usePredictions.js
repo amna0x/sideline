@@ -63,7 +63,9 @@ export function usePredictions(matchId) {
     const userId = useStore.getState().user?.id
     if (!userId) throw new Error('not signed in')
     const opened = prediction.opens_at ? new Date(prediction.opens_at).getTime() : Date.now()
-    const speedMs = Date.now() - opened
+    // Clamp so the server's 10-minute speed_ms ceiling can't reject submits when
+    // the page held a stale prediction (server restart, slow user, etc.).
+    const speedMs = Math.max(0, Math.min(600000, Date.now() - opened))
     const result = await api.submitPrediction({
       user_id: userId,
       prediction_id: prediction.id,

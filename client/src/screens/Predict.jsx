@@ -17,10 +17,7 @@ export default function Predict() {
   const { active, upcoming, submissions, loading, submit } = usePredictions(match?.id)
   const [top, setTop] = useState([])
   const userId = useStore((s) => s.user?.id)
-  const isGuest = useStore((s) => s.isGuest)
   const showToast = useStore((s) => s.showToast)
-  const bumpGuest = useStore((s) => s.bumpGuest)
-  const guestInteractions = useStore((s) => s.guestInteractions)
 
   useEffect(() => {
     if (!match?.id) return
@@ -31,10 +28,6 @@ export default function Predict() {
   }, [match?.id])
 
   async function onSelect(p, opt) {
-    if (isGuest) {
-      bumpGuest()
-      if (guestInteractions >= 2) { showToast('Sign up to lock in predictions'); return }
-    }
     try { await submit(p, opt) }
     catch (e) { showToast(e.message || 'submit failed') }
   }

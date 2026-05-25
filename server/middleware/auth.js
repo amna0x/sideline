@@ -1,4 +1,7 @@
-import { supabase, ready } from '../db/supabase.js'
+// Auth middleware. Verifies AWS Cognito JWTs (when configured) and attaches
+// req.user. Falls back to a header-based guest identity for local demos.
+
+import { verifyToken, cognitoReady } from './cognito.js'
 
 const BEARER = /^Bearer\s+(.+)$/i
 
@@ -8,39 +11,44 @@ function extractToken(req) {
   return m ? m[1].trim() : null
 }
 
-async function resolveUser(token) {
-  if (!ready || !token) return null
-  const { data, error } = await supabase.auth.getUser(token)
-  if (error || !data?.user) return null
-  return data.user
+function guestFrom(req) {
+  const fallback = req.headers['x-user-id'] || req.body?.user_id
+  if (!fallback) return null
+  return { id: String(fallback), guest: true }
 }
 
 export async function requireAuth(req, res, next) {
   try {
-    if (!ready) {
-      const fallback = req.headers['x-user-id'] || req.body?.user_id
-      if (!fallback) return res.status(401).json({ error: 'unauthorized' })
-      req.user = { id: String(fallback), guest: true }
+    if (!cognitoReady) {
+      const guest = guestFrom(req)
+      if (!guest) return res.status(401).json({ error: 'unauthorized' })
+      req.user = guest
       return next()
     }
     const token = extractToken(req)
-    const user = await resolveUser(token)
-    if (!user) return res.status(401).json({ error: 'unauthorized' })
-    req.user = { id: user.id, email: user.email, metadata: user.user_metadata || {} }
+    const user = token ? await verifyToken(token) : null
+    if (!user) {
+      const guest = guestFrom(req)
+      if (guest) {
+        req.user = guest
+        return next()
+      }
+      return res.status(401).json({ error: 'unauthorized' })
+    }
+    req.user = user
     next()
   } catch (e) { next(e) }
 }
 
 export async function optionalAuth(req, _res, next) {
   try {
-    if (!ready) {
-      const fallback = req.headers['x-user-id'] || req.body?.user_id
-      req.user = fallback ? { id: String(fallback), guest: true } : null
+    if (!cognitoReady) {
+      req.user = guestFrom(req)
       return next()
     }
     const token = extractToken(req)
-    const user = await resolveUser(token)
-    req.user = user ? { id: user.id, email: user.email, metadata: user.user_metadata || {} } : null
+    const user = token ? await verifyToken(token) : null
+    req.user = user || guestFrom(req)
     next()
   } catch (e) { next(e) }
 }

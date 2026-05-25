@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client'
-import { supabase } from './supabase.js'
+import { getIdToken } from './cognito.js'
 import { loadGuestSession } from './session.js'
 
 const URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000'
@@ -7,10 +7,8 @@ const URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000'
 let socket = null
 
 async function buildAuth() {
-  if (supabase) {
-    const { data } = await supabase.auth.getSession()
-    if (data?.session?.access_token) return { token: data.session.access_token }
-  }
+  const token = await getIdToken().catch(() => null)
+  if (token) return { token }
   const guest = loadGuestSession()
   if (guest?.user?.id) return { userId: guest.user.id, username: guest.user.user_metadata?.username || 'Guest' }
   return {}
