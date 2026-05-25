@@ -1,8 +1,31 @@
-// Squad rooms, live reactions, and head-to-head duels — all socket-driven.
+// Squad rooms, live reactions, chat, and head-to-head duels — all socket-driven.
 
-const squads = new Map()  // squadId -> { id, name, matchId, members: Map<socketId, {userId, username, avatar_url, joinedAt}>, createdBy, createdAt }
-const duels = []          // { id, squadId, challengerId, opponentId, predictionId, challengerPick, opponentPick, result, createdAt }
-const reactionCooldowns = new Map() // `${socketId}` -> lastReactionTime
+import { mode } from '../db/index.js'
+import { query } from '../db/postgres.js'
+
+const squads = new Map()  // squadId -> { id, name, matchId, inviteCode, members: Map<socketId, {userId, username, avatar_url, joinedAt}>, createdBy, createdAt }
+const inviteCodes = new Map() // inviteCode -> squadId
+const duels = []
+const reactionCooldowns = new Map()
+
+function genCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase()
+}
+
+export function getSquadByInviteCode(code) {
+  const squadId = inviteCodes.get(code?.toUpperCase())
+  return squadId ? squads.get(squadId) : null
+}
+
+export function generateInviteCode(squadId) {
+  const squad = squads.get(squadId)
+  if (!squad) return null
+  if (squad.inviteCode) return squad.inviteCode
+  const code = genCode()
+  squad.inviteCode = code
+  inviteCodes.set(code, squadId)
+  return code
+}
 
 export function registerSquadHandlers(io) {
   io.on('connection', (socket) => {
@@ -14,15 +37,18 @@ export function registerSquadHandlers(io) {
       const squadId = `${matchId}::${squadName.toLowerCase().trim()}`
       let squad = squads.get(squadId)
       if (!squad) {
+        const inviteCode = genCode()
         squad = {
           id: squadId,
           name: squadName.trim(),
           matchId,
+          inviteCode,
           members: new Map(),
           createdBy: user.id,
           createdAt: Date.now()
         }
         squads.set(squadId, squad)
+        inviteCodes.set(inviteCode, squadId)
       }
 
       // Leave any previous squad
@@ -44,6 +70,7 @@ export function registerSquadHandlers(io) {
         id: squad.id,
         name: squad.name,
         matchId: squad.matchId,
+        inviteCode: squad.inviteCode,
         members: [...squad.members.values()],
         memberCount: squad.members.size
       })
@@ -88,6 +115,75 @@ export function registerSquadHandlers(io) {
           break
         }
       }
+    })
+
+    // Squad chat message
+    socket.on('squad:message', async ({ text }) => {
+      const user = socket.data.user
+      if (!user?.id || !text || text.trim().length === 0) return
+      const msg = text.trim().slice(0, 500) // max 500 chars
+
+      for (const [sid, s] of squads) {
+        if (s.members.has(socket.id)) {
+          const chatMsg = {
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            squad_id: sid,
+            user_id: user.id,
+            username: user.username || 'Anon',
+            avatar_url: user.avatar_url || null,
+            message: msg,
+            created_at: new Date().toISOString()
+          }
+          // Broadcast to squad
+          io.to(`squad:${sid}`).emit('squad:chat_message', chatMsg)
+          // Persist to DB
+          if (mode === 'postgres') {
+            query(
+              'INSERT INTO squad_messages (squad_id, user_id, username, message) VALUES ($1, $2, $3, $4)',
+              [sid, user.id, chatMsg.username, msg]
+            ).catch(() => {})
+          }
+          break
+        }
+      }
+    })
+
+    // Get invite code for current squad
+    socket.on('squad:get_invite', () => {
+      for (const [sid, s] of squads) {
+        if (s.members.has(socket.id)) {
+          socket.emit('squad:invite_code', { code: s.inviteCode, squadName: s.name })
+          break
+        }
+      }
+    })
+
+    // Join via invite code
+    socket.on('squad:join_invite', ({ code }) => {
+      const user = socket.data.user
+      if (!user?.id || !code) return
+      const squad = getSquadByInviteCode(code)
+      if (!squad) return socket.emit('squad:error', { message: 'Invalid or expired invite link' })
+
+      // Leave any previous squad
+      for (const [sid, s] of squads) {
+        if (s.members.has(socket.id)) {
+          s.members.delete(socket.id)
+          socket.leave(`squad:${sid}`)
+          io.to(`squad:${sid}`).emit('squad:member_left', { userId: user.id, memberCount: s.members.size })
+          if (s.members.size === 0) { inviteCodes.delete(s.inviteCode); squads.delete(sid) }
+        }
+      }
+
+      const member = { userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null, joinedAt: Date.now() }
+      squad.members.set(socket.id, member)
+      socket.join(`squad:${squad.id}`)
+
+      socket.emit('squad:state', {
+        id: squad.id, name: squad.name, matchId: squad.matchId, inviteCode: squad.inviteCode,
+        members: [...squad.members.values()], memberCount: squad.members.size
+      })
+      socket.to(`squad:${squad.id}`).emit('squad:member_joined', { ...member, memberCount: squad.members.size })
     })
 
     socket.on('squad:challenge', ({ opponentId, predictionId }) => {

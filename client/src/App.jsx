@@ -44,6 +44,7 @@ export default function App() {
           <Route path="/" element={<Protected session={session}><Home /></Protected>} />
           <Route path="/predict" element={<Protected session={session}><Predict /></Protected>} />
           <Route path="/squad" element={<Protected session={session}><Squad /></Protected>} />
+          <Route path="/squad/join/:code" element={<Protected session={session}><Squad /></Protected>} />
           <Route path="/vault" element={<Protected session={session}><Vault /></Protected>} />
           <Route path="/leaderboard" element={<Protected session={session}><Leaderboard /></Protected>} />
           <Route path="/profile" element={<Protected session={session}><Profile /></Protected>} />

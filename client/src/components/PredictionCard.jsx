@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { getPlayerAvatar } from '../lib/players.js'
 
 export default function PredictionCard({ prediction, selected, onSelect, locked }) {
   const resolved = !!prediction.correct_answer
@@ -55,6 +56,7 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
           <div className="grid grid-cols-2 gap-3">
             {opts.map((opt) => {
               const isSel = selected === opt
+              const avatar = getPlayerAvatar(opt)
               return (
                 <motion.button
                   key={opt}
@@ -70,6 +72,9 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
                         : 'border-outline-variant bg-surface-container hover:border-[var(--sv-accent)]/50 text-on-surface shadow-comic-sm'
                   }`}
                 >
+                  {avatar && (
+                    <img src={avatar} alt="" className="w-8 h-8 rounded-full object-cover mx-auto mb-1.5 border border-[#e0e0e0]" />
+                  )}
                   <span className="block font-body-lg text-body-lg font-medium">{opt}</span>
                   {isSel && (
                     <motion.span
