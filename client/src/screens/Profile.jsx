@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import AvatarUpload from '../components/AvatarUpload.jsx'
-import Avatar from '../components/Avatar.jsx'
+import Avatar, { AdminBadge } from '../components/Avatar.jsx'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
@@ -87,7 +87,7 @@ export default function Profile() {
             onError={(msg) => showToast(msg)}
           />
         </div>
-        <h1 className="font-comic text-2xl text-[#1a1a1a]">{profile.username || 'User'}</h1>
+        <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">{profile.username || 'User'} <AdminBadge username={profile.username} /></h1>
         <p className="text-xs text-[#999] mt-1">{(profile.prediction_title || 'Fan').toUpperCase()} · {(profile.tier || 'Fan').toUpperCase()}</p>
       </section>
 
