@@ -20,6 +20,8 @@ export default function Profile() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedFriend, setSelectedFriend] = useState(null)
+  const [editingBio, setEditingBio] = useState(false)
+  const [bioText, setBioText] = useState('')
 
   useEffect(() => {
     const t = searchParams.get('tab')
@@ -32,6 +34,23 @@ export default function Profile() {
     api.friends().then(setFriends).catch(() => {})
     api.friendRequests().then(setFriendRequests).catch(() => {})
   }, [user?.id])
+
+  useEffect(() => {
+    setBioText(profile.bio || '')
+  }, [profile.bio])
+
+  async function saveBio() {
+    if (!user?.id) return
+    const trimmed = bioText.trim().slice(0, 160)
+    try {
+      await api.updateUser(user.id, { bio: trimmed })
+      setUserProfile({ ...profile, bio: trimmed })
+      setEditingBio(false)
+      showToast('Bio updated')
+    } catch (e) {
+      showToast('Could not save bio')
+    }
+  }
 
   const profile = user?.profile || {}
   const cards = (profile.vault || []).filter((v) => v.type === 'collectible' || v.type === 'adidas_card')
@@ -88,7 +107,38 @@ export default function Profile() {
           />
         </div>
         <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">{profile.username || 'User'} <AdminBadge username={profile.username} /></h1>
-        <p className="text-xs text-[#999] mt-1">{(profile.prediction_title || 'Fan').toUpperCase()} · {(profile.tier || 'Fan').toUpperCase()}</p>
+        {/* Bio */}
+        <div className="mt-2 w-full max-w-[280px]">
+          {editingBio ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={bioText}
+                onChange={(e) => setBioText(e.target.value.slice(0, 160))}
+                placeholder="Add a bio…"
+                rows={2}
+                maxLength={160}
+                autoFocus
+                className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-3 py-2 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none resize-none"
+              />
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#999]">{bioText.length}/160</span>
+                <div className="flex gap-2">
+                  <button onClick={() => { setEditingBio(false); setBioText(profile.bio || '') }} className="text-[#666] font-comic">CANCEL</button>
+                  <button onClick={saveBio} className="text-[var(--sv-accent)] font-comic">SAVE</button>
+                </div>
+              </div>
+            </div>
+          ) : profile.bio ? (
+            <button onClick={() => setEditingBio(true)} className="text-sm text-[#1a1a1a] text-center hover:opacity-70 transition-opacity">
+              {profile.bio}
+            </button>
+          ) : (
+            <button onClick={() => setEditingBio(true)} className="text-xs text-[#999] hover:text-[var(--sv-accent)] transition-colors flex items-center gap-1 mx-auto">
+              <span className="material-symbols-outlined text-[14px]">edit</span>
+              Add a bio
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="grid grid-cols-4 gap-2 px-4 mt-4">

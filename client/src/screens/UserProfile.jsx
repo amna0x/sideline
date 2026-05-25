@@ -73,7 +73,8 @@ export default function UserProfile() {
           {profile.username || 'User'}
           <AdminBadge username={profile.username} />
         </h1>
-        <p className="text-xs text-[#999] mt-1">{(profile.prediction_title || 'Fan').toUpperCase()} · {(profile.tier || 'Fan').toUpperCase()}</p>
+        {profile.bio && <p className="text-sm text-[#1a1a1a] mt-2 max-w-[280px] text-center">{profile.bio}</p>}
+        <p className="text-xs text-[#999] mt-1">{(profile.tier || 'Fan').toUpperCase()}</p>
 
         {/* Action buttons */}
         <div className="flex gap-2 mt-4">

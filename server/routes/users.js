@@ -12,6 +12,7 @@ const r = Router()
 const patchSchema = z.object({
   username: z.string().min(2).max(32).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
   avatar_url: z.string().url().max(512).optional(),
+  bio: z.string().max(160).optional(),
   prediction_title: z.string().max(64).optional(),
   tier: z.enum(['fan', 'expert', 'pro', 'legend']).optional(),
   notifications_enabled: z.boolean().optional(),
