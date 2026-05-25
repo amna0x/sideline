@@ -9,8 +9,7 @@ import { cognitoReady, changePassword as cogChangePassword, deleteCurrentUser as
 import { THEMES } from '../lib/theme.js'
 import { getSocket } from '../lib/socket.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
-
-const ADMIN_EMAILS = ['mohibk0004@gmail.com']
+import { isAdminUser } from '../lib/admin.js'
 
 export default function Settings() {
   const user = useStore((s) => s.user)
@@ -29,7 +28,7 @@ export default function Settings() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
 
-  const isAdmin = ADMIN_EMAILS.includes(user?.email || profile.email || '')
+  const isAdmin = isAdminUser(user)
 
   useEffect(() => {
     const t = searchParams.get('tab')

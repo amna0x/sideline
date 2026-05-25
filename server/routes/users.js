@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { getUser, createUser, updateUser, deleteUser, getUserVault, getUserMatchHistory, mode } from '../db/index.js'
 import { query } from '../db/postgres.js'
-import { requireAuth, requireSelf } from '../middleware/auth.js'
+import { requireAuth, requireSelf, optionalAuth } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { writeLimiter, makeLimiter } from '../middleware/rateLimit.js'
 import { handleAvatarUpload, extForMime } from '../middleware/upload.js'
@@ -20,11 +20,15 @@ const patchSchema = z.object({
 
 const avatarLimiter = makeLimiter({ windowMs: 60 * 1000, max: 10 })
 
-r.get('/:id', async (req, res, next) => {
+r.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const id = req.params.id
     let user = await getUser(id)
-    if (!user) user = await autoCreateUser(id)
+    if (!user) user = await autoCreateUser(id, req)
+    // Update email from auth if missing
+    if (!user.email && req.user?.email) {
+      user = await updateUser(id, { email: req.user.email })
+    }
     const vault = await getUserVault(id)
     res.json({ ...user, vault })
   } catch (e) { next(e) }
@@ -91,8 +95,20 @@ r.get('/check/username/:username', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-async function autoCreateUser(id) {
-  const u = { id, username: `op_${id.slice(0, 6)}`, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' }
+// Lookup email by username (for login-by-username)
+r.get('/lookup/email/:username', async (req, res, next) => {
+  try {
+    if (mode !== 'postgres') return res.status(404).json({ error: 'not_found' })
+    const { rows } = await query('SELECT email FROM users WHERE username = $1 LIMIT 1', [req.params.username])
+    if (!rows[0]?.email) return res.status(404).json({ error: 'not_found' })
+    res.json({ email: rows[0].email })
+  } catch (e) { next(e) }
+})
+
+async function autoCreateUser(id, req) {
+  const email = req?.user?.email || null
+  const username = req?.user?.username || `op_${id.slice(0, 6)}`
+  const u = { id, username, email, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' }
   return await createUser(u)
 }
 

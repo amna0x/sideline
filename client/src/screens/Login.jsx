@@ -44,7 +44,19 @@ export default function Login() {
     setBusy(true); setError(null)
     try {
       if (mode === 'login') {
-        await signIn(email, password)
+        // Support login by username or email
+        let loginEmail = email
+        if (!email.includes('@')) {
+          // Looks like a username — look up the email
+          try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/users/lookup/email/${encodeURIComponent(email)}`)
+            if (res.ok) {
+              const data = await res.json()
+              loginEmail = data.email
+            }
+          } catch {}
+        }
+        await signIn(loginEmail, password)
         nav('/', { replace: true })
       } else if (mode === 'signup') {
         const result = await signUp(email, password, username || email.split('@')[0])
@@ -141,8 +153,9 @@ export default function Login() {
             )}
 
             {(mode === 'login' || mode === 'signup' || mode === 'forgot' || mode === 'reset') && (
-              <Field label="EMAIL" icon="mail">
-                <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" placeholder="user@sideline.pro"
+              <Field label={mode === 'login' ? 'EMAIL OR USERNAME' : 'EMAIL'} icon="mail">
+                <input value={email} onChange={(e) => setEmail(e.target.value)} required type={mode === 'login' ? 'text' : 'email'}
+                  placeholder={mode === 'login' ? 'email or username' : 'user@sideline.pro'}
                   disabled={mode === 'reset'}
                   className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl p-3 text-[#1a1a1a] placeholder-[#bbb] focus:outline-none focus:border-[var(--sv-accent)] transition-colors disabled:opacity-60" />
               </Field>
