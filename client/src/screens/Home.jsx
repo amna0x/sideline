@@ -81,6 +81,16 @@ export default function Home() {
         </motion.section>
 
         <motion.section variants={fadeUp}>
+          <SectionHeader icon="bar_chart" title="TEAM STATS" />
+          <TeamStats events={events} match={match} />
+        </motion.section>
+
+        <motion.section variants={fadeUp}>
+          <SectionHeader icon="person" title="PLAYER STATS" />
+          <PlayerStats events={events} />
+        </motion.section>
+
+        <motion.section variants={fadeUp}>
           <SectionHeader icon="bolt" title="EVENT FEED" />
           <div className="comic-panel divide-y divide-outline-variant/30">
             {events.slice(-6).reverse().map((e, i) => (
@@ -173,4 +183,86 @@ function Retry({ onClick }) {
       className="w-full py-3 bg-error/20 border-2 border-error rounded-xl text-error font-comic text-lg shadow-comic-sm"
     >RETRY</motion.button>
   </div>
+}
+
+function TeamStats({ events, match }) {
+  const home = events.filter((e) => e.team === 'home')
+  const away = events.filter((e) => e.team === 'away')
+
+  const stats = [
+    { label: 'Goals', home: home.filter((e) => e.type === 'goal').length, away: away.filter((e) => e.type === 'goal').length },
+    { label: 'Yellow Cards', home: home.filter((e) => e.type === 'yellow_card').length, away: away.filter((e) => e.type === 'yellow_card').length },
+    { label: 'Red Cards', home: home.filter((e) => e.type === 'red_card').length, away: away.filter((e) => e.type === 'red_card').length },
+    { label: 'Corners', home: home.filter((e) => e.type === 'corner').length, away: away.filter((e) => e.type === 'corner').length },
+    { label: 'Substitutions', home: home.filter((e) => e.type === 'substitution').length, away: away.filter((e) => e.type === 'substitution').length }
+  ]
+
+  return (
+    <div className="comic-panel p-4">
+      <div className="flex justify-between items-center mb-3 text-xs font-comic">
+        <span className="text-[var(--sv-cyan)] truncate max-w-[100px]">{match?.home_team || 'HOME'}</span>
+        <span className="text-[#999]">VS</span>
+        <span className="text-[var(--sv-accent)] truncate max-w-[100px] text-right">{match?.away_team || 'AWAY'}</span>
+      </div>
+      <div className="space-y-3">
+        {stats.map((s) => {
+          const total = s.home + s.away
+          const homePct = total === 0 ? 50 : (s.home / total) * 100
+          return (
+            <div key={s.label}>
+              <div className="flex justify-between items-center mb-1 text-xs">
+                <span className="font-comic tabular-nums text-[var(--sv-cyan)]">{s.home}</span>
+                <span className="text-[#999]">{s.label}</span>
+                <span className="font-comic tabular-nums text-[var(--sv-accent)]">{s.away}</span>
+              </div>
+              <div className="h-1.5 w-full bg-[#f0f0f0] rounded-full overflow-hidden flex">
+                <div className="h-full bg-[var(--sv-cyan)] transition-all" style={{ width: `${homePct}%` }} />
+                <div className="h-full bg-[var(--sv-accent)] transition-all" style={{ width: `${100 - homePct}%` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function PlayerStats({ events }) {
+  // Aggregate events per player
+  const players = {}
+  for (const e of events) {
+    if (!e.player_name) continue
+    if (!players[e.player_name]) {
+      players[e.player_name] = { name: e.player_name, team: e.team, goals: 0, yellows: 0, reds: 0, total: 0 }
+    }
+    const p = players[e.player_name]
+    if (e.type === 'goal') p.goals++
+    else if (e.type === 'yellow_card') p.yellows++
+    else if (e.type === 'red_card') p.reds++
+    p.total++
+  }
+
+  const list = Object.values(players).sort((a, b) => b.goals - a.goals || b.total - a.total).slice(0, 6)
+
+  if (list.length === 0) {
+    return (
+      <div className="comic-panel p-6 text-center">
+        <span className="text-sm text-[#999]">No player stats yet</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="comic-panel divide-y divide-[#f0f0f0]">
+      {list.map((p) => (
+        <div key={p.name} className="flex items-center gap-3 p-3">
+          <span className={`w-1 h-8 rounded-full ${p.team === 'home' ? 'bg-[var(--sv-cyan)]' : 'bg-[var(--sv-accent)]'}`} />
+          <span className="text-sm text-[#1a1a1a] flex-1 truncate">{p.name}</span>
+          {p.goals > 0 && <span className="flex items-center gap-1 text-xs text-[#1a1a1a]"><span>⚽</span>{p.goals}</span>}
+          {p.yellows > 0 && <span className="flex items-center gap-1 text-xs text-[#1a1a1a]"><span className="w-2 h-3 bg-yellow-400 rounded-sm" />{p.yellows}</span>}
+          {p.reds > 0 && <span className="flex items-center gap-1 text-xs text-[#1a1a1a]"><span className="w-2 h-3 bg-red-500 rounded-sm" />{p.reds}</span>}
+        </div>
+      ))}
+    </div>
+  )
 }

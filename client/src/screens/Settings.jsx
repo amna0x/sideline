@@ -8,6 +8,7 @@ import { api } from '../lib/api.js'
 import { cognitoReady, changePassword as cogChangePassword, deleteCurrentUser as cogDeleteUser } from '../lib/cognito.js'
 import { THEMES } from '../lib/theme.js'
 import { getSocket } from '../lib/socket.js'
+import { requireSignedIn } from '../lib/guestGuard.js'
 
 const ADMIN_EMAILS = ['mohibk0004@gmail.com']
 
@@ -26,25 +27,36 @@ export default function Settings() {
   const [name, setName] = useState(profile.username || '')
   const [notif, setNotif] = useState(profile.notifications_enabled ?? false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
 
   const isAdmin = ADMIN_EMAILS.includes(user?.email || profile.email || '')
 
   useEffect(() => {
     const t = searchParams.get('tab')
-    if (t === 'signout') { handleSignOut(); return }
+    if (t === 'signout') { setConfirmSignOut(true); return }
     if (t) setTab(t)
   }, [searchParams])
 
   useEffect(() => setName(profile.username || ''), [profile.username])
 
   async function saveName() {
+    if (!requireSignedIn('username editing')) return
     if (!user?.id || !name.trim()) return
-    await api.updateUser(user.id, { username: name.trim() })
-    setUserProfile({ ...profile, username: name.trim() })
-    setEditingName(false); showToast('Username updated')
+    try {
+      await api.updateUser(user.id, { username: name.trim() })
+      setUserProfile({ ...profile, username: name.trim() })
+      setEditingName(false); showToast('Username updated')
+    } catch (e) {
+      if (e.message?.includes('username_taken') || e.message?.includes('409')) {
+        showToast('Username already taken')
+      } else {
+        showToast('Could not update username')
+      }
+    }
   }
 
   async function changePassword() {
+    if (!requireSignedIn('password change')) return
     if (!cognitoReady) { showToast('Auth not configured'); return }
     const oldPw = window.prompt('Current password:')
     if (!oldPw) return
@@ -115,7 +127,7 @@ export default function Settings() {
 
           {/* Sign out button */}
           <button
-            onClick={handleSignOut}
+            onClick={() => setConfirmSignOut(true)}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-left text-red-500 hover:bg-red-50 transition-all mt-2"
           >
             <span className="material-symbols-outlined text-[20px]">logout</span>
@@ -197,6 +209,23 @@ export default function Settings() {
             <div className="flex gap-2">
               <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2.5 border border-[#e0e0e0] rounded-xl font-comic text-sm text-[#666]">CANCEL</button>
               <button onClick={deleteAccount} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl font-comic text-sm">DELETE</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {confirmSignOut && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl border border-[#e0e0e0] p-5 max-w-xs w-full shadow-lg"
+          >
+            <h3 className="font-comic text-xl text-[#1a1a1a] mb-2">Sign Out?</h3>
+            <p className="text-sm text-[#666] mb-4">You'll need to log in again to access your account.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmSignOut(false)} className="flex-1 py-2.5 border border-[#e0e0e0] rounded-xl font-comic text-sm text-[#666]">CANCEL</button>
+              <button onClick={handleSignOut} className="flex-1 py-2.5 bg-[var(--sv-accent)] text-white rounded-xl font-comic text-sm">SIGN OUT</button>
             </div>
           </motion.div>
         </div>

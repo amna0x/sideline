@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
 import { useStore } from '../store/index.js'
 import { useSocket } from './useSocket.js'
+import { requireSignedIn } from '../lib/guestGuard.js'
 
 export function usePredictions(matchId) {
   const [active, setActive] = useState([])
@@ -60,6 +61,7 @@ export function usePredictions(matchId) {
   })
 
   async function submit(prediction, option) {
+    if (!requireSignedIn('predictions')) throw new Error('guest_blocked')
     const userId = useStore.getState().user?.id
     if (!userId) throw new Error('not signed in')
     const opened = prediction.opens_at ? new Date(prediction.opens_at).getTime() : Date.now()

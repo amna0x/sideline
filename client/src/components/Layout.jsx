@@ -66,9 +66,9 @@ function TopBar({ title, points }) {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex justify-between items-center px-4 h-14 bg-white/95 backdrop-blur-md text-[#1a1a1a] border-b border-black/[0.06]">
+    <header className="sticky top-0 z-40 grid grid-cols-3 items-center px-4 h-14 bg-white/95 backdrop-blur-md text-[#1a1a1a] border-b border-black/[0.06]">
       {/* Settings dropdown (left) */}
-      <div className="relative" ref={settingsRef}>
+      <div className="relative justify-self-start" ref={settingsRef}>
         <button
           onClick={() => { setSettingsMenu(!settingsMenu); setProfileMenu(false) }}
           className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 transition-transform hover:scale-110 active:scale-95"
@@ -112,12 +112,12 @@ function TopBar({ title, points }) {
       </div>
 
       {/* Title */}
-      <div className="flex items-center gap-2">
-        <span className="font-comic text-xl tracking-tight text-[#1a1a1a]">{title}</span>
+      <div className="flex items-center justify-center">
+        <span className="font-comic text-xl tracking-tight text-[#1a1a1a] truncate">{title}</span>
       </div>
 
       {/* Profile dropdown (right) */}
-      <div className="flex items-center gap-2 relative" ref={profileRef}>
+      <div className="flex items-center gap-2 justify-self-end relative" ref={profileRef}>
         <motion.span
           key={points}
           initial={{ scale: 1.3, color: 'var(--sv-accent)' }}

@@ -6,6 +6,7 @@ import AvatarUpload from '../components/AvatarUpload.jsx'
 import Avatar from '../components/Avatar.jsx'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
+import { requireSignedIn } from '../lib/guestGuard.js'
 
 export default function Profile() {
   const user = useStore((s) => s.user)
@@ -44,6 +45,7 @@ export default function Profile() {
   }
 
   async function addFriend(friendId) {
+    if (!requireSignedIn('friends')) return
     try {
       await api.addFriend(friendId)
       showToast('Friend request sent!')
@@ -57,6 +59,7 @@ export default function Profile() {
   }
 
   async function acceptRequest(requestId) {
+    if (!requireSignedIn('friends')) return
     await api.acceptFriend(requestId).catch(() => {})
     setFriendRequests((r) => r.filter((req) => req.request_id !== requestId))
     api.friends().then(setFriends).catch(() => {})
@@ -64,6 +67,7 @@ export default function Profile() {
   }
 
   async function removeFriend(friendId) {
+    if (!requireSignedIn('friends')) return
     await api.removeFriend(friendId).catch(() => {})
     setFriends((f) => f.filter((fr) => fr.id !== friendId))
     setSelectedFriend(null)

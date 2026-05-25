@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { useStore } from '../store/index.js'
 import { getSocket } from '../lib/socket.js'
+import { requireSignedIn } from '../lib/guestGuard.js'
 
 export function useSquad() {
   const squad = useStore((s) => s.squad)
@@ -81,10 +82,12 @@ export function useSquad() {
   }, [])
 
   const joinSquad = useCallback((squadName, matchId) => {
+    if (!requireSignedIn('squads')) return
     socketRef.current?.emit('squad:join', { squadName, matchId })
   }, [])
 
   const joinByInvite = useCallback((code) => {
+    if (!requireSignedIn('squads')) return
     socketRef.current?.emit('squad:join_invite', { code })
   }, [])
 

@@ -24,19 +24,22 @@ export default function MatchHero({ match }) {
       </div>
 
       <div className="comic-panel p-5 speed-lines">
-        <div className="flex items-center justify-between relative z-10">
-          <TeamLabel name={match.home_team} logoUrl={match.home_team_logo} />
+        <div className="grid grid-cols-3 items-center relative z-10">
+          <div className="flex justify-start">
+            <TeamLabel name={match.home_team} logoUrl={match.home_team_logo} />
+          </div>
           <motion.div
             key={`${match.home_score}-${match.away_score}`}
             initial={{ scale: 2, opacity: 0, rotate: -5 }}
             animate={{ scale: 1, opacity: 1, rotate: 0 }}
             transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-            className="font-comic text-[64px] leading-none text-primary-container chromatic drop-shadow-[0_0_20px_rgba(216,207,188,0.3)] tabular-nums"
-            data-text={`${match.home_score}–${match.away_score}`}
+            className="font-comic text-5xl text-center text-[#1a1a1a] tabular-nums"
           >{match.home_score}–{match.away_score}</motion.div>
-          <TeamLabel name={match.away_team} logoUrl={match.away_team_logo} align="right" />
+          <div className="flex justify-end">
+            <TeamLabel name={match.away_team} logoUrl={match.away_team_logo} align="right" />
+          </div>
         </div>
-        <p className="mt-3 text-center text-xs text-on-surface-variant font-marker">{match.stadium}</p>
+        <p className="mt-3 text-center text-xs text-[#666] font-marker">{match.stadium}</p>
       </div>
     </section>
   )

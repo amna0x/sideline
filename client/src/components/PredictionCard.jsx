@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import PlayerAvatar from './PlayerAvatar.jsx'
 import { getPlayerAvatar } from '../lib/players.js'
 
 export default function PredictionCard({ prediction, selected, onSelect, locked }) {
@@ -73,7 +74,7 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
                   }`}
                 >
                   {avatar && (
-                    <img src={avatar} alt="" className="w-8 h-8 rounded-full object-cover mx-auto mb-1.5 border border-[#e0e0e0]" />
+                    <PlayerAvatar name={opt} size={32} className="mx-auto mb-1.5 border border-[#e0e0e0]" />
                   )}
                   <span className="block font-body-lg text-body-lg font-medium">{opt}</span>
                   {isSel && (

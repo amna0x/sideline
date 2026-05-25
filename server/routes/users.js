@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { getUser, createUser, updateUser, deleteUser, getUserVault, getUserMatchHistory, mode } from '../db/index.js'
+import { query } from '../db/postgres.js'
 import { requireAuth, requireSelf } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { writeLimiter, makeLimiter } from '../middleware/rateLimit.js'
@@ -34,9 +35,22 @@ r.patch('/:id', writeLimiter, requireAuth, requireSelf('id'), validate({ body: p
     const id = req.params.id
     let user = await getUser(id)
     if (!user) user = await autoCreateUser(id)
+
+    // Check username uniqueness if changing
+    if (req.body.username && req.body.username !== user.username) {
+      if (mode === 'postgres') {
+        const { rows } = await query('SELECT id FROM users WHERE username = $1 AND id != $2 LIMIT 1', [req.body.username, id])
+        if (rows.length > 0) return res.status(409).json({ error: 'username_taken' })
+      }
+    }
+
     const updated = await updateUser(id, req.body)
     res.json(updated)
-  } catch (e) { next(e) }
+  } catch (e) {
+    // Postgres unique violation
+    if (e.code === '23505') return res.status(409).json({ error: 'username_taken' })
+    next(e)
+  }
 })
 
 r.delete('/:id', writeLimiter, requireAuth, requireSelf('id'), async (req, res, next) => {
@@ -65,6 +79,15 @@ r.post('/:id/avatar', avatarLimiter, requireAuth, requireSelf('id'), handleAvata
 r.get('/:id/history', async (req, res, next) => {
   try {
     res.json(await getUserMatchHistory(req.params.id))
+  } catch (e) { next(e) }
+})
+
+// Check if username is available
+r.get('/check/username/:username', async (req, res, next) => {
+  try {
+    if (mode !== 'postgres') return res.json({ available: true })
+    const { rows } = await query('SELECT id FROM users WHERE username = $1 LIMIT 1', [req.params.username])
+    res.json({ available: rows.length === 0 })
   } catch (e) { next(e) }
 })
 

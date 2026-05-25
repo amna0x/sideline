@@ -126,3 +126,41 @@ export function deleteCurrentUser() {
     })
   })
 }
+
+export function forgotPassword(email) {
+  if (!userPool) return Promise.reject(new Error('Cognito not configured'))
+  const user = new CognitoUser({ Username: email, Pool: userPool })
+  return new Promise((resolve, reject) => {
+    user.forgotPassword({
+      onSuccess: (result) => resolve(result),
+      onFailure: (err) => reject(err)
+    })
+  })
+}
+
+export function confirmForgotPassword(email, code, newPassword) {
+  if (!userPool) return Promise.reject(new Error('Cognito not configured'))
+  const user = new CognitoUser({ Username: email, Pool: userPool })
+  return new Promise((resolve, reject) => {
+    user.confirmPassword(code, newPassword, {
+      onSuccess: (result) => resolve(result),
+      onFailure: (err) => reject(err)
+    })
+  })
+}
+
+// Build a Cognito Hosted UI URL for OAuth providers (Google, Apple, GitHub)
+// Requires COGNITO_HOSTED_DOMAIN env var (e.g. sideline.auth.eu-north-1.amazoncognito.com)
+export function getOAuthUrl(provider) {
+  const domain = import.meta.env.VITE_COGNITO_HOSTED_DOMAIN
+  if (!domain || !CLIENT_ID) return null
+  const redirectUri = `${window.location.origin}/login`
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: CLIENT_ID,
+    redirect_uri: redirectUri,
+    identity_provider: provider, // 'Google' | 'SignInWithApple' | 'GitHub' (custom)
+    scope: 'openid email profile'
+  })
+  return `https://${domain}/oauth2/authorize?${params.toString()}`
+}
