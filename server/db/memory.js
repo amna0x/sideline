@@ -1,5 +1,5 @@
-// In-memory fallback so the API works without Supabase configured.
-// Replaced by real DB once SUPABASE_* env vars are set.
+// In-memory fallback so the API works without a database configured.
+// Replaced by real DB once DB_HOST env var is set.
 
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
