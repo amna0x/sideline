@@ -22,6 +22,9 @@ export default function Squad() {
   const [joinName, setJoinName] = useState('')
   const [inviteInput, setInviteInput] = useState('')
   const [loadingRooms, setLoadingRooms] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [confirmCreate, setConfirmCreate] = useState(null) // squad name to confirm
+  const [searchDropdown, setSearchDropdown] = useState([])
 
   useEffect(() => {
     if (!match?.id) return
@@ -32,10 +35,38 @@ export default function Squad() {
       .finally(() => setLoadingRooms(false))
   }, [match?.id, squad])
 
-  function handleJoin(name) {
+  function handleJoinAttempt(name) {
     if (!name?.trim() || !match?.id) return
-    joinSquad(name.trim(), match.id)
+    const trimmed = name.trim()
+    // Check if squad already exists
+    const existing = rooms.find((r) => r.name.toLowerCase() === trimmed.toLowerCase())
+    if (existing) {
+      // Join existing squad directly
+      joinSquad(trimmed, match.id)
+      setJoinName('')
+      setSearchDropdown([])
+    } else {
+      // Confirm creation of new squad
+      setConfirmCreate(trimmed)
+    }
+  }
+
+  function handleConfirmCreate() {
+    if (!confirmCreate || !match?.id) return
+    joinSquad(confirmCreate, match.id)
     setJoinName('')
+    setConfirmCreate(null)
+    setSearchDropdown([])
+  }
+
+  function handleSearchInput(val) {
+    setJoinName(val)
+    if (val.trim().length >= 1) {
+      const matches = rooms.filter((r) => r.name.toLowerCase().includes(val.toLowerCase()))
+      setSearchDropdown(matches)
+    } else {
+      setSearchDropdown([])
+    }
   }
 
   function handleJoinInvite() {
@@ -64,11 +95,28 @@ export default function Squad() {
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="comic-panel p-4 mb-4">
             <label className="font-comic text-sm text-[var(--sv-accent)] mb-2 block">CREATE OR JOIN</label>
             <div className="flex gap-2">
-              <input type="text" value={joinName} onChange={(e) => setJoinName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoin(joinName)}
-                placeholder="Squad name…" maxLength={24}
-                className="flex-1 bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-4 py-3 text-[#1a1a1a] font-body placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none transition-colors" />
-              <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleJoin(joinName)} disabled={!joinName.trim()}
+              <div className="flex-1 relative">
+                <input type="text" value={joinName} onChange={(e) => handleSearchInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleJoinAttempt(joinName)}
+                  placeholder="Squad name…" maxLength={24}
+                  className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-4 py-3 text-[#1a1a1a] font-body placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none transition-colors" />
+                {/* Search dropdown */}
+                {searchDropdown.length > 0 && joinName.trim() && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e0e0e0] rounded-xl shadow-lg z-20 overflow-hidden">
+                    {searchDropdown.map((r) => (
+                      <button key={r.id} onClick={() => { joinSquad(r.name, match.id); setJoinName(''); setSearchDropdown([]) }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[#f5f5f5] border-b border-[#f0f0f0] last:border-b-0">
+                        <div>
+                          <span className="text-sm text-[#1a1a1a] font-medium">{r.name}</span>
+                          <span className="block text-[10px] text-[#999]">{r.memberCount} member{r.memberCount !== 1 ? 's' : ''}</span>
+                        </div>
+                        <span className="text-xs text-[var(--sv-accent)] font-comic">JOIN</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleJoinAttempt(joinName)} disabled={!joinName.trim()}
                 className="px-5 py-3 rounded-xl font-comic text-base bg-[var(--sv-accent)] text-white shadow-comic-sm disabled:opacity-40">GO</motion.button>
             </div>
           </motion.div>
@@ -94,7 +142,7 @@ export default function Squad() {
               </h2>
               <div className="space-y-2">
                 {rooms.map((r) => (
-                  <motion.button key={r.id} whileTap={{ scale: 0.98 }} onClick={() => handleJoin(r.name)}
+                  <motion.button key={r.id} whileTap={{ scale: 0.98 }} onClick={() => { joinSquad(r.name, match.id) }}
                     className="w-full comic-panel p-3 flex items-center justify-between text-left">
                     <div>
                       <span className="font-comic text-base text-on-surface">{r.name}</span>
@@ -136,7 +184,7 @@ export default function Squad() {
                 className="px-2 py-1 rounded-lg font-comic text-xs border border-[var(--sv-accent)] text-[var(--sv-accent)]">
                 <span className="material-symbols-outlined text-[14px] mr-1">link</span>INVITE
               </motion.button>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={leaveSquad}
+              <motion.button whileTap={{ scale: 0.9 }} onClick={() => setConfirmLeave(true)}
                 className="px-2 py-1 rounded-lg font-comic text-xs border border-error/40 text-error">LEAVE</motion.button>
             </div>
           </div>
@@ -174,6 +222,34 @@ export default function Squad() {
           )}
         </AnimatePresence>
       </section>
+
+      {/* Leave confirmation */}
+      {confirmLeave && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl border border-[#e0e0e0] p-5 max-w-xs w-full shadow-lg">
+            <h3 className="font-comic text-lg text-[#1a1a1a] mb-2">Leave Squad?</h3>
+            <p className="text-sm text-[#666] mb-4">You'll lose access to the chat and reactions in this room.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmLeave(false)} className="flex-1 py-2.5 border border-[#e0e0e0] rounded-xl font-comic text-sm text-[#666]">STAY</button>
+              <button onClick={() => { leaveSquad(); setConfirmLeave(false) }} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl font-comic text-sm">LEAVE</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Create confirmation */}
+      {confirmCreate && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl border border-[#e0e0e0] p-5 max-w-xs w-full shadow-lg">
+            <h3 className="font-comic text-lg text-[#1a1a1a] mb-2">Create Squad?</h3>
+            <p className="text-sm text-[#666] mb-4">No squad named "<strong>{confirmCreate}</strong>" exists yet. Create it?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmCreate(null)} className="flex-1 py-2.5 border border-[#e0e0e0] rounded-xl font-comic text-sm text-[#666]">CANCEL</button>
+              <button onClick={handleConfirmCreate} className="flex-1 py-2.5 bg-[var(--sv-accent)] text-white rounded-xl font-comic text-sm">CREATE</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </Layout>
   )
 }

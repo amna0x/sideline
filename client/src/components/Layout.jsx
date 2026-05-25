@@ -146,6 +146,11 @@ function TopBar({ title, points }) {
                 <span className="material-symbols-outlined text-[18px] text-[#666]">person</span>
                 View Profile
               </Link>
+              <Link to="/profile?tab=friends" onClick={() => setProfileMenu(false)}
+                className="flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors border-t border-[#f0f0f0]">
+                <span className="material-symbols-outlined text-[18px] text-[#666]">group_add</span>
+                Friends
+              </Link>
               <button onClick={shareProfile}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors border-t border-[#f0f0f0]">
                 <span className="material-symbols-outlined text-[18px] text-[#666]">share</span>
