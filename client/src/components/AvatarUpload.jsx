@@ -37,7 +37,7 @@ export default function AvatarUpload({ userId, currentUrl, name, size = 112, onU
   return (
     <div className="relative inline-flex" style={{ width: size, height: size }}>
       <div className="absolute -inset-1 bg-primary-container/30 rounded-full blur-md animate-pulse" />
-      <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-primary-container z-10 bg-surface-container-low shadow-[0_0_20px_rgba(216,207,188,0.2)]">
+      <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-primary-container bg-surface-container-low shadow-[0_0_20px_rgba(216,207,188,0.2)]">
         <Avatar url={url} name={name} size={size} />
       </div>
       <button
@@ -45,7 +45,7 @@ export default function AvatarUpload({ userId, currentUrl, name, size = 112, onU
         onClick={() => fileRef.current?.click()}
         disabled={busy}
         aria-label="Change avatar"
-        className="absolute bottom-0 right-0 w-8 h-8 bg-primary-container text-background rounded-full flex items-center justify-center shadow-md disabled:opacity-60"
+        className="absolute -bottom-1 -right-1 z-20 w-9 h-9 bg-primary-container text-background rounded-full flex items-center justify-center shadow-lg border-2 border-background disabled:opacity-60"
       >
         <span className="material-symbols-outlined text-[16px]">{busy ? 'progress_activity' : 'edit'}</span>
       </button>

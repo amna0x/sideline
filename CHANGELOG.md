@@ -4,6 +4,87 @@ Session-level handoff notes for teammates resuming work. Newest at the top.
 
 ---
 
+## 2026-05-25 (DB + UI overhaul) — RDS PostgreSQL + major UI fixes (Amna)
+
+### TL;DR
+
+- **AWS RDS PostgreSQL** is now the primary database. Data persists across restarts.
+- **Cognito** credentials configured (eu-north-1_OIzHNyguT).
+- **Unified DB layer** (`server/db/index.js`) — routes no longer call Supabase/memory directly.
+- **Multiple UI fixes** across predictions, vault, squad, leaderboard, and profile.
+
+### Database — AWS RDS
+
+- **New file:** `server/db/postgres.js` — `pg` Pool connecting to RDS.
+- **New file:** `server/db/index.js` — unified data access layer. Priority: RDS → Supabase → memory.
+- **New file:** `server/db/schema-rds.sql` — clean Postgres schema (no Supabase RLS/auth.users).
+- **Refactored routes:** `predictions.js`, `leaderboard.js`, `users.js`, `vault.js` now import from `db/index.js`.
+- **RDS instance:** `sideline-db.cticy0mc4izt.eu-north-1.rds.amazonaws.com`, db `sideline`, user `sideline_app`.
+- **All 9 tables created and verified.**
+
+### UI Fixes
+
+1. **Squad emoji reactions** — Changed from `fixed inset-0` to `absolute` within the screen container. Emojis now stay within the phone viewport.
+
+2. **Prediction vote count** — Vote count now increments locally when you submit. No longer stays at 0.
+
+3. **Prediction error handling** — No more raw "404" or "already submitted" error toasts. Friendly messages shown inline on the card: "Already predicted — nice one!", "This prediction has closed", etc.
+
+4. **Prediction timer** — Fixed the absurd "1895624M 26S" display. Now shows a live countdown in `M:SS` format. Predictions last 5 minutes (was 1 minute).
+
+5. **Vault cards** — All cards are now the same fixed height (200px). Epic and legendary have animated glow effects. Tapping a card opens a full card-shaped detail popup with item info, cost, and action buttons.
+
+6. **More vault items** — Added 6 new items: First Blood badge, Neon Pulse Frame, Perfect Week badge, Squad MVP badge, Kane Hat-trick Hero, Musiala Magic Moment.
+
+7. **No random drops** — Removed `mintRareDrop` from simulator. Vault items are earned via XP purchase only.
+
+8. **Leaderboard** — Now refreshes every 15s (was 60s) and re-fetches when you submit a prediction. Match leaderboard shows all users who predicted (even with 0 points).
+
+9. **Avatar edit icon** — Moved outside the `overflow-hidden` circle with `z-20`, negative offset, and a border so it's fully visible.
+
+### Env configured
+
+```dotenv
+# server/.env
+DB_HOST=sideline-db.cticy0mc4izt.eu-north-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=sideline
+DB_USER=sideline_app
+DB_PASSWORD=<set>
+COGNITO_USER_POOL_ID=eu-north-1_OIzHNyguT
+COGNITO_CLIENT_ID=439h5apul898inloupl6pm0jsh
+
+# client/.env
+VITE_COGNITO_USER_POOL_ID=eu-north-1_OIzHNyguT
+VITE_COGNITO_CLIENT_ID=439h5apul898inloupl6pm0jsh
+```
+
+### Verification
+
+```bash
+# Server tests — all pass
+cd server && npm test
+# → tests 18, pass 18, fail 0
+
+# Client build — succeeds
+cd client && npm run build
+# → 905kB bundle, builds in 6.5s
+
+# DB connection verified
+# → [postgres] connected to sideline-db.cticy0mc4izt.eu-north-1.rds.amazonaws.com
+# → [db] running in "postgres" mode
+```
+
+### How to run
+
+Double-click `start.bat` or:
+```bash
+npm run dev
+```
+This starts both client (port 5173) and server (port 4000) with `AUTO_SIMULATE=1`.
+
+---
+
 ## 2026-05-25 (later) — AWS Cognito auth + share-card API + scoped sockets (Amna)
 
 ### TL;DR

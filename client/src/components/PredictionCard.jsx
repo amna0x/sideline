@@ -1,8 +1,42 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 export default function PredictionCard({ prediction, selected, onSelect, locked }) {
   const resolved = !!prediction.correct_answer
   const opts = prediction.options || []
+  const [localVotes, setLocalVotes] = useState(prediction.submission_count ?? 0)
+  const [feedback, setFeedback] = useState(null)
+  const [countdown, setCountdown] = useState('')
+
+  // Live countdown timer
+  useEffect(() => {
+    function tick() {
+      setCountdown(closesIn(prediction.closes_at))
+    }
+    tick()
+    const t = setInterval(tick, 1000)
+    return () => clearInterval(t)
+  }, [prediction.closes_at])
+
+  async function handleSelect(opt) {
+    try {
+      setFeedback(null)
+      await onSelect?.(opt)
+      setLocalVotes((v) => v + 1)
+    } catch (e) {
+      const msg = e.message || ''
+      if (msg.includes('already submitted') || msg.includes('400')) {
+        setFeedback('Already predicted — nice one!')
+      } else if (msg.includes('prediction closed') || msg.includes('closed')) {
+        setFeedback('This prediction has closed')
+      } else if (msg.includes('not signed in')) {
+        setFeedback('Sign in to predict')
+      } else {
+        setFeedback('Something went wrong, try again')
+      }
+    }
+  }
+
   return (
     <div className="relative" style={{ perspective: 1200 }}>
       <motion.div
@@ -25,7 +59,7 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
                 <motion.button
                   key={opt}
                   disabled={locked}
-                  onClick={() => onSelect?.(opt)}
+                  onClick={() => handleSelect(opt)}
                   whileHover={!locked ? { scale: 1.03, rotate: 0.5 } : {}}
                   whileTap={!locked ? { scale: 0.97 } : {}}
                   className={`relative rounded-xl p-3 text-center transition-all border-2 ${
@@ -48,9 +82,27 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
               )
             })}
           </div>
+
+          {/* Feedback message */}
+          {feedback && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 text-center text-sm font-comic text-[var(--sv-accent)] bg-[var(--sv-accent)]/10 rounded-lg py-2 px-3"
+            >
+              {feedback}
+            </motion.div>
+          )}
+
           <div className="mt-3 flex justify-between text-xs text-on-surface-variant font-label-caps">
-            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">schedule</span>{closesIn(prediction.closes_at)}</span>
-            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">group</span>{prediction.submission_count ?? 0}</span>
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">schedule</span>
+              {countdown}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">group</span>
+              {localVotes}
+            </span>
           </div>
         </div>
         {/* Back (reveal) */}
@@ -77,7 +129,9 @@ function closesIn(iso) {
   if (!iso) return 'OPEN'
   const ms = new Date(iso).getTime() - Date.now()
   if (ms <= 0) return 'CLOSED'
-  const s = Math.floor(ms / 1000)
-  const m = Math.floor(s / 60)
-  return m > 0 ? `${m}M ${s % 60}S` : `${s}S`
+  const totalSec = Math.floor(ms / 1000)
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  if (m > 0) return `${m}:${s.toString().padStart(2, '0')}`
+  return `${s}S`
 }

@@ -4,8 +4,9 @@
 
 import { Router } from 'express'
 import { z } from 'zod'
+import { mode, getUser, createUser, updateUser, getVaultItems } from '../db/index.js'
+import { query } from '../db/postgres.js'
 import { db } from '../db/memory.js'
-import { supabase, ready } from '../db/supabase.js'
 import { validate } from '../middleware/validate.js'
 
 const r = Router()
@@ -20,47 +21,33 @@ r.post('/grant', validate({ body: grantSchema }), async (req, res, next) => {
   try {
     const { user_id, points, vault_all } = req.body
 
-    let user
-    if (ready) {
-      const { data, error } = await supabase.from('users').select('*').eq('id', user_id).single()
-      if (error && error.code !== 'PGRST116') throw error
-      user = data
-      if (!user) {
-        const insert = { id: user_id, username: `dev_${user_id.slice(0, 6)}`, tier: 'fan', points_total: 0 }
-        const { data: created, error: insErr } = await supabase.from('users').insert(insert).select().single()
-        if (insErr) throw insErr
-        user = created
-      }
-    } else {
-      user = db.users.get(user_id) || { id: user_id, username: `dev_${user_id.slice(0, 6)}`, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0 }
-      db.users.set(user_id, user)
+    // Ensure user exists
+    let user = await getUser(user_id)
+    if (!user) {
+      user = await createUser({ id: user_id, username: `dev_${user_id.slice(0, 6)}`, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' })
     }
 
+    // Grant points
     if (points) {
-      user.points_total = (user.points_total || 0) + points
-      if (ready) await supabase.from('users').update({ points_total: user.points_total }).eq('id', user_id)
-      else db.users.set(user_id, user)
+      const newTotal = (user.points_total || 0) + points
+      await updateUser(user_id, { points_total: newTotal })
+      user.points_total = newTotal
     }
 
+    // Grant all vault items
     let granted = []
     if (vault_all) {
-      const items = ready
-        ? (await supabase.from('vault_items').select('*')).data || []
-        : [...db.vault_items.values()]
-
+      const items = await getVaultItems()
       for (const item of items) {
-        const record = {
-          id: `uv_${user_id.slice(0, 6)}_${item.id}_${Date.now()}`,
-          user_id,
-          vault_item_id: item.id,
-          earned_at: new Date().toISOString(),
-          redeemed: false
-        }
-        if (ready) {
-          const { error } = await supabase.from('user_vault').insert(record)
-          if (!error) granted.push(item.id)
+        if (mode === 'postgres') {
+          const { rows: existing } = await query('SELECT id FROM user_vault WHERE user_id = $1 AND vault_item_id = $2', [user_id, item.id])
+          if (existing.length > 0) continue
+          await query('INSERT INTO user_vault (user_id, vault_item_id, earned_at) VALUES ($1, $2, NOW())', [user_id, item.id])
+          granted.push(item.id)
         } else {
-          db.user_vault.push(record)
+          const exists = db.user_vault.some(v => v.user_id === user_id && v.vault_item_id === item.id)
+          if (exists) continue
+          db.user_vault.push({ id: `uv_${user_id.slice(0, 6)}_${item.id}_${Date.now()}`, user_id, vault_item_id: item.id, earned_at: new Date().toISOString(), redeemed: false })
           granted.push(item.id)
         }
       }

@@ -1,27 +1,25 @@
 import { Router } from 'express'
-import { supabase, ready } from '../db/supabase.js'
+import { mode } from '../db/index.js'
+import { query } from '../db/postgres.js'
 import { db } from '../db/memory.js'
 import { generateQuiz } from '../services/gemini.js'
 
 const r = Router()
 
-// In-memory cache for dynamic quizzes
 const quizCache = new Map()
 
 r.get('/:matchId', async (req, res, next) => {
   try {
     const { matchId } = req.params
 
-    // 1. Check cache
     if (quizCache.has(matchId)) {
       return res.json(quizCache.get(matchId))
     }
 
-    // 2. Fetch match info
     let match = null
-    if (ready) {
-      const { data, error } = await supabase.from('matches').select('*').eq('id', matchId).single()
-      if (!error) match = data
+    if (mode === 'postgres') {
+      const { rows } = await query('SELECT * FROM matches WHERE id = $1', [matchId])
+      match = rows[0] || null
     } else {
       match = db.matches.get(matchId)
     }
@@ -29,50 +27,38 @@ r.get('/:matchId', async (req, res, next) => {
     const homeTeam = match?.home_team || 'Borussia Dortmund'
     const awayTeam = match?.away_team || 'FC Bayern München'
 
-    // 3. Generate dynamic quiz with Gemini/Claude
     let questions = await generateQuiz(matchId, homeTeam, awayTeam)
 
     if (questions && Array.isArray(questions) && questions.length > 0) {
-      // Add questions to the database/in-memory store so they can be answered
       for (const q of questions) {
         db.quiz_questions.set(q.id, q)
-        if (ready) {
-          await supabase.from('quiz_questions').upsert({
-            id: q.id,
-            match_id: matchId,
-            question: q.question,
-            options: JSON.stringify(q.options),
-            correct_answer: q.correct_answer,
-            fun_fact: q.fun_fact,
-            difficulty: q.difficulty || 'medium'
-          })
+        if (mode === 'postgres') {
+          await query(
+            `INSERT INTO quiz_questions (id, match_id, question, options, correct_answer, fun_fact, difficulty)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (id) DO UPDATE SET question = $3, options = $4, correct_answer = $5, fun_fact = $6, difficulty = $7`,
+            [q.id, matchId, q.question, JSON.stringify(q.options), q.correct_answer, q.fun_fact, q.difficulty || 'medium']
+          ).catch((e) => console.error('[quiz insert]', e.message))
         }
       }
-      
       quizCache.set(matchId, questions)
       return res.json(questions)
     }
 
-    // 4. Fall back to static seed questions
-    console.warn('[Quiz Route] Dynamic quiz generation unavailable or failed. Using fallback seed questions.');
+    console.warn('[Quiz Route] Dynamic quiz generation unavailable, using fallback seed.')
     let list = []
-    if (ready) {
-      const { data, error } = await supabase.from('quiz_questions').select('*').eq('match_id', matchId).limit(5)
-      if (error) throw error
-      list = (data || []).map((q) => ({ ...q, options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options }))
+    if (mode === 'postgres') {
+      const { rows } = await query('SELECT * FROM quiz_questions WHERE match_id = $1 LIMIT 5', [matchId])
+      list = rows.map((q) => ({ ...q, options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options }))
     } else {
       list = [...db.quiz_questions.values()].filter((q) => q.match_id === matchId).slice(0, 5)
     }
-    
     res.json(list)
   } catch (e) { next(e) }
 })
 
-r.get('/:matchId/history', async (req, res, next) => {
-  try {
-    // simplified — last 10 quiz session totals
-    res.json([])
-  } catch (e) { next(e) }
+r.get('/:matchId/history', async (_req, res, _next) => {
+  res.json([])
 })
 
 r.post('/answer', async (req, res, next) => {
@@ -80,18 +66,27 @@ r.post('/answer', async (req, res, next) => {
     const { user_id, question_id, answer, elapsed_seconds } = req.body || {}
     if (!user_id || !question_id) return res.status(400).json({ error: 'missing fields' })
     let q
-    if (ready) {
-      const { data, error } = await supabase.from('quiz_questions').select('*').eq('id', question_id).single()
-      if (error) throw error
-      q = { ...data, options: typeof data.options === 'string' ? JSON.parse(data.options) : data.options }
-    } else q = db.quiz_questions.get(question_id)
+    if (mode === 'postgres') {
+      const { rows } = await query('SELECT * FROM quiz_questions WHERE id = $1', [question_id])
+      if (!rows[0]) return res.status(404).json({ error: 'question not found' })
+      q = { ...rows[0], options: typeof rows[0].options === 'string' ? JSON.parse(rows[0].options) : rows[0].options }
+    } else {
+      q = db.quiz_questions.get(question_id)
+    }
     if (!q) return res.status(404).json({ error: 'question not found' })
+
     const correct = answer === q.correct_answer
     const speedBonus = elapsed_seconds != null && elapsed_seconds < 8 ? 25 : 0
     const points_earned = correct ? 50 + speedBonus : 0
-    if (ready) {
-      // Increment user.points_total via SQL RPC ideally; here just upsert a record
-      await supabase.from('quiz_attempts').insert({ user_id, question_id, answer, correct, points_earned, elapsed_seconds })
+
+    if (mode === 'postgres') {
+      await query(
+        'INSERT INTO quiz_attempts (user_id, question_id, answer, correct, points_earned, elapsed_seconds) VALUES ($1, $2, $3, $4, $5, $6)',
+        [user_id, question_id, answer, correct, points_earned, elapsed_seconds]
+      ).catch(() => {})
+      if (correct) {
+        await query('UPDATE users SET points_total = points_total + $1 WHERE id = $2', [points_earned, user_id]).catch(() => {})
+      }
     }
     res.json({ correct, points_earned, fun_fact: q.fun_fact })
   } catch (e) { next(e) }

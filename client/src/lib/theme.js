@@ -1,6 +1,11 @@
 export const THEMES = {
   default: {
     id: 'default',
+    name: 'Sideline',
+    swatches: ['#f8f8f8', '#DF5B30', '#ffffff']
+  },
+  spiderverse: {
+    id: 'spiderverse',
     name: 'Spiderverse',
     swatches: ['#000000', '#ff2d7b', '#00f0ff']
   },
