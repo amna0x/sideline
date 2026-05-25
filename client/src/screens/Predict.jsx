@@ -23,13 +23,19 @@ export default function Predict() {
     if (!match?.id) return
     const tick = () => api.leaderboard('match', match.id).then((rows) => setTop((rows || []).slice(0, 5))).catch(() => {})
     tick()
-    const t = setInterval(tick, 60000)
+    const t = setInterval(tick, 15000) // refresh every 15s
     return () => clearInterval(t)
-  }, [match?.id])
+  }, [match?.id, Object.keys(submissions).length]) // re-fetch when user submits
 
   async function onSelect(p, opt) {
     try { await submit(p, opt) }
-    catch (e) { showToast(e.message || 'submit failed') }
+    catch (e) {
+      // Errors are now handled inside PredictionCard with friendly messages
+      // Only show toast for unexpected errors
+      if (e.message !== 'already submitted' && e.message !== 'prediction closed' && e.message !== 'not signed in') {
+        showToast('Something went wrong')
+      }
+    }
   }
 
   return (

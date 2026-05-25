@@ -1,14 +1,18 @@
 import { motion } from 'framer-motion'
 
-// Per-item overrides — id-keyed icons keep every card visually distinct.
-// Falls back to TYPE_ICON for unknown ids, then to the tier default.
 const ITEM_ICON = {
-  vi_frame_olive: 'shield',           // Olive Drab Frame — military insignia
-  vi_badge_streak: 'local_fire_department', // 10-Win Streak — fire
-  vi_card_brandt_md12: 'sports_soccer',     // Brandt 89' Winner — match-winning goal
-  vi_card_adeyemi_md12: 'bolt',             // Adeyemi Strike — speed/strike
-  vi_card_mythic_md12: 'emoji_events',      // Match-Winner Mythic — trophy
-  vi_frame_floral: 'filter_vintage'         // Floral White Frame — petal motif
+  vi_frame_olive: 'shield',
+  vi_badge_streak: 'local_fire_department',
+  vi_card_brandt_md12: 'sports_soccer',
+  vi_card_adeyemi_md12: 'bolt',
+  vi_card_mythic_md12: 'emoji_events',
+  vi_frame_floral: 'filter_vintage',
+  vi_badge_first_blood: 'whatshot',
+  vi_card_kane_md12: 'sports_soccer',
+  vi_badge_perfect_week: 'stars',
+  vi_frame_neon: 'blur_on',
+  vi_card_musiala_md12: 'electric_bolt',
+  vi_badge_squad_mvp: 'groups'
 }
 
 const TYPE_ICON = {
@@ -26,73 +30,114 @@ function pickIcon(item, tierFallback) {
 const TIER = {
   common: {
     color: '#959086',
-    label: 'COM',
+    label: 'COMMON',
     icon: 'shield',
     bg: 'radial-gradient(ellipse at center, #2c2a26 0%, #15140f 75%)',
-    ring: '#959086'
+    ring: '#959086',
+    glow: 'none'
   },
   rare: {
     color: '#A0C4FF',
-    label: 'RAR',
+    label: 'RARE',
     icon: 'verified',
-    bg: 'radial-gradient(ellipse at center, #1f3a5c 0%, #0a1424 80%)',
-    ring: '#A0C4FF'
+    bg: 'radial-gradient(ellipse at 30% 20%, #1f3a5c 0%, #0a1424 80%)',
+    ring: '#A0C4FF',
+    glow: '0 0 20px rgba(160,196,255,0.3)'
   },
   epic: {
-    color: '#FFADAD',
-    label: 'EPC',
+    color: '#FF6B9D',
+    label: 'EPIC',
     icon: 'diamond',
-    bg: 'radial-gradient(ellipse at center, #4a1d34 0%, #1a0a14 80%)',
-    ring: '#FFADAD'
+    bg: 'radial-gradient(ellipse at 40% 30%, #5c1a3a 0%, #1a0a14 70%)',
+    ring: '#FF6B9D',
+    glow: '0 0 30px rgba(255,107,157,0.4), 0 0 60px rgba(255,107,157,0.15)'
   },
   legendary: {
-    color: '#FFD6A5',
-    label: 'LGD',
+    color: '#FFB347',
+    label: 'LEGENDARY',
     icon: 'workspace_premium',
-    bg: 'radial-gradient(ellipse at center, #4a3416 0%, #1a1408 80%)',
-    ring: '#FFD6A5'
+    bg: 'radial-gradient(ellipse at 50% 30%, #5c3a16 0%, #1a1408 70%)',
+    ring: '#FFB347',
+    glow: '0 0 35px rgba(255,179,71,0.5), 0 0 70px rgba(255,179,71,0.2)'
   },
   mythic: {
-    color: '#FFFBF4',
-    label: 'MYT',
+    color: '#E8D5FF',
+    label: 'MYTHIC',
     icon: 'auto_awesome',
-    bg: 'radial-gradient(ellipse at center, #2a1538 0%, #08040c 85%)',
-    ring: '#FFFBF4'
+    bg: 'radial-gradient(ellipse at 50% 40%, #2a1538 0%, #08040c 85%)',
+    ring: '#E8D5FF',
+    glow: '0 0 40px rgba(232,213,255,0.5), 0 0 80px rgba(232,213,255,0.2), 0 0 120px rgba(160,196,255,0.1)'
   }
 }
 
 export default function VaultCard({ item, owned, points, onClick }) {
   const t = TIER[item.tier] || TIER.common
   const locked = !owned
-  const insufficient = locked && points < (item.points_cost || 0)
   const itemIcon = pickIcon(item, t.icon)
+
   return (
     <motion.button
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: 1.02 }}
       onClick={onClick}
-      className="relative group text-left"
+      className="relative group text-left w-full"
     >
-      {!locked && (
-        <div className="absolute inset-0 rounded-2xl blur-xl opacity-30" style={{ backgroundColor: t.color }} />
+      {/* Glow effect for owned epic+ items */}
+      {!locked && (item.tier === 'epic' || item.tier === 'legendary' || item.tier === 'mythic') && (
+        <motion.div
+          className="absolute inset-0 rounded-2xl blur-xl"
+          style={{ backgroundColor: t.color, opacity: 0.25 }}
+          animate={{ opacity: [0.2, 0.35, 0.2] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+        />
       )}
+
       <div
-        className={`relative z-10 rounded-2xl p-3 aspect-[3/4] flex flex-col border ${locked ? 'border-surface-container-highest bg-surface-container-lowest opacity-70' : 'bg-surface-container-low'}`}
-        style={!locked ? { borderColor: t.color, boxShadow: `0 0 15px ${t.color}33` } : undefined}
+        className={`relative z-10 rounded-2xl p-3 h-[200px] flex flex-col border transition-all ${
+          locked
+            ? 'border-[#e0e0e0] bg-[#f5f5f5] opacity-75'
+            : 'bg-white'
+        }`}
+        style={!locked ? {
+          borderColor: t.color,
+          boxShadow: t.glow
+        } : undefined}
       >
-        <div className="flex justify-between items-start mb-2">
-          <span className="font-label-caps text-label-caps px-2 py-1 rounded-sm" style={{ color: locked ? '#565449' : t.color, backgroundColor: locked ? 'transparent' : `${t.color}15` }}>{t.label}</span>
-          <span className="material-symbols-outlined text-[18px]" style={{ color: locked ? '#565449' : t.color, fontVariationSettings: locked ? "'FILL' 0" : "'FILL' 1" }}>
+        {/* Header */}
+        <div className="flex justify-between items-start mb-1">
+          <span
+            className="font-label-caps text-[9px] px-1.5 py-0.5 rounded-sm"
+            style={{
+              color: locked ? '#bbb' : t.color,
+              backgroundColor: locked ? 'transparent' : `${t.color}18`
+            }}
+          >
+            {t.label}
+          </span>
+          <span
+            className="material-symbols-outlined text-[16px]"
+            style={{
+              color: locked ? '#bbb' : t.color,
+              fontVariationSettings: locked ? "'FILL' 0" : "'FILL' 1"
+            }}
+          >
             {locked ? 'lock' : itemIcon}
           </span>
         </div>
+
+        {/* Visual center */}
         <div className="flex-grow flex items-center justify-center">
           <TierVisual tier={item.tier || 'common'} icon={itemIcon} locked={locked} />
         </div>
-        <div className="mt-auto">
-          <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{locked ? '???' : item.name}</h3>
-          <p className="font-label-caps text-[10px] text-outline mt-1">
+
+        {/* Footer */}
+        <div className="mt-auto pt-1">
+          <h3 className="font-body-md text-[12px] font-semibold text-on-surface truncate">
+            {locked ? '???' : item.name}
+          </h3>
+          <p className="font-label-caps text-[9px] text-outline mt-0.5">
             {locked
-              ? insufficient ? `${item.points_cost} XP` : 'TAP TO UNLOCK'
+              ? `${(item.points_cost || 0).toLocaleString()} XP`
               : `OWNED · ${item.remaining_supply}/${item.total_supply}`}
           </p>
         </div>
@@ -103,43 +148,40 @@ export default function VaultCard({ item, owned, points, onClick }) {
 
 function TierVisual({ tier, icon, locked }) {
   const t = TIER[tier] || TIER.common
-  const dim = locked ? 'grayscale(0.6) brightness(0.45)' : 'none'
-  const sizeClass = tier === 'mythic' ? 'w-[64%] max-w-[96px]' : 'w-[80%] max-w-[120px]'
-  const iconSize = tier === 'mythic' ? '32px' : '40px'
+  const dim = locked ? 'grayscale(0.6) brightness(0.4)' : 'none'
 
   return (
     <div
-      className={`relative aspect-square ${sizeClass} rounded-xl overflow-hidden flex items-center justify-center`}
+      className="relative w-[70px] h-[70px] rounded-xl overflow-hidden flex items-center justify-center"
       style={{ background: t.bg, filter: dim }}
     >
-      {/* tier-specific decorations */}
       {tier === 'mythic' && !locked && <MythicAura color={t.ring} />}
       {tier === 'legendary' && !locked && <LegendaryStars color={t.ring} />}
       {tier === 'epic' && !locked && <EpicShimmer color={t.ring} />}
       {tier === 'rare' && !locked && <RareRing color={t.ring} />}
 
-      {/* inner ring */}
+      {/* Inner ring */}
       <div
         className="absolute inset-2 rounded-full"
         style={{
-          border: `1px solid ${t.ring}${locked ? '40' : '60'}`,
-          boxShadow: locked ? 'none' : `inset 0 0 14px ${t.ring}30`
+          border: `1px solid ${t.ring}${locked ? '30' : '50'}`,
+          boxShadow: locked ? 'none' : `inset 0 0 12px ${t.ring}25`
         }}
       />
 
-      {/* central icon */}
+      {/* Central icon */}
       <motion.span
         className="material-symbols-outlined relative z-10"
         style={{
-          color: locked ? '#565449' : t.color,
-          fontSize: iconSize,
+          color: locked ? '#bbb' : t.color,
+          fontSize: '28px',
           fontVariationSettings: locked ? "'FILL' 0" : "'FILL' 1",
-          textShadow: locked ? 'none' : `0 0 14px ${t.ring}aa, 0 0 3px ${t.ring}`
+          textShadow: locked ? 'none' : `0 0 12px ${t.ring}aa, 0 0 3px ${t.ring}`
         }}
         animate={!locked && (tier === 'legendary' || tier === 'mythic')
-          ? { scale: [1, 1.06, 1] }
+          ? { scale: [1, 1.08, 1] }
           : undefined}
-        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
         {icon}
       </motion.span>
@@ -154,7 +196,7 @@ function RareRing({ color }) {
       animate={{ rotate: 360 }}
       transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
       style={{
-        background: `conic-gradient(from 0deg, transparent 0deg, ${color}55 60deg, transparent 120deg, transparent 240deg, ${color}33 300deg, transparent 360deg)`
+        background: `conic-gradient(from 0deg, transparent 0deg, ${color}44 60deg, transparent 120deg, transparent 240deg, ${color}22 300deg, transparent 360deg)`
       }}
     />
   )
@@ -166,15 +208,17 @@ function EpicShimmer({ color }) {
       <motion.div
         className="absolute inset-0"
         animate={{ rotate: -360 }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
         style={{
-          background: `conic-gradient(from 0deg, transparent 0deg, ${color}66 30deg, transparent 90deg, transparent 180deg, ${color}44 210deg, transparent 270deg)`
+          background: `conic-gradient(from 0deg, transparent 0deg, ${color}77 20deg, transparent 60deg, ${color}55 180deg, transparent 220deg, ${color}44 300deg, transparent 340deg)`
         }}
       />
-      <div
+      <motion.div
         className="absolute inset-0"
+        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, ${color}33 0%, transparent 25%), radial-gradient(circle at 75% 75%, ${color}22 0%, transparent 25%)`
+          backgroundImage: `radial-gradient(circle at 30% 30%, ${color}44 0%, transparent 30%), radial-gradient(circle at 70% 70%, ${color}33 0%, transparent 30%)`
         }}
       />
     </>
@@ -187,30 +231,30 @@ function LegendaryStars({ color }) {
       <motion.div
         className="absolute inset-0"
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
         style={{
-          background: `conic-gradient(from 0deg, ${color}66, transparent 30%, ${color}33 50%, transparent 70%, ${color}55 100%)`,
-          opacity: 0.55
+          background: `conic-gradient(from 0deg, ${color}88, transparent 25%, ${color}55 50%, transparent 75%, ${color}77 100%)`,
+          opacity: 0.5
         }}
       />
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const angle = (i / 6) * Math.PI * 2
-        const r = 38
+      {[0, 1, 2, 3, 4].map((i) => {
+        const angle = (i / 5) * Math.PI * 2
+        const r = 28
         return (
           <motion.span
             key={i}
             className="material-symbols-outlined absolute"
             style={{
               color,
-              fontSize: '11px',
+              fontSize: '10px',
               left: `calc(50% + ${Math.cos(angle) * r}px)`,
               top: `calc(50% + ${Math.sin(angle) * r}px)`,
               transform: 'translate(-50%, -50%)',
               fontVariationSettings: "'FILL' 1",
               filter: `drop-shadow(0 0 4px ${color})`
             }}
-            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
-            transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.35, ease: 'easeInOut' }}
+            animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.3, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.35, ease: 'easeInOut' }}
           >
             star
           </motion.span>
@@ -223,27 +267,24 @@ function LegendaryStars({ color }) {
 function MythicAura({ color }) {
   return (
     <>
-      {/* prismatic conic */}
       <motion.div
         className="absolute inset-0"
         animate={{ rotate: 360 }}
-        transition={{ duration: 9, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
         style={{
-          background: 'conic-gradient(from 0deg, #FFD6A5, #FFADAD, #A0C4FF, #B5E48C, #FFD6A5)',
-          opacity: 0.22,
-          filter: 'blur(12px)'
+          background: 'conic-gradient(from 0deg, #FFB347, #FF6B9D, #A0C4FF, #B5E48C, #E8D5FF, #FFB347)',
+          opacity: 0.2,
+          filter: 'blur(8px)'
         }}
       />
-      {/* counter-rotating outline */}
       <motion.div
-        className="absolute inset-3 rounded-full border"
+        className="absolute inset-2 rounded-full border"
         animate={{ rotate: -360 }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
-        style={{ borderColor: `${color}55`, borderStyle: 'dashed' }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+        style={{ borderColor: `${color}44`, borderStyle: 'dashed' }}
       />
-      {/* sparkles */}
-      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
-        const angle = (i / 8) * Math.PI * 2
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const angle = (i / 6) * Math.PI * 2
         return (
           <motion.div
             key={i}
@@ -252,15 +293,15 @@ function MythicAura({ color }) {
               background: color,
               left: '50%',
               top: '50%',
-              boxShadow: `0 0 8px ${color}`
+              boxShadow: `0 0 6px ${color}`
             }}
             animate={{
-              x: [0, Math.cos(angle) * 36, 0],
-              y: [0, Math.sin(angle) * 36, 0],
+              x: [0, Math.cos(angle) * 28, 0],
+              y: [0, Math.sin(angle) * 28, 0],
               opacity: [0, 1, 0],
-              scale: [0.5, 1.4, 0.5]
+              scale: [0.5, 1.2, 0.5]
             }}
-            transition={{ duration: 2.6, repeat: Infinity, delay: i * 0.3, ease: 'easeInOut' }}
+            transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.3, ease: 'easeInOut' }}
           />
         )
       })}

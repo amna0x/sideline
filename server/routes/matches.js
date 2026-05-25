@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { supabase, ready } from '../db/supabase.js'
+import { mode } from '../db/index.js'
+import { query } from '../db/postgres.js'
 import { db, pickLiveMatch, pickUpcomingMatch } from '../db/memory.js'
 import { fetchLiveScores, mapFixtureToMatch } from '../services/apiFootball.js'
 import { getTeamLogoUrl } from '../services/sofascore.js'
@@ -20,10 +21,9 @@ r.get('/live', async (_, res, next) => {
 
     // 2. Fall back to DB / Simulator
     let match = null
-    if (ready) {
-      const { data, error } = await supabase.from('matches').select('*').eq('status', 'live').limit(1)
-      if (error) throw error
-      match = data?.[0] || null
+    if (mode === 'postgres') {
+      const { rows } = await query("SELECT * FROM matches WHERE status = 'live' LIMIT 1")
+      match = rows[0] || null
     } else {
       match = pickLiveMatch()
     }
@@ -39,10 +39,9 @@ r.get('/live', async (_, res, next) => {
 r.get('/upcoming', async (_, res, next) => {
   try {
     let match = null
-    if (ready) {
-      const { data, error } = await supabase.from('matches').select('*').eq('status', 'upcoming').order('started_at', { ascending: true }).limit(1)
-      if (error) throw error
-      match = data?.[0] || null
+    if (mode === 'postgres') {
+      const { rows } = await query("SELECT * FROM matches WHERE status = 'upcoming' ORDER BY started_at ASC LIMIT 1")
+      match = rows[0] || null
     } else {
       match = pickUpcomingMatch()
     }
@@ -58,10 +57,9 @@ r.get('/upcoming', async (_, res, next) => {
 r.get('/:id', async (req, res, next) => {
   try {
     let match = null
-    if (ready) {
-      const { data, error } = await supabase.from('matches').select('*').eq('id', req.params.id).single()
-      if (error) throw error
-      match = data
+    if (mode === 'postgres') {
+      const { rows } = await query('SELECT * FROM matches WHERE id = $1', [req.params.id])
+      match = rows[0] || null
     } else {
       match = db.matches.get(req.params.id) || null
     }
@@ -76,10 +74,9 @@ r.get('/:id', async (req, res, next) => {
 
 r.get('/:id/events', async (req, res, next) => {
   try {
-    if (ready) {
-      const { data, error } = await supabase.from('match_events').select('*').eq('match_id', req.params.id).order('minute', { ascending: true })
-      if (error) throw error
-      return res.json(data)
+    if (mode === 'postgres') {
+      const { rows } = await query('SELECT * FROM match_events WHERE match_id = $1 ORDER BY minute ASC', [req.params.id])
+      return res.json(rows)
     }
     res.json(db.match_events.filter((e) => e.match_id === req.params.id))
   } catch (e) { next(e) }
@@ -90,13 +87,11 @@ r.get('/:id/ratings', async (req, res, next) => {
     let match = null
     let events = []
 
-    if (ready) {
-      const { data: mData, error: mErr } = await supabase.from('matches').select('*').eq('id', req.params.id).single()
-      if (mErr) throw mErr
-      match = mData
-
-      const { data: eData } = await supabase.from('match_events').select('*').eq('match_id', req.params.id).order('minute', { ascending: true })
-      events = eData || []
+    if (mode === 'postgres') {
+      const { rows: mRows } = await query('SELECT * FROM matches WHERE id = $1', [req.params.id])
+      match = mRows[0] || null
+      const { rows: eRows } = await query('SELECT * FROM match_events WHERE match_id = $1 ORDER BY minute ASC', [req.params.id])
+      events = eRows
     } else {
       match = db.matches.get(req.params.id) || null
       events = db.match_events.filter((e) => e.match_id === req.params.id)
@@ -104,12 +99,10 @@ r.get('/:id/ratings', async (req, res, next) => {
 
     if (!match) return res.status(404).json({ error: 'match not found' })
 
-    // Generate ratings using AI (Gemini or Claude)
     let ratings = await generatePlayerRatings(match.home_team, match.away_team, events)
 
-    // Fallback if AI key is missing or fails
     if (!ratings) {
-      console.warn('[Matches Rating] AI ratings generation unavailable or failed. Using fallback.');
+      console.warn('[Matches Rating] AI ratings generation unavailable or failed. Using fallback.')
       ratings = {
         ratings: [
           { name: 'Harry Kane', rating: 8.2, position: 'FW', summary: 'Dynamic threat up front, scored the crucial equalizer.' },

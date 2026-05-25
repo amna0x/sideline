@@ -5,7 +5,8 @@ import { readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { db } from '../db/memory.js'
-import { supabase, ready } from '../db/supabase.js'
+import { mode } from '../db/index.js'
+import { query } from '../db/postgres.js'
 import { emit } from '../socket/handlers.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -56,7 +57,6 @@ export function startSimulator(io, opts = {}) {
           player_name: ev.player_name, minute: ev.minute, team: ev.team,
           rarity: ev.rarity || 'EPIC', is_rare: !!ev.is_rare
         })
-        if (ev.is_rare) await mintRareDrop(io, ev)
       }
 
       if (ev.opens_prediction) {
@@ -65,18 +65,30 @@ export function startSimulator(io, opts = {}) {
           id: pid, match_id: match.id, type: ev.opens_prediction.type || 'goal_scorer',
           question: ev.opens_prediction.question, options: ev.opens_prediction.options,
           opens_at: new Date().toISOString(),
-          closes_at: new Date(Date.now() + 60_000).toISOString(),
-          correct_answer: null, resolved_at: null
+          closes_at: new Date(Date.now() + 5 * 60_000).toISOString(), // 5 minutes
+          correct_answer: null, resolved_at: null, submission_count: 0
         }
         db.predictions.set(pid, pred)
+        if (mode === 'postgres') {
+          await query(
+            `INSERT INTO predictions (id, match_id, type, question, options, opens_at, closes_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`,
+            [pred.id, pred.match_id, pred.type, pred.question, JSON.stringify(pred.options), pred.opens_at, pred.closes_at]
+          ).catch(e => console.error('[sim] insert prediction error:', e.message))
+        }
         emit.predictionNew(io, pred)
       }
       if (ev.resolves_prediction) {
-        const p = db.predictions.get(ev.resolves_prediction.id)
+        let p = db.predictions.get(ev.resolves_prediction.id)
+        if (mode === 'postgres' && !p) {
+          // Fetch from postgres
+          const { rows } = await query('SELECT * FROM predictions WHERE id = $1', [ev.resolves_prediction.id])
+          if (rows[0]) p = { ...rows[0], options: rows[0].options }
+        }
         if (p) {
           p.correct_answer = ev.resolves_prediction.correct_answer
           p.resolved_at = new Date().toISOString()
-          const awards = grade(p)
+          const awards = await grade(p)
           emit.predictionResolved(io, { prediction_id: p.id, correct_answer: p.correct_answer, awards })
           emit.leaderboardUpdate(io)
         }
@@ -96,6 +108,8 @@ export function startSimulator(io, opts = {}) {
 }
 
 function grade(p) {
+  if (mode === 'postgres') return gradePostgres(p)
+  // Memory mode
   const winners = []
   for (const sub of db.user_predictions) {
     if (sub.prediction_id !== p.id) continue
@@ -113,23 +127,69 @@ function grade(p) {
   return winners
 }
 
-async function mintRareDrop(io, ev) {
-  const item = [...db.vault_items.values()].find((v) => v.tier === 'mythic' && v.remaining_supply > 0)
-  if (!item) return
-  item.remaining_supply -= 1
-  // mint to the most active recent predictor as a hackathon shortcut
-  const recent = db.user_predictions.slice(-1)[0]
-  if (!recent) return
-  const record = { id: `uv_${Date.now()}`, user_id: recent.user_id, vault_item_id: item.id, earned_at: new Date().toISOString(), redeemed: false }
-  db.user_vault.push(record)
-  emit.vaultMinted(io, record)
-  emit.vaultSupply(io, { vault_item_id: item.id, remaining_supply: item.remaining_supply })
-  if (ready) await supabase.from('user_vault').insert(record)
+async function gradePostgres(p) {
+  try {
+    // Get all submissions for this prediction
+    const { rows: subs } = await query(
+      'SELECT * FROM user_predictions WHERE prediction_id = $1', [p.id]
+    )
+    const winners = []
+    for (const sub of subs) {
+      const correct = sub.selected_option === p.correct_answer
+      const pointsEarned = correct ? Math.round(100 * (Number(sub.speed_bonus) || 1)) : 0
+
+      // Update the submission
+      await query(
+        'UPDATE user_predictions SET is_correct = $1, points_earned = $2 WHERE id = $3',
+        [correct, pointsEarned, sub.id]
+      )
+
+      // Update user stats
+      if (pointsEarned > 0) {
+        await query(
+          `UPDATE users SET
+            points_total = points_total + $1,
+            predictions_made = predictions_made + 1,
+            predictions_correct = predictions_correct + 1
+          WHERE id = $2`, [pointsEarned, sub.user_id]
+        )
+        winners.push({ user_id: sub.user_id, points_earned: pointsEarned })
+      } else {
+        await query(
+          'UPDATE users SET predictions_made = predictions_made + 1 WHERE id = $1', [sub.user_id]
+        )
+      }
+    }
+
+    // Mark prediction as resolved
+    await query(
+      'UPDATE predictions SET correct_answer = $1, resolved_at = $2 WHERE id = $3',
+      [p.correct_answer, p.resolved_at, p.id]
+    )
+
+    return winners
+  } catch (err) {
+    console.error('[sim] gradePostgres error:', err.message)
+    return []
+  }
+}
+
+async function mintRareDrop(_io, _ev) {
+  // Removed — random drops are no longer minted by the simulator.
+  // Vault items are earned via XP purchase only.
+  return
 }
 
 function upsertMatch(m) {
   db.matches.set(m.id, m)
-  if (ready) supabase.from('matches').upsert(m).then().catch(() => {})
+  if (mode === 'postgres') {
+    query(
+      `INSERT INTO matches (id, home_team, away_team, home_score, away_score, minute, status, stadium, matchday, started_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (id) DO UPDATE SET home_score = $4, away_score = $5, minute = $6, status = $7`,
+      [m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.minute, m.status, m.stadium, m.matchday, m.started_at || null]
+    ).catch(e => console.error('[sim] upsert match error:', e.message))
+  }
 }
 
 function randomZones() {

@@ -1,194 +1,117 @@
--- Sideline · Supabase schema
--- Run in Supabase SQL Editor (or `psql`) once per project.
+-- Sideline · RDS PostgreSQL schema
+-- Run this against your AWS RDS instance to set up all tables.
+-- No Supabase-specific features (no RLS, no auth.users, no storage).
+-- User IDs are text (Cognito sub UUIDs stored as strings).
 
--- Users (mirrors auth.users via trigger; insert your own row on signup)
-create table if not exists public.users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  username text unique,
-  email text,
-  avatar_url text,
-  prediction_title text default 'Rookie',
-  tier text default 'fan',
-  points_total integer default 0,
-  predictions_made integer default 0,
-  predictions_correct integer default 0,
-  matches_watched integer default 0,
-  notifications_enabled boolean default false,
-  strava_connected boolean default false,
-  created_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE,
+  email TEXT,
+  avatar_url TEXT,
+  prediction_title TEXT DEFAULT 'Rookie',
+  tier TEXT DEFAULT 'fan',
+  points_total INTEGER DEFAULT 0,
+  predictions_made INTEGER DEFAULT 0,
+  predictions_correct INTEGER DEFAULT 0,
+  matches_watched INTEGER DEFAULT 0,
+  notifications_enabled BOOLEAN DEFAULT FALSE,
+  strava_connected BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-create table if not exists public.matches (
-  id text primary key,
-  home_team text not null,
-  away_team text not null,
-  home_score integer default 0,
-  away_score integer default 0,
-  minute integer default 0,
-  status text check (status in ('upcoming','live','finished')) default 'upcoming',
-  stadium text,
-  matchday integer,
-  started_at timestamptz
+CREATE TABLE IF NOT EXISTS matches (
+  id TEXT PRIMARY KEY,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  home_score INTEGER DEFAULT 0,
+  away_score INTEGER DEFAULT 0,
+  minute INTEGER DEFAULT 0,
+  status TEXT CHECK (status IN ('upcoming','live','finished')) DEFAULT 'upcoming',
+  stadium TEXT,
+  matchday INTEGER,
+  started_at TIMESTAMPTZ
 );
 
-create table if not exists public.predictions (
-  id text primary key,
-  match_id text references public.matches(id) on delete cascade,
-  type text,
-  question text not null,
-  options jsonb not null,
-  correct_answer text,
-  opens_at timestamptz default now(),
-  closes_at timestamptz,
-  resolved_at timestamptz
+CREATE TABLE IF NOT EXISTS predictions (
+  id TEXT PRIMARY KEY,
+  match_id TEXT REFERENCES matches(id) ON DELETE CASCADE,
+  type TEXT,
+  question TEXT NOT NULL,
+  options JSONB NOT NULL,
+  correct_answer TEXT,
+  opens_at TIMESTAMPTZ DEFAULT NOW(),
+  closes_at TIMESTAMPTZ,
+  resolved_at TIMESTAMPTZ
 );
 
-create table if not exists public.user_predictions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  prediction_id text references public.predictions(id) on delete cascade,
-  selected_option text not null,
-  is_correct boolean,
-  points_earned integer,
-  speed_ms integer,
-  speed_bonus numeric default 1,
-  submitted_at timestamptz default now(),
-  unique (user_id, prediction_id)
+CREATE TABLE IF NOT EXISTS user_predictions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  prediction_id TEXT REFERENCES predictions(id) ON DELETE CASCADE,
+  selected_option TEXT NOT NULL,
+  is_correct BOOLEAN,
+  points_earned INTEGER,
+  speed_ms INTEGER,
+  speed_bonus NUMERIC DEFAULT 1,
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, prediction_id)
 );
 
-create table if not exists public.vault_items (
-  id text primary key,
-  name text not null,
-  type text check (type in ('profile_frame','badge','adidas_card','collectible')),
-  tier text check (tier in ('common','rare','epic','legendary','mythic')),
-  total_supply integer default 0,
-  remaining_supply integer default 0,
-  image_url text,
-  points_cost integer default 0
+CREATE TABLE IF NOT EXISTS vault_items (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT CHECK (type IN ('profile_frame','badge','adidas_card','collectible')),
+  tier TEXT CHECK (tier IN ('common','rare','epic','legendary','mythic')),
+  total_supply INTEGER DEFAULT 0,
+  remaining_supply INTEGER DEFAULT 0,
+  image_url TEXT,
+  points_cost INTEGER DEFAULT 0
 );
 
-create table if not exists public.user_vault (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  vault_item_id text references public.vault_items(id) on delete cascade,
-  earned_at timestamptz default now(),
-  redeemed boolean default false,
-  code text
+CREATE TABLE IF NOT EXISTS user_vault (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  vault_item_id TEXT REFERENCES vault_items(id) ON DELETE CASCADE,
+  earned_at TIMESTAMPTZ DEFAULT NOW(),
+  redeemed BOOLEAN DEFAULT FALSE,
+  code TEXT
 );
 
-create table if not exists public.match_events (
-  id uuid primary key default gen_random_uuid(),
-  match_id text references public.matches(id) on delete cascade,
-  type text,
-  player_name text,
-  minute integer,
-  team text,
-  created_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS match_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id TEXT REFERENCES matches(id) ON DELETE CASCADE,
+  type TEXT,
+  player_name TEXT,
+  minute INTEGER,
+  team TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-create table if not exists public.quiz_questions (
-  id text primary key,
-  match_id text references public.matches(id) on delete cascade,
-  question text not null,
-  options jsonb not null,
-  correct_answer text,
-  fun_fact text,
-  difficulty text
+CREATE TABLE IF NOT EXISTS quiz_questions (
+  id TEXT PRIMARY KEY,
+  match_id TEXT REFERENCES matches(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  options JSONB NOT NULL,
+  correct_answer TEXT,
+  fun_fact TEXT,
+  difficulty TEXT
 );
 
-create table if not exists public.quiz_attempts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.users(id) on delete cascade,
-  question_id text references public.quiz_questions(id) on delete cascade,
-  answer text,
-  correct boolean,
-  points_earned integer,
-  elapsed_seconds numeric,
-  created_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  question_id TEXT REFERENCES quiz_questions(id) ON DELETE CASCADE,
+  answer TEXT,
+  correct BOOLEAN,
+  points_earned INTEGER,
+  elapsed_seconds NUMERIC,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Leaderboard views (all-time + this-month + per-match)
-create or replace view public.leaderboard_all as
-  select u.id as user_id, u.username, u.tier, u.avatar_url, u.points_total
-    from public.users u
-    order by u.points_total desc;
-
-create or replace view public.leaderboard_month as
-  select up.user_id, u.username, u.tier, u.avatar_url, sum(up.points_earned) as points_total
-    from public.user_predictions up
-    join public.users u on u.id = up.user_id
-    where up.submitted_at >= date_trunc('month', now())
-    group by up.user_id, u.username, u.tier, u.avatar_url;
-
-create or replace view public.leaderboard_match as
-  select up.user_id, p.match_id, u.username, u.tier, u.avatar_url, sum(up.points_earned) as points_total
-    from public.user_predictions up
-    join public.predictions p on p.id = up.prediction_id
-    join public.users u on u.id = up.user_id
-    group by up.user_id, p.match_id, u.username, u.tier, u.avatar_url;
-
--- Match history RPC
-create or replace function public.user_match_history(uid uuid)
-returns table (
-  id text, home_team text, away_team text, matchday integer,
-  predictions_made bigint, predictions_correct bigint, points_earned bigint
-)
-language sql stable as $$
-  select m.id, m.home_team, m.away_team, m.matchday,
-         count(*)::bigint as predictions_made,
-         count(*) filter (where up.is_correct) ::bigint as predictions_correct,
-         coalesce(sum(up.points_earned),0)::bigint as points_earned
-    from public.user_predictions up
-    join public.predictions p on p.id = up.prediction_id
-    join public.matches m on m.id = p.match_id
-    where up.user_id = uid
-    group by m.id, m.home_team, m.away_team, m.matchday
-    order by max(up.submitted_at) desc
-    limit 10;
-$$;
-
--- RLS
-alter table public.users enable row level security;
-alter table public.user_predictions enable row level security;
-alter table public.user_vault enable row level security;
-alter table public.quiz_attempts enable row level security;
-
-create policy "users self" on public.users for select using (auth.uid() = id);
-create policy "users update self" on public.users for update using (auth.uid() = id);
-create policy "user_predictions self" on public.user_predictions for all using (auth.uid() = user_id);
-create policy "user_vault self" on public.user_vault for all using (auth.uid() = user_id);
-create policy "quiz_attempts self" on public.quiz_attempts for all using (auth.uid() = user_id);
-
--- Public reads
-alter table public.matches enable row level security;
-alter table public.predictions enable row level security;
-alter table public.vault_items enable row level security;
-alter table public.match_events enable row level security;
-alter table public.quiz_questions enable row level security;
-create policy "matches public" on public.matches for select using (true);
-create policy "predictions public" on public.predictions for select using (true);
-create policy "vault_items public" on public.vault_items for select using (true);
-create policy "match_events public" on public.match_events for select using (true);
-create policy "quiz_questions public" on public.quiz_questions for select using (true);
-
--- Auto-create users row on signup
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.users (id, email, username)
-    values (new.id, new.email, coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)))
-    on conflict (id) do nothing;
-  return new;
-end$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
--- Avatars storage bucket (run separately in Storage UI):
---   create bucket: avatars (public)
--- Avatar uploads route through the server (service role) so the bucket only
--- needs a public-read policy. The route validates MIME + 5MB cap, so direct
--- client writes are not required and are intentionally not granted.
--- create policy "avatars public read" on storage.objects for select
---   using (bucket_id = 'avatars');
+-- Indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_user_predictions_user ON user_predictions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_predictions_prediction ON user_predictions(prediction_id);
+CREATE INDEX IF NOT EXISTS idx_predictions_match ON predictions(match_id);
+CREATE INDEX IF NOT EXISTS idx_users_points ON users(points_total DESC);
+CREATE INDEX IF NOT EXISTS idx_user_vault_user ON user_vault(user_id);
+CREATE INDEX IF NOT EXISTS idx_match_events_match ON match_events(match_id);

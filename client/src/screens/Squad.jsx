@@ -39,8 +39,8 @@ export default function Squad() {
   if (!squad) {
     return (
       <Layout title="SQUAD">
-        <ReactionBurst />
-        <section className="px-4 pt-6">
+        <section className="px-4 pt-6 relative overflow-hidden">
+          <ReactionBurst />
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -131,8 +131,8 @@ export default function Squad() {
   // In a squad room
   return (
     <Layout title={squad.name?.toUpperCase()}>
-      <ReactionBurst />
-      <section className="px-4 pt-4">
+      <section className="px-4 pt-4 relative overflow-hidden">
+        <ReactionBurst />
         {/* Room header */}
         <motion.div
           initial={{ y: -10, opacity: 0 }}

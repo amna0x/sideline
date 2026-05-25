@@ -26,21 +26,21 @@
       "id": "p_seed_dortmund_1",
       "match_id": "m_dortmund_bayern_md12",
       "type": "goal_scorer",
-      "question": "Who scores next?",
+      "question": "Who scores the first goal?",
       "options": ["Guirassy", "Kane", "Adeyemi", "Musiala"],
       "opens_at": "2024-01-01T00:00:00Z",
       "closes_at": "2030-01-01T00:00:00Z",
-      "correct_answer": null, "resolved_at": null
+      "correct_answer": null, "resolved_at": null, "submission_count": 0
     },
     {
       "id": "p_seed_dortmund_2",
       "match_id": "m_dortmund_bayern_md12",
       "type": "yellow_card",
-      "question": "Next booking — which side?",
+      "question": "Which team gets the first yellow card?",
       "options": ["Dortmund", "Bayern"],
       "opens_at": "2024-01-01T00:00:00Z",
       "closes_at": "2030-01-01T00:00:00Z",
-      "correct_answer": null, "resolved_at": null
+      "correct_answer": null, "resolved_at": null, "submission_count": 0
     },
     {
       "id": "p_seed_dortmund_3",
@@ -50,7 +50,7 @@
       "options": ["Under 8", "8-12", "Over 12"],
       "opens_at": "2024-01-01T00:00:00Z",
       "closes_at": "2030-01-01T00:00:00Z",
-      "correct_answer": null, "resolved_at": null
+      "correct_answer": null, "resolved_at": null, "submission_count": 0
     },
     {
       "id": "p_seed_leverkusen_1",
@@ -60,16 +60,22 @@
       "options": ["Yes", "No"],
       "opens_at": "2024-01-01T00:00:00Z",
       "closes_at": "2030-01-01T00:00:00Z",
-      "correct_answer": null, "resolved_at": null
+      "correct_answer": null, "resolved_at": null, "submission_count": 0
     }
   ],
   "vault_items": [
     { "id": "vi_frame_olive", "name": "Olive Drab Frame", "type": "profile_frame", "tier": "common", "total_supply": 5000, "remaining_supply": 4892, "image_url": "", "points_cost": 200 },
+    { "id": "vi_badge_first_blood", "name": "First Blood", "type": "badge", "tier": "common", "total_supply": 5000, "remaining_supply": 4500, "image_url": "", "points_cost": 150 },
     { "id": "vi_badge_streak", "name": "10-Win Streak", "type": "badge", "tier": "rare", "total_supply": 1000, "remaining_supply": 612, "image_url": "", "points_cost": 800 },
+    { "id": "vi_frame_neon", "name": "Neon Pulse Frame", "type": "profile_frame", "tier": "rare", "total_supply": 800, "remaining_supply": 650, "image_url": "", "points_cost": 1000 },
+    { "id": "vi_badge_perfect_week", "name": "Perfect Week", "type": "badge", "tier": "rare", "total_supply": 500, "remaining_supply": 420, "image_url": "", "points_cost": 1200 },
     { "id": "vi_card_brandt_md12", "name": "Brandt 89' Winner", "type": "adidas_card", "tier": "epic", "total_supply": 500, "remaining_supply": 500, "image_url": "", "points_cost": 1500 },
-    { "id": "vi_card_adeyemi_md12", "name": "Adeyemi Strike", "type": "adidas_card", "tier": "legendary", "total_supply": 100, "remaining_supply": 100, "image_url": "", "points_cost": 4000 },
-    { "id": "vi_card_mythic_md12", "name": "Match-Winner Mythic", "type": "collectible", "tier": "mythic", "total_supply": 10, "remaining_supply": 10, "image_url": "", "points_cost": 10000 },
-    { "id": "vi_frame_floral", "name": "Floral White Frame", "type": "profile_frame", "tier": "epic", "total_supply": 250, "remaining_supply": 250, "image_url": "", "points_cost": 2000 }
+    { "id": "vi_frame_floral", "name": "Floral White Frame", "type": "profile_frame", "tier": "epic", "total_supply": 250, "remaining_supply": 250, "image_url": "", "points_cost": 2000 },
+    { "id": "vi_badge_squad_mvp", "name": "Squad MVP", "type": "badge", "tier": "epic", "total_supply": 300, "remaining_supply": 280, "image_url": "", "points_cost": 2500 },
+    { "id": "vi_card_kane_md12", "name": "Kane Hat-trick Hero", "type": "adidas_card", "tier": "legendary", "total_supply": 100, "remaining_supply": 100, "image_url": "", "points_cost": 4000 },
+    { "id": "vi_card_adeyemi_md12", "name": "Adeyemi Lightning Strike", "type": "adidas_card", "tier": "legendary", "total_supply": 100, "remaining_supply": 100, "image_url": "", "points_cost": 4000 },
+    { "id": "vi_card_musiala_md12", "name": "Musiala Magic Moment", "type": "adidas_card", "tier": "legendary", "total_supply": 50, "remaining_supply": 50, "image_url": "", "points_cost": 5000 },
+    { "id": "vi_card_mythic_md12", "name": "Der Klassiker Mythic", "type": "collectible", "tier": "mythic", "total_supply": 10, "remaining_supply": 10, "image_url": "", "points_cost": 10000 }
   ],
   "quiz_questions": [
     { "id": "qq_1", "match_id": "m_dortmund_bayern_md12", "question": "Who is BVB's all-time top scorer?", "options": ["Lewandowski", "Aubameyang", "Reus", "Haaland"], "correct_answer": "Lewandowski", "fun_fact": "Lewy bagged 103 BVB goals before moving to Bayern in 2014.", "difficulty": "medium" },

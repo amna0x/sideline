@@ -41,16 +41,14 @@ export function useMatch() {
     },
     'match:pulse': (zones) => setPulse(zones),
     'match:goal': (drop) => {
-      setPendingDrop(drop)
-      if (drop.is_rare) {
-        pushNotification({
-          type: 'vault',
-          title: 'RARE DROP UNLOCKED',
-          message: `${drop.player_name} ${drop.minute}' — ${drop.rarity}`,
-          icon: '💎',
-          duration: 6000
-        })
-      }
+      // Only show a notification for goals, no full-screen overlay
+      pushNotification({
+        type: 'goal',
+        title: `${drop.rarity} MOMENT`,
+        message: `${drop.player_name} ${drop.minute}'`,
+        icon: '⚽',
+        duration: 4000
+      })
     }
   })
 
