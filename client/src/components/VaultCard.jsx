@@ -86,10 +86,16 @@ export default function VaultCard({ item, owned, points, onClick }) {
           </span>
         </div>
         <div className="flex-grow flex items-center justify-center">
-          <TierVisual tier={item.tier || 'common'} icon={itemIcon} locked={locked} />
+          {item.image_url ? (
+            <PlayerCardVisual item={item} tier={item.tier} locked={locked} tierStyle={t} />
+          ) : (
+            <TierVisual tier={item.tier || 'common'} icon={itemIcon} locked={locked} />
+          )}
         </div>
         <div className="mt-auto">
           <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{locked ? '???' : item.name}</h3>
+          {!locked && item.player && <p className="text-[10px] text-on-surface-variant truncate">{item.player}</p>}
+          {!locked && item.stat && <p className="text-[9px] text-[var(--sv-accent)] font-comic truncate mt-0.5">{item.stat}</p>}
           <p className="font-label-caps text-[10px] text-outline mt-1">
             {locked
               ? insufficient ? `${item.points_cost} XP` : 'TAP TO UNLOCK'
@@ -143,6 +149,43 @@ function TierVisual({ tier, icon, locked }) {
       >
         {icon}
       </motion.span>
+    </div>
+  )
+}
+
+function PlayerCardVisual({ item, tier, locked, tierStyle }) {
+  const t = tierStyle
+  const dim = locked ? 'grayscale(0.8) brightness(0.3)' : 'none'
+  return (
+    <div
+      className="relative w-[90%] max-w-[120px] aspect-square rounded-xl overflow-hidden"
+      style={{ filter: dim }}
+    >
+      {/* Tier background glow */}
+      <div className="absolute inset-0" style={{ background: t.bg }} />
+
+      {/* Player photo */}
+      <img
+        src={item.image_url}
+        alt={item.player || item.name}
+        className="absolute inset-0 w-full h-full object-cover object-top"
+        loading="lazy"
+        onError={(e) => { e.target.style.display = 'none' }}
+      />
+
+      {/* Gradient overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+      {/* Tier decorations on top of photo */}
+      {tier === 'mythic' && !locked && <MythicAura color={t.ring} />}
+      {tier === 'legendary' && !locked && <LegendaryStars color={t.ring} />}
+
+      {/* Team badge corner */}
+      {!locked && item.team && (
+        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center">
+          <span className="text-[8px] font-comic text-white/80">{item.team.slice(0, 3).toUpperCase()}</span>
+        </div>
+      )}
     </div>
   )
 }

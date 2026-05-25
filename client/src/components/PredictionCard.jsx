@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 export default function PredictionCard({ prediction, selected, onSelect, locked }) {
   const resolved = !!prediction.correct_answer
   const opts = prediction.options || []
+  const playerImages = prediction.player_images || {}
+  const hasPlayerImages = Object.keys(playerImages).length > 0
   return (
     <div className="relative" style={{ perspective: 1200 }}>
       <motion.div
@@ -18,9 +20,10 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
             <span className="font-comic text-sm text-[var(--sv-accent)] tracking-wide">{(prediction.type || 'PREDICTION').replace('_', ' ').toUpperCase()}</span>
           </div>
           <h3 className="font-comic text-2xl text-on-surface mb-4 leading-tight">{prediction.question}</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid ${hasPlayerImages ? 'grid-cols-2' : 'grid-cols-2'} gap-3`}>
             {opts.map((opt) => {
               const isSel = selected === opt
+              const playerImg = playerImages[opt]
               return (
                 <motion.button
                   key={opt}
@@ -28,7 +31,7 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
                   onClick={() => onSelect?.(opt)}
                   whileHover={!locked ? { scale: 1.03, rotate: 0.5 } : {}}
                   whileTap={!locked ? { scale: 0.97 } : {}}
-                  className={`relative rounded-xl p-3 text-center transition-all border-2 ${
+                  className={`relative rounded-xl p-2 text-center transition-all border-2 overflow-hidden ${
                     isSel
                       ? 'border-[var(--sv-accent)] bg-[var(--sv-accent)]/10 text-[var(--sv-accent)] shadow-neon-sm'
                       : locked
@@ -36,7 +39,12 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
                         : 'border-outline-variant bg-surface-container hover:border-[var(--sv-accent)]/50 text-on-surface shadow-comic-sm'
                   }`}
                 >
-                  <span className="block font-body-lg text-body-lg font-medium">{opt}</span>
+                  {playerImg && (
+                    <div className="w-10 h-10 rounded-full mx-auto mb-1.5 overflow-hidden border border-white/10">
+                      <img src={playerImg} alt={opt} className="w-full h-full object-cover object-top" loading="lazy" onError={(e) => { e.target.parentElement.style.display = 'none' }} />
+                    </div>
+                  )}
+                  <span className="block font-body-lg text-body-lg font-medium text-sm">{opt}</span>
                   {isSel && (
                     <motion.span
                       initial={{ scale: 0 }}

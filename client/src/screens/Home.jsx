@@ -9,6 +9,15 @@ import { useStore } from '../store/index.js'
 const stagger = { show: { transition: { staggerChildren: 0.08 } } }
 const fadeUp = { hidden: { y: 24, opacity: 0 }, show: { y: 0, opacity: 1 } }
 
+const KEY_PLAYERS = [
+  { name: 'Kane', stat: '21 Goals', img: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Harry_Kane_2024.jpg' },
+  { name: 'Musiala', stat: '9 Assists', img: 'https://upload.wikimedia.org/wikipedia/commons/1/10/Jamal_Musiala_2023.jpg' },
+  { name: 'Guirassy', stat: '18 Goals', img: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Serhou_Guirassy_2024.jpg' },
+  { name: 'Adeyemi', stat: '36.2 km/h', img: 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Karim_Adeyemi_2022.jpg' },
+  { name: 'Wirtz', stat: '8 Assists', img: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Florian_Wirtz_2024.jpg' },
+  { name: 'Sané', stat: '5 Bangers', img: 'https://upload.wikimedia.org/wikipedia/commons/7/73/Leroy_San%C3%A9_2023.jpg' }
+]
+
 export default function Home() {
   const { match, loading, reload, error } = useMatch()
   const events = useStore((s) => s.matchEvents)
@@ -77,6 +86,21 @@ export default function Home() {
                 {loading ? 'CONNECTING…' : 'AWAITING EVENTS'}
               </div>
             )}
+          </div>
+        </motion.section>
+
+        <motion.section variants={fadeUp}>
+          <SectionHeader icon="person" title="KEY PLAYERS" />
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+            {KEY_PLAYERS.map((p) => (
+              <div key={p.name} className="shrink-0 w-[100px] comic-panel p-2 flex flex-col items-center">
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[var(--sv-accent)]/30 mb-1.5">
+                  <img src={p.img} alt={p.name} className="w-full h-full object-cover object-top" loading="lazy" />
+                </div>
+                <span className="text-[11px] text-white font-medium text-center truncate w-full">{p.name}</span>
+                <span className="text-[9px] text-[var(--sv-accent)] font-comic">{p.stat}</span>
+              </div>
+            ))}
           </div>
         </motion.section>
 

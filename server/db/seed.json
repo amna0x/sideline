@@ -8,7 +8,9 @@
       "minute": 0, "status": "upcoming",
       "stadium": "Signal Iduna Park",
       "matchday": 12,
-      "started_at": "2026-04-25T18:30:00Z"
+      "started_at": "2026-04-25T18:30:00Z",
+      "home_crest": "https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg",
+      "away_crest": "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg"
     },
     {
       "id": "m_leverkusen_leipzig_md13",
@@ -18,7 +20,9 @@
       "minute": 0, "status": "upcoming",
       "stadium": "BayArena",
       "matchday": 13,
-      "started_at": "2026-04-26T15:30:00Z"
+      "started_at": "2026-04-26T15:30:00Z",
+      "home_crest": "https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg",
+      "away_crest": "https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg"
     }
   ],
   "predictions": [
@@ -28,6 +32,12 @@
       "type": "goal_scorer",
       "question": "Who scores next?",
       "options": ["Guirassy", "Kane", "Adeyemi", "Musiala"],
+      "player_images": {
+        "Guirassy": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Serhou_Guirassy_2024.jpg",
+        "Kane": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Harry_Kane_2024.jpg",
+        "Adeyemi": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Karim_Adeyemi_2022.jpg",
+        "Musiala": "https://upload.wikimedia.org/wikipedia/commons/1/10/Jamal_Musiala_2023.jpg"
+      },
       "opens_at": "2024-01-01T00:00:00Z",
       "closes_at": "2030-01-01T00:00:00Z",
       "correct_answer": null, "resolved_at": null
@@ -53,23 +63,50 @@
       "correct_answer": null, "resolved_at": null
     },
     {
+      "id": "p_seed_dortmund_4",
+      "match_id": "m_dortmund_bayern_md12",
+      "type": "goal_scorer",
+      "question": "First goal scorer?",
+      "options": ["Füllkrug", "Sané", "Brandt", "Müller"],
+      "player_images": {
+        "Füllkrug": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Niclas_F%C3%BCllkrug_2023.jpg",
+        "Sané": "https://upload.wikimedia.org/wikipedia/commons/7/73/Leroy_San%C3%A9_2023.jpg",
+        "Brandt": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Julian_Brandt_2022.jpg",
+        "Müller": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Thomas_M%C3%BCller_2023.jpg"
+      },
+      "opens_at": "2024-01-01T00:00:00Z",
+      "closes_at": "2030-01-01T00:00:00Z",
+      "correct_answer": null, "resolved_at": null
+    },
+    {
       "id": "p_seed_leverkusen_1",
       "match_id": "m_leverkusen_leipzig_md13",
-      "type": "yellow_card",
-      "question": "First booking before 30'?",
-      "options": ["Yes", "No"],
+      "type": "goal_scorer",
+      "question": "Who opens the scoring?",
+      "options": ["Wirtz", "Schick", "Openda", "Xhaka"],
+      "player_images": {
+        "Wirtz": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Florian_Wirtz_2024.jpg",
+        "Schick": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Patrik_Schick_2021.jpg",
+        "Openda": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Lo%C3%AFs_Openda_2023.jpg",
+        "Xhaka": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Granit_Xhaka_2023.jpg"
+      },
       "opens_at": "2024-01-01T00:00:00Z",
       "closes_at": "2030-01-01T00:00:00Z",
       "correct_answer": null, "resolved_at": null
     }
   ],
   "vault_items": [
-    { "id": "vi_frame_olive", "name": "Olive Drab Frame", "type": "profile_frame", "tier": "common", "total_supply": 5000, "remaining_supply": 4892, "image_url": "", "points_cost": 200 },
+    { "id": "vi_card_kane", "name": "Harry Kane — Hat-trick Hero", "type": "adidas_card", "tier": "mythic", "total_supply": 10, "remaining_supply": 10, "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Harry_Kane_2024.jpg", "points_cost": 10000, "player": "Harry Kane", "team": "FC Bayern München", "stat": "3 Goals vs Dortmund" },
+    { "id": "vi_card_musiala", "name": "Musiala — Dribble King", "type": "adidas_card", "tier": "legendary", "total_supply": 50, "remaining_supply": 50, "image_url": "https://upload.wikimedia.org/wikipedia/commons/1/10/Jamal_Musiala_2023.jpg", "points_cost": 5000, "player": "Jamal Musiala", "team": "FC Bayern München", "stat": "12 Dribbles Completed" },
+    { "id": "vi_card_adeyemi", "name": "Adeyemi — Lightning Strike", "type": "adidas_card", "tier": "legendary", "total_supply": 100, "remaining_supply": 100, "image_url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Karim_Adeyemi_2022.jpg", "points_cost": 4000, "player": "Karim Adeyemi", "team": "Borussia Dortmund", "stat": "36.2 km/h Top Speed" },
+    { "id": "vi_card_wirtz", "name": "Wirtz — Wonderkid", "type": "adidas_card", "tier": "epic", "total_supply": 200, "remaining_supply": 200, "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Florian_Wirtz_2024.jpg", "points_cost": 2500, "player": "Florian Wirtz", "team": "Bayer 04 Leverkusen", "stat": "8 Assists in 5 Games" },
+    { "id": "vi_card_guirassy", "name": "Guirassy — Goal Machine", "type": "adidas_card", "tier": "epic", "total_supply": 300, "remaining_supply": 300, "image_url": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Serhou_Guirassy_2024.jpg", "points_cost": 2000, "player": "Serhou Guirassy", "team": "Borussia Dortmund", "stat": "18 Goals This Season" },
+    { "id": "vi_card_sane", "name": "Sané — Rocket Foot", "type": "adidas_card", "tier": "rare", "total_supply": 500, "remaining_supply": 500, "image_url": "https://upload.wikimedia.org/wikipedia/commons/7/73/Leroy_San%C3%A9_2023.jpg", "points_cost": 1200, "player": "Leroy Sané", "team": "FC Bayern München", "stat": "5 Long-Range Goals" },
+    { "id": "vi_card_brandt", "name": "Brandt — 89' Winner", "type": "adidas_card", "tier": "rare", "total_supply": 500, "remaining_supply": 500, "image_url": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Julian_Brandt_2022.jpg", "points_cost": 800, "player": "Julian Brandt", "team": "Borussia Dortmund", "stat": "Late Winner vs Bayern" },
     { "id": "vi_badge_streak", "name": "10-Win Streak", "type": "badge", "tier": "rare", "total_supply": 1000, "remaining_supply": 612, "image_url": "", "points_cost": 800 },
-    { "id": "vi_card_brandt_md12", "name": "Brandt 89' Winner", "type": "adidas_card", "tier": "epic", "total_supply": 500, "remaining_supply": 500, "image_url": "", "points_cost": 1500 },
-    { "id": "vi_card_adeyemi_md12", "name": "Adeyemi Strike", "type": "adidas_card", "tier": "legendary", "total_supply": 100, "remaining_supply": 100, "image_url": "", "points_cost": 4000 },
-    { "id": "vi_card_mythic_md12", "name": "Match-Winner Mythic", "type": "collectible", "tier": "mythic", "total_supply": 10, "remaining_supply": 10, "image_url": "", "points_cost": 10000 },
-    { "id": "vi_frame_floral", "name": "Floral White Frame", "type": "profile_frame", "tier": "epic", "total_supply": 250, "remaining_supply": 250, "image_url": "", "points_cost": 2000 }
+    { "id": "vi_badge_perfect", "name": "Perfect Matchday", "type": "badge", "tier": "epic", "total_supply": 250, "remaining_supply": 250, "image_url": "", "points_cost": 1500 },
+    { "id": "vi_frame_bvb", "name": "BVB Yellow Wall Frame", "type": "profile_frame", "tier": "common", "total_supply": 5000, "remaining_supply": 4892, "image_url": "", "points_cost": 200 },
+    { "id": "vi_frame_bayern", "name": "Mia San Mia Frame", "type": "profile_frame", "tier": "common", "total_supply": 5000, "remaining_supply": 4800, "image_url": "", "points_cost": 200 }
   ],
   "quiz_questions": [
     { "id": "qq_1", "match_id": "m_dortmund_bayern_md12", "question": "Who is BVB's all-time top scorer?", "options": ["Lewandowski", "Aubameyang", "Reus", "Haaland"], "correct_answer": "Lewandowski", "fun_fact": "Lewy bagged 103 BVB goals before moving to Bayern in 2014.", "difficulty": "medium" },
