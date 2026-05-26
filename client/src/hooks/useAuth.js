@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { useSocket } from './useSocket.js'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
 import { saveGuestSession, loadGuestSession, clearGuestSession } from '../lib/session.js'
@@ -64,19 +63,6 @@ export function useAuth() {
       }
     }).catch(() => {})
   }, [user?.id, setUserProfile, setPoints])
-
-  // Listen for server-side point updates over socket and sync profile+points
-  useSocket({
-    'user:points_updated': ({ userId, points_total }) => {
-      const curUser = useStore.getState().user
-      if (curUser?.id === userId) {
-        useStore.getState().setPoints(points_total)
-        // also update profile object if present
-        const profile = useStore.getState().user?.profile
-        if (profile) useStore.getState().setUserProfile({ ...profile, points_total })
-      }
-    }
-  })
 
   async function signIn(email, password) {
     if (!cognitoReady) throw new Error('AWS Cognito not configured')

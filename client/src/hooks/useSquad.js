@@ -2,7 +2,6 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useStore } from '../store/index.js'
 import { getSocket } from '../lib/socket.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
-import { api } from '../lib/api.js'
 
 export function useSquad() {
   const squad = useStore((s) => s.squad)
@@ -38,38 +37,15 @@ export function useSquad() {
       })
 
       s.on('squad:member_joined', (member) => {
-        useStore.setState((prev) => {
-          // Merge member into existing list (preserve existing avatar if present)
-          const exists = prev.squadMembers.find((m) => m.userId === member.userId)
-          if (exists) {
-            return { squadMembers: prev.squadMembers.map((m) => m.userId === member.userId ? { ...m, ...member } : m) }
-          }
-          return { squadMembers: [...prev.squadMembers, member] }
-        })
-        // Refresh from server to avoid stale/missing avatar URLs
-        (async () => {
-          try {
-            const sid = useStore.getState().squad?.id
-            if (!sid) return
-            const members = await api.get(`/api/squad/${encodeURIComponent(sid)}/members`).catch(() => null)
-            if (members) useStore.getState().setSquadMembers(members)
-          } catch (e) {}
-        })()
+        useStore.setState((prev) => ({
+          squadMembers: [...prev.squadMembers.filter((m) => m.userId !== member.userId), member]
+        }))
       })
 
       s.on('squad:member_left', ({ userId, memberCount }) => {
         useStore.setState((prev) => ({
           squadMembers: prev.squadMembers.filter((m) => m.userId !== userId)
         }))
-        // Refresh members list to keep avatars consistent
-        (async () => {
-          try {
-            const sid = useStore.getState().squad?.id
-            if (!sid) return
-            const members = await api.get(`/api/squad/${encodeURIComponent(sid)}/members`).catch(() => null)
-            if (members) useStore.getState().setSquadMembers(members)
-          } catch (e) {}
-        })()
       })
 
       s.on('squad:reaction_burst', (reaction) => addReaction(reaction))
@@ -77,15 +53,6 @@ export function useSquad() {
       s.on('squad:chat_message', (msg) => {
         useStore.getState().appendSquadChat(msg)
         setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
-      })
-
-      s.on('squad:message_edited', (update) => {
-        useStore.getState().updateSquadChatMsg(update.id, { message: update.message, edited_at: update.edited_at })
-      })
-
-      s.on('squad:message_deleted', ({ id, deleted_at, deleted_by }) => {
-        // mark message as deleted; front-end will render appropriately
-        useStore.getState().updateSquadChatMsg(id, { deleted_at, message: '', msg_type: 'deleted' })
       })
 
       s.on('squad:message_seen', ({ messageId, userId: seenBy, username }) => {
@@ -165,10 +132,10 @@ export function useSquad() {
     return () => {
       cancelled = true
       if (socketRef.current) {
-          const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
-            'squad:chat_message', 'squad:message_edited', 'squad:message_deleted', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
-            'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
-            'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
+        const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
+          'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
+          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
+          'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
         events.forEach((e) => socketRef.current.off(e))
       }
     }
@@ -219,18 +186,6 @@ export function useSquad() {
     })
   }, [])
 
-  const editMessage = useCallback((messageId, newText) => {
-    // Optimistic update locally
-    useStore.getState().updateSquadChatMsg(messageId, { message: newText, edited_at: new Date().toISOString() })
-    socketRef.current?.emit('squad:edit_message', { messageId, newText })
-  }, [])
-
-  const deleteMessage = useCallback((messageId) => {
-    // Optimistic local deletion marker
-    useStore.getState().updateSquadChatMsg(messageId, { deleted_at: new Date().toISOString(), message: '', msg_type: 'deleted' })
-    socketRef.current?.emit('squad:delete_message', { messageId })
-  }, [])
-
   const markSeen = useCallback((messageId) => {
     socketRef.current?.emit('squad:mark_seen', { messageId })
   }, [])
@@ -278,6 +233,5 @@ export function useSquad() {
     sendReaction, sendMessage, sendTyping, markSeen, getInviteCode,
     setVisibility, promote, demote, kick,
     sendChallenge, acceptChallenge, submitDuelPick
-    , editMessage, deleteMessage
   }
 }

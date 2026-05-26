@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
 import { initialsFor, colorsFor } from '../lib/avatar.js'
 import { isAdmin } from '../lib/admin.js'
 
@@ -20,19 +19,14 @@ export default function Avatar({ url, name, size = 32, className = '', alt = '',
   const fontSize = Math.max(10, Math.round(size * 0.42))
   const adminStyle = showAdminAura ? getAdminStyle(name) : null
 
-  const [imgFailed, setImgFailed] = useState(false)
-  const [imgLoaded, setImgLoaded] = useState(false)
-
-  const inner = url && !imgFailed ? (
+  const inner = url ? (
     <img
       src={url}
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setImgFailed(true)}
-      onLoad={() => setImgLoaded(true)}
       style={dim}
-      className={`rounded-full object-cover bg-[#f0f0f0] ${imgLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity ${className}`}
+      className={`rounded-full object-cover bg-[#f0f0f0] ${className}`}
     />
   ) : (
     <span

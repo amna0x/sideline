@@ -3,7 +3,6 @@
 
 import { mode } from '../db/index.js'
 import { query } from '../db/postgres.js'
-import { randomUUID } from 'crypto'
 
 // In-memory live presence: squadId -> Map<socketId, { userId, username, avatar_url }>
 const liveMembers = new Map()
@@ -142,8 +141,6 @@ async function dbGetChatHistory(squadId, limit = 50) {
     reply_to_id: r.reply_to_id,
     reply_to_text: r.reply_to_text,
     reply_to_username: r.reply_to_username,
-    edited_at: r.edited_at || null,
-    deleted_at: r.deleted_at || null,
     created_at: r.created_at
   }))
 }
@@ -393,10 +390,9 @@ export function registerSquadHandlers(io) {
       const type = msgType === 'sticker' ? 'sticker' : 'text'
       const msg = type === 'text' ? (text || '').trim().slice(0, 500) : ''
       if (type === 'text' && !msg) return
-      // Generate a stable UUID for the message so clients and DB share the same id
-      const id = randomUUID()
+
       const chatMsg = {
-        id,
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         squad_id: squadId, user_id: user.id, username: user.username || 'Anon',
         avatar_url: user.avatar_url || null, message: msg,
         msg_type: type, sticker_id: stickerId || null,
@@ -409,59 +405,10 @@ export function registerSquadHandlers(io) {
       io.to(`squad:${squadId}`).emit('squad:chat_message', chatMsg)
       if (mode === 'postgres') {
         query(
-          `INSERT INTO squad_messages (id, squad_id, user_id, username, message, avatar_url, reply_to_id, reply_to_text, reply_to_username, msg_type, sticker_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-          [id, squadId, user.id, chatMsg.username, msg, chatMsg.avatar_url, chatMsg.reply_to_id, chatMsg.reply_to_text, chatMsg.reply_to_username, type, chatMsg.sticker_id]
+          `INSERT INTO squad_messages (squad_id, user_id, username, message, avatar_url, reply_to_id, reply_to_text, reply_to_username, msg_type, sticker_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [squadId, user.id, chatMsg.username, msg, chatMsg.avatar_url, chatMsg.reply_to_id, chatMsg.reply_to_text, chatMsg.reply_to_username, type, chatMsg.sticker_id]
         ).catch(() => {})
-      }
-    })
-
-    // Edit a message (owner or moderator/admin)
-    socket.on('squad:edit_message', async ({ messageId, newText }) => {
-      const user = socket.data.user
-      if (!user?.id || !messageId) return
-      const squadId = getSquadIdForSocket(socket)
-      if (!squadId) return
-      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
-      // Only message owner or admin/moderator can edit
-      // We'll attempt update and let DB constraints/rows determine outcome
-      const trimmed = (newText || '').trim().slice(0, 500)
-      if (!trimmed) return
-      if (mode === 'postgres') {
-        try {
-          // Ensure only owner or admin/mod can edit
-          const { rows } = await query('SELECT user_id FROM squad_messages WHERE id = $1 AND squad_id = $2', [messageId, squadId])
-          if (!rows[0]) return
-          const ownerId = rows[0].user_id
-          const myRole = roles[user.id]
-          if (user.id !== ownerId && myRole !== 'admin' && myRole !== 'moderator') return socket.emit('squad:error', { message: 'Not allowed' })
-          const { rows: updated } = await query('UPDATE squad_messages SET message = $1, edited_at = NOW() WHERE id = $2 AND squad_id = $3 RETURNING id, message, edited_at', [trimmed, messageId, squadId])
-          if (updated[0]) {
-            io.to(`squad:${squadId}`).emit('squad:message_edited', { id: updated[0].id, message: updated[0].message, edited_at: updated[0].edited_at })
-          }
-        } catch (e) {}
-      }
-    })
-
-    // Delete a message (owner or moderator/admin)
-    socket.on('squad:delete_message', async ({ messageId }) => {
-      const user = socket.data.user
-      if (!user?.id || !messageId) return
-      const squadId = getSquadIdForSocket(socket)
-      if (!squadId) return
-      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
-      if (mode === 'postgres') {
-        try {
-          const { rows } = await query('SELECT user_id FROM squad_messages WHERE id = $1 AND squad_id = $2', [messageId, squadId])
-          if (!rows[0]) return
-          const ownerId = rows[0].user_id
-          const myRole = roles[user.id]
-          if (user.id !== ownerId && myRole !== 'admin' && myRole !== 'moderator') return socket.emit('squad:error', { message: 'Not allowed' })
-          const { rows: updated } = await query('UPDATE squad_messages SET deleted_at = NOW() WHERE id = $1 AND squad_id = $2 RETURNING id, deleted_at', [messageId, squadId])
-          if (updated[0]) {
-            io.to(`squad:${squadId}`).emit('squad:message_deleted', { id: updated[0].id, deleted_at: updated[0].deleted_at, deleted_by: user.id })
-          }
-        } catch (e) {}
       }
     })
 

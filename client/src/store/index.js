@@ -22,11 +22,7 @@ export const useStore = create((set) => ({
 
   // Points
   points: 0,
-  setPoints: (points) => set((s) => ({
-    points,
-    // Also sync profile.points_total if present so UI reflects latest XP
-    user: s.user ? { ...s.user, profile: { ...(s.user.profile || {}), points_total: points } } : s.user
-  })),
+  setPoints: (points) => set({ points }),
   addPoints: (n) => set((s) => ({ points: s.points + n })),
 
   // Adidas drop
@@ -47,12 +43,6 @@ export const useStore = create((set) => ({
   // Theme
   theme: 'default',
   setTheme: (theme) => set({ theme }),
-
-  // Sound effects
-  sfxEnabled: true,
-  sfxVolume: 0.8,
-  setSfxEnabled: (v) => set({ sfxEnabled: !!v }),
-  setSfxVolume: (v) => set({ sfxVolume: Math.max(0, Math.min(1, v)) }),
 
   // Squad
   squad: null,

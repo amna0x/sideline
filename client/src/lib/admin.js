@@ -1,12 +1,6 @@
-// Admin usernames and emails — can be extended via Vite env variables
-const DEFAULT_ADMIN_USERNAMES = ['amna', 'mohibkhan']
-const DEFAULT_ADMIN_EMAILS = ['mohibk0004@gmail.com']
-
-const envUsernames = (import.meta.env.VITE_ADMIN_USERNAMES || '').split(',').map(s => s.toLowerCase().trim()).filter(Boolean)
-const envEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(s => s.toLowerCase().trim()).filter(Boolean)
-
-const ADMIN_USERNAMES = Array.from(new Set([...DEFAULT_ADMIN_USERNAMES, ...envUsernames]))
-const ADMIN_EMAILS = Array.from(new Set([...DEFAULT_ADMIN_EMAILS, ...envEmails]))
+// Admin usernames and emails — these users get special aura, badges, and dev panel
+const ADMIN_USERNAMES = ['amna', 'mohibkhan']
+const ADMIN_EMAILS = ['mohibk0004@gmail.com']
 
 export function isAdmin(usernameOrEmail) {
   if (!usernameOrEmail) return false

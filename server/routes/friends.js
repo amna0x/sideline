@@ -150,7 +150,7 @@ r.get('/search', requireAuth, async (req, res, next) => {
     if (!q || q.length < 2) return res.json([])
     if (mode !== 'postgres') return res.json([])
     const { rows } = await query(
-      "SELECT id, username, email, avatar_url, tier, points_total FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10",
+      "SELECT id, username, avatar_url, tier FROM users WHERE username ILIKE $1 LIMIT 10",
       [`%${q}%`]
     )
     res.json(rows)

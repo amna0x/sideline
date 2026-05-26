@@ -35,19 +35,6 @@ r.get('/:squadId/messages', requireAuth, async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-// Get squad members
-r.get('/:squadId/members', requireAuth, async (req, res, next) => {
-  try {
-    if (mode !== 'postgres') return res.json([])
-    const { rows } = await query(
-      `SELECT sm.user_id, u.username, u.avatar_url, sm.role
-       FROM squad_members sm JOIN users u ON u.id = sm.user_id
-       WHERE sm.squad_id = $1`, [req.params.squadId]
-    )
-    res.json(rows.map((r) => ({ userId: r.user_id, username: r.username, avatar_url: r.avatar_url, role: r.role })))
-  } catch (e) { next(e) }
-})
-
 // Get a user's current squad (for profile display)
 r.get('/user/:userId', async (req, res, next) => {
   try {

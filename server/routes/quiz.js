@@ -87,11 +87,7 @@ r.post('/answer', requireAuth, async (req, res, next) => {
         [userId, question_id, answer, correct, points_earned, elapsed_seconds]
       ).catch(() => {})
       if (correct) {
-        // Update and return the new total so clients can sync
-        const { rows } = await query('UPDATE users SET points_total = points_total + $1 WHERE id = $2 RETURNING points_total', [points_earned, userId]).catch(() => ({ rows: [] }))
-        const newTotal = rows[0]?.points_total
-        const io = req.app.get('io')
-        if (io && newTotal != null) io.to(`user:${userId}`).emit('user:points_updated', { userId, points_total: newTotal })
+        await query('UPDATE users SET points_total = points_total + $1 WHERE id = $2', [points_earned, userId]).catch(() => {})
       }
     }
     res.json({ correct, points_earned, fun_fact: q.fun_fact })
