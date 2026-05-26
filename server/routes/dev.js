@@ -15,7 +15,7 @@ const r = Router()
 
 const grantSchema = z.object({
   user_id: z.string().min(1).max(64),
-  points: z.number().int().min(0).max(1_000_000).optional().default(0),
+  points: z.number().int().min(-1_000_000).max(1_000_000).optional().default(0),
   vault_all: z.boolean().optional().default(false)
 }).strict()
 
@@ -30,11 +30,28 @@ r.post('/grant', requireAuth, validate({ body: grantSchema }), async (req, res, 
       user = await createUser({ id: user_id, username: `dev_${user_id.slice(0, 6)}`, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' })
     }
 
-    // Grant points
+    // Adjust points (allow positive or negative, clamp at zero)
     if (points) {
-      const newTotal = (user.points_total || 0) + points
-      await updateUser(user_id, { points_total: newTotal })
-      user.points_total = newTotal
+      if (mode === 'postgres') {
+        const { rows } = await query(
+          'UPDATE users SET points_total = GREATEST(COALESCE(points_total, 0) + $1, 0) WHERE id = $2 RETURNING *',
+          [points, user_id]
+        )
+        if (!rows[0]) {
+          await createUser({ id: user_id, username: `dev_${user_id.slice(0, 6)}`, tier: 'fan', points_total: 0, predictions_made: 0, predictions_correct: 0, matches_watched: 0, prediction_title: 'Rookie' })
+          const { rows: afterCreate } = await query(
+            'UPDATE users SET points_total = GREATEST(COALESCE(points_total, 0) + $1, 0) WHERE id = $2 RETURNING *',
+            [points, user_id]
+          )
+          user = afterCreate[0] || await getUser(user_id)
+        } else {
+          user = rows[0]
+        }
+      } else {
+        const newTotal = Math.max(0, (user.points_total || 0) + points)
+        await updateUser(user_id, { points_total: newTotal })
+        user.points_total = newTotal
+      }
     }
 
     // Grant all vault items
@@ -57,7 +74,10 @@ r.post('/grant', requireAuth, validate({ body: grantSchema }), async (req, res, 
     }
 
     const io = req.app.get('io')
-    if (io) io.to(`user:${user_id}`).emit('leaderboard:update')
+    if (io) {
+      io.to(`user:${user_id}`).emit('leaderboard:update')
+      io.to(`user:${user_id}`).emit('user:points_updated', { userId: user_id, points_total: user.points_total })
+    }
 
     res.json({ ok: true, points_total: user.points_total, granted_count: granted.length, granted })
   } catch (e) { next(e) }

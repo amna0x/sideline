@@ -248,34 +248,83 @@ export default function Settings() {
 
 function AdminPanel() {
   const pushNotification = useStore((s) => s.pushNotification)
-  const addPoints = useStore((s) => s.addPoints)
+  const currentUser = useStore((s) => s.user)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [xpDelta, setXpDelta] = useState(25000)
+  const [busy, setBusy] = useState(false)
+  const [vaultBusy, setVaultBusy] = useState(false)
+  const [matchBusy, setMatchBusy] = useState(false)
   const match = useStore((s) => s.match)
   const setMatch = useStore((s) => s.setMatch)
 
-  async function grantBigXP() {
-    const user = useStore.getState().user
-    if (!user?.id) return
+  useEffect(() => {
+    let cancelled = false
+    const q = query.trim()
+    if (q.length < 2) {
+      setResults([])
+      return () => {}
+    }
+    const t = setTimeout(async () => {
+      try {
+        const rows = await api.searchUsers(q).catch(() => [])
+        if (!cancelled) setResults(rows || [])
+      } catch {
+        if (!cancelled) setResults([])
+      }
+    }, 250)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [query])
+
+  async function applyXp(deltaOverride) {
+    const target = selectedUser || currentUser
+    const delta = Number(deltaOverride ?? xpDelta)
+    if (!target?.id || !Number.isFinite(delta) || delta === 0) {
+      pushNotification({ type: 'goal', title: 'NO CHANGE', message: 'Pick a user and enter a non-zero XP amount', duration: 3000 })
+      return
+    }
+    setBusy(true)
     try {
-      const r = await api.post('/api/dev/grant', { user_id: user.id, points: 25000 })
-      useStore.getState().setPoints(r.points_total)
-      pushNotification({ type: 'xp', title: '+25,000 XP', message: `Total ${r.points_total.toLocaleString()}`, points: 25000, icon: '🪙', duration: 4000 })
+      const r = await api.post('/api/dev/grant', { user_id: target.id, points: delta })
+      if (target.id === currentUser?.id) {
+        useStore.getState().setPoints(r.points_total)
+      }
+      if (target.id === currentUser?.id) {
+        api.user(target.id).then((p) => useStore.getState().setUserProfile(p)).catch(() => {})
+      }
+      setSelectedUser((cur) => cur ? { ...cur, points_total: r.points_total } : cur)
+      pushNotification({
+        type: 'xp',
+        title: delta > 0 ? `+${delta.toLocaleString()} XP` : `${delta.toLocaleString()} XP`,
+        message: `${target.username || target.email || target.id} → ${r.points_total.toLocaleString()} XP`,
+        points: delta,
+        icon: '🪙',
+        duration: 4000
+      })
     } catch (e) {
-      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 70) || 'Enable DEV_TOOLS=1', duration: 4000 })
+    } finally {
+      setBusy(false)
     }
   }
 
   async function grantAllVault() {
-    const user = useStore.getState().user
-    if (!user?.id) return
+    const target = selectedUser || currentUser
+    if (!target?.id) return
+    setVaultBusy(true)
     try {
-      const r = await api.post('/api/dev/grant', { user_id: user.id, vault_all: true })
-      pushNotification({ type: 'vault', title: 'VAULT UNLOCKED', message: `${r.granted_count} items granted`, icon: '🗝️', duration: 4000 })
+      const r = await api.post('/api/dev/grant', { user_id: target.id, vault_all: true })
+      pushNotification({ type: 'vault', title: 'VAULT UNLOCKED', message: `${r.granted_count} items granted to ${target.username || target.id}`, icon: '🗝️', duration: 4000 })
     } catch (e) {
       pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+    } finally {
+      setVaultBusy(false)
     }
   }
 
   async function startSimulator() {
+    setMatchBusy(true)
     if (!match) {
       setMatch({ id: 'bvb_fcb_2024_md9', home_team: 'Dortmund', away_team: 'Bayern', home_score: 0, away_score: 0, minute: 1, status: 'live', stadium: 'Signal Iduna Park', matchday: 9 })
     }
@@ -285,18 +334,96 @@ function AdminPanel() {
       pushNotification({ type: 'prediction', title: 'SIMULATOR', message: 'Connected — events incoming', icon: '🚀', duration: 3000 })
     } catch (e) {
       pushNotification({ type: 'goal', title: 'ERROR', message: e.message, duration: 3000 })
+    } finally {
+      setMatchBusy(false)
     }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-24">
       <Card>
-        <div className="p-4">
-          <h3 className="font-comic text-sm text-[var(--sv-accent)] mb-3">ADMIN TOOLS</h3>
-          <div className="grid grid-cols-2 gap-2">
-            <Btn label="🪙 +25K XP" onClick={grantBigXP} />
-            <Btn label="🗝️ All Vault" onClick={grantAllVault} />
-            <Btn label="🚀 Simulator" onClick={startSimulator} />
+        <div className="p-4 space-y-4">
+          <div>
+            <h3 className="font-comic text-sm text-[var(--sv-accent)]">ADMIN PANEL</h3>
+            <p className="text-xs text-[#999] mt-1">Search any user by username or email and add or remove XP.</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-comic text-[#999] uppercase">Target User</label>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search username or email"
+              className="w-full px-4 py-3 rounded-xl border border-[#e0e0e0] bg-white text-sm text-[#1a1a1a] focus:border-[var(--sv-accent)] focus:outline-none"
+            />
+            {results.length > 0 && (
+              <div className="border border-[#e0e0e0] rounded-xl overflow-hidden bg-white max-h-56 overflow-y-auto">
+                {results.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => { setSelectedUser(u); setQuery(u.username || u.email || '') }}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-[#f7f7f7] border-b border-[#f0f0f0] last:border-b-0 ${selectedUser?.id === u.id ? 'bg-[var(--sv-accent)]/8' : ''}`}
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm text-[#1a1a1a] font-medium truncate">{u.username}</div>
+                      <div className="text-[11px] text-[#999] truncate">{u.email || 'No email'}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-sm font-comic text-[var(--sv-accent)] tabular-nums">{(u.points_total ?? 0).toLocaleString()} XP</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedUser && (
+              <div className="rounded-xl border border-[#e0e0e0] bg-[#fafafa] px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-[#1a1a1a] truncate">{selectedUser.username}</div>
+                  <div className="text-[11px] text-[#999] truncate">{selectedUser.email || selectedUser.id}</div>
+                </div>
+                <div className="text-sm font-comic text-[var(--sv-accent)] tabular-nums">{(selectedUser.points_total ?? 0).toLocaleString()} XP</div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-comic text-[#999] uppercase">XP Adjustment</label>
+            <input
+              type="number"
+              step="1"
+              value={xpDelta}
+              onChange={(e) => setXpDelta(Number(e.target.value))}
+              className="w-full px-4 py-3 rounded-xl border border-[#e0e0e0] bg-white text-sm text-[#1a1a1a] focus:border-[var(--sv-accent)] focus:outline-none tabular-nums"
+            />
+            <div className="grid grid-cols-4 gap-2">
+              {[2500, 5000, 25000, -25000].map((n) => (
+                <button key={n} onClick={() => setXpDelta(n)} className="py-2 rounded-xl border border-[#e0e0e0] text-[11px] font-comic text-[#666] hover:border-[var(--sv-accent)]">
+                  {n > 0 ? `+${n.toLocaleString()}` : n.toLocaleString()}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => applyXp(xpDelta)}
+                disabled={busy}
+                className="py-3 rounded-xl font-comic text-sm bg-[var(--sv-accent)] text-white disabled:opacity-50"
+              >
+                {busy ? 'APPLYING…' : 'APPLY XP'}
+              </button>
+              <button
+                onClick={() => applyXp(-Math.abs(Number(xpDelta) || 0))}
+                disabled={busy}
+                className="py-3 rounded-xl font-comic text-sm border border-[#e0e0e0] text-[#666] disabled:opacity-50"
+              >
+                SUBTRACT XP
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            <Btn label={vaultBusy ? '🗝️ Working…' : '🗝️ All Vault'} onClick={grantAllVault} disabled={vaultBusy} />
+            <Btn label={matchBusy ? '🚀 Simulator…' : '🚀 Simulator'} onClick={startSimulator} disabled={matchBusy} />
           </div>
         </div>
       </Card>
@@ -304,12 +431,13 @@ function AdminPanel() {
   )
 }
 
-function Btn({ label, onClick }) {
+function Btn({ label, onClick, disabled }) {
   return (
     <motion.button
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className="py-2.5 px-3 rounded-xl font-comic text-[12px] bg-[var(--sv-accent)] text-white"
+      disabled={disabled}
+      className="py-2.5 px-3 rounded-xl font-comic text-[12px] bg-[var(--sv-accent)] text-white disabled:opacity-50"
     >{label}</motion.button>
   )
 }

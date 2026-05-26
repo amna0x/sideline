@@ -19,7 +19,7 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE' }
   }, [toast, showToast])
 
   return (
-    <div className="mobile-frame text-on-background pb-28 font-body halftone relative">
+    <div className="mobile-frame text-on-background pb-40 font-body halftone relative">
       <TopBar title={title} points={points} />
       <Notifications />
       <main className="relative z-10">{children}</main>
