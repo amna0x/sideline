@@ -244,7 +244,7 @@ export default function Squad() {
 
         {/* Members row */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 shrink-0">
-          {squadMembers.map((m) => (
+          {squadMembers.slice(0, 8).map((m) => (
             <div key={m.userId} className="flex flex-col items-center min-w-[48px]">
               <div className={`w-10 h-10 rounded-full border-2 ${m.userId === userId ? 'border-[var(--sv-accent)]' : roles[m.userId] === 'admin' ? 'border-yellow-400' : roles[m.userId] === 'moderator' ? 'border-blue-400' : 'border-[#e0e0e0]'} p-0.5 flex items-center justify-center overflow-hidden`}>
                 <Avatar url={m.avatar_url} name={m.username} size={32} />
@@ -256,6 +256,14 @@ export default function Squad() {
               {roles[m.userId] === 'moderator' && <span className="text-[8px] text-blue-500">⭐</span>}
             </div>
           ))}
+          {squadMembers.length > 8 && (
+            <button onClick={() => setShowManage(true)} className="flex flex-col items-center min-w-[48px]">
+              <div className="w-10 h-10 rounded-full border-2 border-[#e0e0e0] flex items-center justify-center bg-[#f0f0f0]">
+                <span className="font-comic text-xs text-[#666]">+{squadMembers.length - 8}</span>
+              </div>
+              <span className="text-[9px] text-[#999] mt-0.5">more</span>
+            </button>
+          )}
         </div>
 
         {/* Reactions bar */}
@@ -447,7 +455,13 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
   useEffect(() => {
     if (messages.length > prevCount.current) {
       const last = messages[messages.length - 1]
-      if (last?.user_id !== userId) playReceiveSound()
+      // Only play sound if someone replied to you
+      if (last?.user_id !== userId && last?.reply_to_username) {
+        const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
+        if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
+          playReceiveSound()
+        }
+      }
     }
     prevCount.current = messages.length
   }, [messages.length, userId])
