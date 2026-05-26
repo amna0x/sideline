@@ -121,8 +121,9 @@ function TopBar({ title, points }) {
   return (
     <header className="app-topbar sticky top-3 z-40 mx-4 mt-3 mb-2 grid grid-cols-3 items-center px-4 h-16 text-white rounded-[28px] shadow-[0_14px_30px_var(--topbar-shadow)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
-        <span className="material-symbols-outlined absolute -top-9 left-10 text-[102px] text-white/[0.11] animate-float" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-        <span className="material-symbols-outlined absolute -top-12 right-12 text-[124px] text-white/[0.085] animate-float" style={{ fontVariationSettings: "'FILL' 1", animationDelay: '0.8s' }}>star</span>
+        <span className="material-symbols-outlined absolute -top-11 left-16 text-[118px] text-white/[0.10] animate-float rotate-[-18deg]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+        <span className="material-symbols-outlined absolute -bottom-12 right-20 text-[94px] text-white/[0.065] animate-float rotate-[24deg] scale-x-125 scale-y-90" style={{ fontVariationSettings: "'FILL' 1", animationDelay: '0.8s' }}>star</span>
+        <span className="material-symbols-outlined absolute -top-7 right-4 text-[58px] text-white/[0.055] rotate-[9deg]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
         <span className="absolute inset-0 opacity-20" style={{
           backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.18) 1px, transparent 1px)',
           backgroundSize: '18px 18px'
