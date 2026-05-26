@@ -6,7 +6,7 @@ import { useStore } from '../store/index.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { api } from '../lib/api.js'
 import { cognitoReady, changePassword as cogChangePassword, deleteCurrentUser as cogDeleteUser } from '../lib/cognito.js'
-import { THEMES } from '../lib/theme.js'
+import { THEMES, saveThemeToProfile } from '../lib/theme.js'
 import { getSocket } from '../lib/socket.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
 import { isAdminUser } from '../lib/admin.js'
@@ -169,7 +169,7 @@ export default function Settings() {
                 <motion.button
                   key={t.id}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setTheme(t.id)}
+                  onClick={() => { setTheme(t.id); saveThemeToProfile(user?.id, t.id, api) }}
                   className={`text-left rounded-xl border-2 p-3 transition-all bg-white ${active ? 'border-[var(--sv-accent)] shadow-[0_2px_12px_rgba(223,91,48,0.2)]' : 'border-[#e0e0e0] hover:border-[#ccc]'}`}
                 >
                   <div className="flex gap-1.5 mb-2">

@@ -13,6 +13,8 @@ export default function UserProfile() {
   const showToast = useStore((s) => s.showToast)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [friendStatus, setFriendStatus] = useState(null) // null | 'friends' | 'pending' | 'none'
+  const [userSquad, setUserSquad] = useState(undefined) // undefined = loading, null = none
 
   useEffect(() => {
     if (!userId) return
@@ -23,16 +25,32 @@ export default function UserProfile() {
       .then(setProfile)
       .catch(() => setProfile(null))
       .finally(() => setLoading(false))
+    // Fetch user's squad
+    api.get(`/api/squad/user/${userId}`).then(setUserSquad).catch(() => setUserSquad(null))
+    // Check friendship status
+    if (myId) {
+      api.friends().then((friends) => {
+        if (friends.some((f) => f.id === userId)) {
+          setFriendStatus('friends')
+        } else {
+          api.outgoingRequests().then((out) => {
+            if (out.some((r) => r.to_id === userId)) setFriendStatus('pending')
+            else setFriendStatus('none')
+          }).catch(() => setFriendStatus('none'))
+        }
+      }).catch(() => setFriendStatus('none'))
+    }
   }, [userId, myId, nav])
 
   async function addFriend() {
     try {
       await api.addFriend(userId)
+      setFriendStatus('pending')
       showToast('Friend request sent!')
     } catch (e) {
       const msg = e.message || ''
-      if (msg.includes('already_friends')) showToast('Already friends')
-      else if (msg.includes('request_pending')) showToast('Request already sent')
+      if (msg.includes('already_friends')) { setFriendStatus('friends'); showToast('Already friends') }
+      else if (msg.includes('request_pending')) { setFriendStatus('pending'); showToast('Request already sent') }
       else showToast('Could not send request')
     }
   }
@@ -78,10 +96,22 @@ export default function UserProfile() {
 
         {/* Action buttons */}
         <div className="flex gap-2 mt-4">
-          <motion.button whileTap={{ scale: 0.95 }} onClick={addFriend}
-            className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[var(--sv-accent)] text-white">
-            Add Friend
-          </motion.button>
+          {friendStatus === 'friends' && (
+            <span className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[#f0f0f0] text-[#666] flex items-center gap-1">
+              <span className="material-symbols-outlined text-[16px]">check</span> Friends
+            </span>
+          )}
+          {friendStatus === 'pending' && (
+            <span className="px-5 py-2.5 rounded-xl font-comic text-sm border border-[var(--sv-accent)]/30 text-[var(--sv-accent)]">
+              Request Sent
+            </span>
+          )}
+          {friendStatus === 'none' && (
+            <motion.button whileTap={{ scale: 0.95 }} onClick={addFriend}
+              className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[var(--sv-accent)] text-white">
+              Add Friend
+            </motion.button>
+          )}
           <motion.button whileTap={{ scale: 0.95 }} onClick={() => nav(-1)}
             className="px-5 py-2.5 rounded-xl font-comic text-sm border border-[#e0e0e0] text-[#666]">
             Back
@@ -94,6 +124,26 @@ export default function UserProfile() {
         <Stat label="PREDICTIONS" value={profile.predictions_made || 0} />
         <Stat label="XP" value={(profile.points_total ?? 0).toLocaleString()} />
       </section>
+
+      {/* Squad info */}
+      {userSquad && (
+        <section className="px-4 mt-4">
+          <div className="bg-white border border-[#e0e0e0] rounded-xl p-3 flex items-center gap-3">
+            <span className="material-symbols-outlined text-[var(--sv-accent)] text-[24px]">groups</span>
+            <div>
+              <span className="font-comic text-xs text-[#999]">SQUAD</span>
+              {userSquad.visibility === 'private' ? (
+                <div className="text-sm text-[#666] flex items-center gap-1">🔒 Private</div>
+              ) : (
+                <div className="text-sm text-[#1a1a1a] font-medium">{userSquad.name}</div>
+              )}
+            </div>
+            {userSquad.visibility !== 'private' && (
+              <span className="ml-auto text-[10px] text-[#999]">{userSquad.memberCount} members</span>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Cards showcase */}
       {cards.length > 0 && (

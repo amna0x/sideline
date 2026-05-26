@@ -61,7 +61,7 @@ body {
   border-radius: 1rem;
   position: relative;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--panel-bg, #ffffff);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .comic-panel::after {
@@ -465,3 +465,76 @@ body {
 [data-theme="solar"] .border-outline-variant { border-color: #2a2008 !important; }
 [data-theme="solar"] header { background-color: #060401 !important; border-color: #2a2008 !important; }
 [data-theme="solar"] nav { background-color: rgba(6,4,1,0.9) !important; border-color: #2a2008 !important; }
+
+
+/* === Additional dark theme overrides for missed white elements === */
+
+/* bg-white/95 used in header and nav */
+[data-theme="spiderverse"] .bg-white\/95,
+[data-theme="mint"] .bg-white\/95,
+[data-theme="inferno"] .bg-white\/95,
+[data-theme="cobalt"] .bg-white\/95,
+[data-theme="solar"] .bg-white\/95 {
+  background-color: rgba(0,0,0,0.95) !important;
+}
+
+/* comic-panel background via CSS variable */
+[data-theme="spiderverse"] { --panel-bg: #111; --surface-bg: #111; --text-fg: #e8e8e8; }
+[data-theme="mint"] { --panel-bg: #0e0e0e; --surface-bg: #0e0e0e; --text-fg: #ffffff; }
+[data-theme="inferno"] { --panel-bg: #140509; --surface-bg: #140509; --text-fg: #ffe9d6; }
+[data-theme="cobalt"] { --panel-bg: #061128; --surface-bg: #061128; --text-fg: #e8f0ff; }
+[data-theme="solar"] { --panel-bg: #181205; --surface-bg: #181205; --text-fg: #fff5d6; }
+
+/* comic-panel border in dark themes */
+[data-theme="spiderverse"] .comic-panel,
+[data-theme="mint"] .comic-panel,
+[data-theme="inferno"] .comic-panel,
+[data-theme="cobalt"] .comic-panel,
+[data-theme="solar"] .comic-panel {
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: none !important;
+}
+
+/* bg-[#f0f0f0] used in chat bubbles */
+[data-theme="spiderverse"] .bg-\[\#f0f0f0\],
+[data-theme="mint"] .bg-\[\#f0f0f0\],
+[data-theme="inferno"] .bg-\[\#f0f0f0\],
+[data-theme="cobalt"] .bg-\[\#f0f0f0\],
+[data-theme="solar"] .bg-\[\#f0f0f0\] {
+  background-color: rgba(255,255,255,0.08) !important;
+}
+
+/* shadow overrides — remove light shadows in dark themes */
+[data-theme="spiderverse"] .shadow-lg,
+[data-theme="mint"] .shadow-lg,
+[data-theme="inferno"] .shadow-lg,
+[data-theme="cobalt"] .shadow-lg,
+[data-theme="solar"] .shadow-lg {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+}
+
+/* border-black/[0.06] used in header/nav */
+[data-theme="spiderverse"] .border-black\/\[0\.06\],
+[data-theme="mint"] .border-black\/\[0\.06\],
+[data-theme="inferno"] .border-black\/\[0\.06\],
+[data-theme="cobalt"] .border-black\/\[0\.06\],
+[data-theme="solar"] .border-black\/\[0\.06\] {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Scrollbar in dark themes */
+[data-theme="spiderverse"] ::-webkit-scrollbar-track,
+[data-theme="mint"] ::-webkit-scrollbar-track,
+[data-theme="inferno"] ::-webkit-scrollbar-track,
+[data-theme="cobalt"] ::-webkit-scrollbar-track,
+[data-theme="solar"] ::-webkit-scrollbar-track {
+  background: #111;
+}
+
+[data-theme="spiderverse"] ::-webkit-scrollbar-thumb,
+[data-theme="mint"] ::-webkit-scrollbar-thumb,
+[data-theme="inferno"] ::-webkit-scrollbar-thumb,
+[data-theme="cobalt"] ::-webkit-scrollbar-thumb,
+[data-theme="solar"] ::-webkit-scrollbar-thumb {
+  background: #333;
+}

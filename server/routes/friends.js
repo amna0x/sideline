@@ -48,6 +48,22 @@ r.get('/requests', requireAuth, async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
+// Get outgoing friend requests (sent by me)
+r.get('/requests/outgoing', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user.id
+    if (mode !== 'postgres') return res.json([])
+    const { rows } = await query(
+      `SELECT f.id as request_id, f.friend_id as to_id, u.username, u.avatar_url, f.created_at
+       FROM friends f JOIN users u ON u.id = f.friend_id
+       WHERE f.user_id = $1 AND f.status = 'pending'
+       ORDER BY f.created_at DESC`,
+      [userId]
+    )
+    res.json(rows)
+  } catch (e) { next(e) }
+})
+
 // Send friend request
 r.post('/add', writeLimiter, requireAuth, validate({ body: addSchema }), async (req, res, next) => {
   try {
@@ -85,6 +101,22 @@ r.post('/accept', writeLimiter, requireAuth, validate({ body: z.object({ request
 
     const { rows } = await query(
       "UPDATE friends SET status = 'accepted' WHERE id = $1 AND friend_id = $2 AND status = 'pending' RETURNING *",
+      [request_id, userId]
+    )
+    if (!rows[0]) return res.status(404).json({ error: 'request_not_found' })
+    res.json({ ok: true })
+  } catch (e) { next(e) }
+})
+
+// Decline friend request (incoming) or cancel (outgoing)
+r.post('/decline', writeLimiter, requireAuth, validate({ body: z.object({ request_id: z.string() }) }), async (req, res, next) => {
+  try {
+    const userId = req.user.id
+    const { request_id } = req.body
+    if (mode !== 'postgres') return res.json({ ok: true })
+
+    const { rows } = await query(
+      "DELETE FROM friends WHERE id = $1 AND (friend_id = $2 OR user_id = $2) AND status = 'pending' RETURNING *",
       [request_id, userId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'request_not_found' })

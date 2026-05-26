@@ -35,6 +35,8 @@ export default function Profile() {
     api.friendRequests().then(setFriendRequests).catch(() => {})
   }, [user?.id])
 
+  const profile = user?.profile || {}
+
   useEffect(() => {
     setBioText(profile.bio || '')
   }, [profile.bio])
@@ -51,8 +53,6 @@ export default function Profile() {
       showToast('Could not save bio')
     }
   }
-
-  const profile = user?.profile || {}
   const cards = (profile.vault || []).filter((v) => v.type === 'collectible' || v.type === 'adidas_card')
   const badges = (profile.vault || []).filter((v) => v.type === 'badge')
 
@@ -106,7 +106,7 @@ export default function Profile() {
             onError={(msg) => showToast(msg)}
           />
         </div>
-        <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">{profile.username || 'User'} <AdminBadge username={profile.username} /></h1>
+        <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">{profile.username || user?.username || user?.user_metadata?.username || 'User'} <AdminBadge username={profile.username || user?.username || user?.email} /></h1>
         {/* Bio */}
         <div className="mt-2 w-full max-w-[280px]">
           {editingBio ? (

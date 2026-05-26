@@ -13,6 +13,8 @@ export function useSquad() {
   const showToast = useStore((s) => s.showToast)
   const socketRef = useRef(null)
   const [chatMessages, setChatMessages] = useState([])
+  const [typingUsers, setTypingUsers] = useState([])
+  const [roles, setRoles] = useState({})
 
   useEffect(() => {
     let cancelled = false
@@ -23,6 +25,7 @@ export function useSquad() {
       s.on('squad:state', (state) => {
         setSquad(state)
         setSquadMembers(state.members)
+        setRoles(state.roles || {})
         setChatMessages([])
         useStore.getState().pushNotification({ type: 'squad', title: `JOINED ${state.name}`, message: `${state.memberCount} members`, icon: '👥', duration: 3000 })
       })
@@ -43,6 +46,45 @@ export function useSquad() {
 
       s.on('squad:chat_message', (msg) => {
         setChatMessages((prev) => [...prev.slice(-99), msg])
+        setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
+      })
+
+      s.on('squad:user_typing', ({ userId, username }) => {
+        setTypingUsers((prev) => {
+          const exists = prev.find((u) => u.userId === userId)
+          if (exists) return prev
+          return [...prev, { userId, username }]
+        })
+        // Auto-clear typing after 3s
+        setTimeout(() => {
+          setTypingUsers((prev) => prev.filter((u) => u.userId !== userId))
+        }, 3000)
+      })
+
+      s.on('squad:visibility_changed', ({ visibility }) => {
+        useStore.setState((prev) => ({
+          squad: prev.squad ? { ...prev.squad, visibility } : null
+        }))
+      })
+
+      s.on('squad:roles_updated', ({ roles: newRoles }) => {
+        setRoles(newRoles)
+      })
+
+      s.on('squad:kicked', ({ squadName }) => {
+        setSquad(null)
+        setSquadMembers([])
+        setChatMessages([])
+        setRoles({})
+        useStore.getState().showToast(`You were removed from ${squadName}`)
+      })
+
+      s.on('squad:admin_transferred', ({ newAdminId, newAdminName }) => {
+        useStore.getState().showToast(`${newAdminName} is now the squad admin`)
+      })
+
+      s.on('squad:leave_info', (info) => {
+        // Handled by the component via leaveInfo state
       })
 
       s.on('squad:invite_code', ({ code, squadName }) => {
@@ -54,16 +96,8 @@ export function useSquad() {
         }
       })
 
-      s.on('squad:challenge_received', (challenge) => {
-        setActiveDuel({ ...challenge, role: 'opponent', status: 'pending' })
-      })
-
-      s.on('squad:challenge_sent', ({ duelId }) => {
-        useStore.setState((prev) => ({
-          activeDuel: prev.activeDuel ? { ...prev.activeDuel, duelId, status: 'waiting' } : null
-        }))
-      })
-
+      s.on('squad:challenge_received', (challenge) => setActiveDuel({ ...challenge, role: 'opponent', status: 'pending' }))
+      s.on('squad:challenge_sent', ({ duelId }) => useStore.setState((prev) => ({ activeDuel: prev.activeDuel ? { ...prev.activeDuel, duelId, status: 'waiting' } : null })))
       s.on('squad:duel_active', (duel) => setActiveDuel({ ...duel, status: 'active' }))
       s.on('squad:duel_update', (update) => updateDuel(update))
       s.on('squad:duel_result', (result) => setActiveDuel({ ...result, status: 'resolved' }))
@@ -74,7 +108,8 @@ export function useSquad() {
       cancelled = true
       if (socketRef.current) {
         const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
-          'squad:chat_message', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
+          'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
+          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
           'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error']
         events.forEach((e) => socketRef.current.off(e))
       }
@@ -96,7 +131,22 @@ export function useSquad() {
     setSquad(null)
     setSquadMembers([])
     setChatMessages([])
+    setRoles({})
   }, [setSquad, setSquadMembers])
+
+  const checkLeave = useCallback(() => {
+    return new Promise((resolve) => {
+      if (!socketRef.current) return resolve({ type: 'member' })
+      const handler = (info) => {
+        socketRef.current.off('squad:leave_info', handler)
+        resolve(info)
+      }
+      socketRef.current.on('squad:leave_info', handler)
+      socketRef.current.emit('squad:check_leave')
+      // Timeout fallback
+      setTimeout(() => { socketRef.current?.off('squad:leave_info', handler); resolve({ type: 'member' }) }, 3000)
+    })
+  }, [])
 
   const sendReaction = useCallback((emoji) => {
     socketRef.current?.emit('squad:reaction', { emoji })
@@ -106,8 +156,28 @@ export function useSquad() {
     socketRef.current?.emit('squad:message', { text })
   }, [])
 
+  const sendTyping = useCallback(() => {
+    socketRef.current?.emit('squad:typing')
+  }, [])
+
   const getInviteCode = useCallback(() => {
     socketRef.current?.emit('squad:get_invite')
+  }, [])
+
+  const setVisibility = useCallback((visibility) => {
+    socketRef.current?.emit('squad:set_visibility', { visibility })
+  }, [])
+
+  const promote = useCallback((targetUserId) => {
+    socketRef.current?.emit('squad:promote', { targetUserId })
+  }, [])
+
+  const demote = useCallback((targetUserId) => {
+    socketRef.current?.emit('squad:demote', { targetUserId })
+  }, [])
+
+  const kick = useCallback((targetUserId) => {
+    socketRef.current?.emit('squad:kick', { targetUserId })
   }, [])
 
   const sendChallenge = useCallback((opponentId, predictionId) => {
@@ -123,5 +193,11 @@ export function useSquad() {
     socketRef.current?.emit('squad:duel_pick', { duelId, pick })
   }, [])
 
-  return { squad, joinSquad, joinByInvite, leaveSquad, sendReaction, sendMessage, getInviteCode, sendChallenge, acceptChallenge, submitDuelPick, chatMessages }
+  return {
+    squad, roles, typingUsers, chatMessages,
+    joinSquad, joinByInvite, leaveSquad, checkLeave,
+    sendReaction, sendMessage, sendTyping, getInviteCode,
+    setVisibility, promote, demote, kick,
+    sendChallenge, acceptChallenge, submitDuelPick
+  }
 }

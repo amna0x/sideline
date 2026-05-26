@@ -84,8 +84,10 @@ export const api = {
   // Friends
   friends: () => request('/api/friends'),
   friendRequests: () => request('/api/friends/requests'),
+  outgoingRequests: () => request('/api/friends/requests/outgoing'),
   addFriend: (friendId) => request('/api/friends/add', { method: 'POST', body: JSON.stringify({ friend_id: friendId }) }),
   acceptFriend: (requestId) => request('/api/friends/accept', { method: 'POST', body: JSON.stringify({ request_id: requestId }) }),
+  declineFriend: (requestId) => request('/api/friends/decline', { method: 'POST', body: JSON.stringify({ request_id: requestId }) }),
   removeFriend: (friendId) => request(`/api/friends/${friendId}`, { method: 'DELETE' }),
   searchUsers: (q) => request(`/api/friends/search?q=${encodeURIComponent(q)}`),
 

@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
 import { saveGuestSession, loadGuestSession, clearGuestSession } from '../lib/session.js'
+import { reconnectSocket } from '../lib/socket.js'
+import { loadThemeFromProfile, applyTheme } from '../lib/theme.js'
 import {
   cognitoReady,
   signIn as cogSignIn,
@@ -53,6 +55,12 @@ export function useAuth() {
     api.user(user.id).then((profile) => {
       setUserProfile(profile)
       if (profile?.points_total != null) setPoints(profile.points_total)
+      // Sync theme from profile (account-level persistence)
+      const profileTheme = loadThemeFromProfile(profile)
+      if (profileTheme) {
+        applyTheme(profileTheme)
+        useStore.getState().setTheme(profileTheme)
+      }
     }).catch(() => {})
   }, [user?.id, setUserProfile, setPoints])
 
@@ -61,6 +69,7 @@ export function useAuth() {
     const result = await cogSignIn(email, password)
     setSession(result)
     useStore.getState().setGuest(false)
+    reconnectSocket()
     return result
   }
 
@@ -71,7 +80,21 @@ export function useAuth() {
 
   async function confirmSignUp(email, code) {
     if (!cognitoReady) throw new Error('AWS Cognito not configured')
-    return cogConfirm(email, code)
+    // Use server-side confirm which also sets email_verified = true
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+    const res = await fetch(`${base}/api/auth/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      const err = new Error(data.error || 'Confirmation failed')
+      if (data.error === 'invalid_code') err.message = 'CodeMismatchException'
+      if (data.error === 'expired_code') err.message = 'ExpiredCodeException'
+      throw err
+    }
+    return await res.json()
   }
 
   async function resendConfirmation(email) {
@@ -95,6 +118,7 @@ export function useAuth() {
     if (cognitoReady) cogSignOut()
     clearGuestSession()
     clearAuth()
+    reconnectSocket()
   }
 
   return { session, user, isGuest, signIn, signUp, confirmSignUp, resendConfirmation, signInAsGuest, signOut }

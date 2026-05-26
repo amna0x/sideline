@@ -28,8 +28,9 @@ function userFromSession(cognitoUser, session) {
   return {
     id: payload.sub,
     email: payload.email || null,
+    username: payload.preferred_username || payload['cognito:username'] || (payload.email ? payload.email.split('@')[0] : null),
     user_metadata: {
-      username: payload['cognito:username'] || payload.preferred_username || (payload.email ? payload.email.split('@')[0] : null),
+      username: payload.preferred_username || payload['cognito:username'] || (payload.email ? payload.email.split('@')[0] : null),
       avatar_url: payload['custom:avatar_url'] || null
     },
     tokens: {

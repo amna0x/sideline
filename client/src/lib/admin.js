@@ -11,5 +11,11 @@ export function isAdmin(usernameOrEmail) {
 export function isAdminUser(user) {
   if (!user) return false
   const profile = user.profile || user
-  return isAdmin(profile.username) || isAdmin(profile.email) || isAdmin(user.email)
+  return (
+    isAdmin(profile.username) ||
+    isAdmin(profile.email) ||
+    isAdmin(user.email) ||
+    isAdmin(user.username) ||
+    isAdmin(user.user_metadata?.username)
+  )
 }
