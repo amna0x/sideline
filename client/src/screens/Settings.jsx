@@ -98,6 +98,7 @@ export default function Settings() {
   const TABS = [
     { key: 'account', label: 'Account', icon: 'person' },
     { key: 'themes', label: 'Themes', icon: 'palette' },
+    { key: 'cosmetics', label: 'My Cosmetics', icon: 'auto_awesome' },
     { key: 'notifications', label: 'Push Alerts', icon: 'notifications' },
     ...(isAdmin ? [{ key: 'admin', label: 'Admin', icon: 'admin_panel_settings' }] : [])
   ]
@@ -192,6 +193,8 @@ export default function Settings() {
             </Row>
           </Card>
         )}
+
+        {tab === 'cosmetics' && <MyCosmeticsPanel userId={user?.id} />}
 
         {tab === 'admin' && isAdmin && <AdminPanel />}
       </section>
@@ -329,5 +332,89 @@ function Toggle({ on, onClick }) {
     <button onClick={onClick} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${on ? 'bg-[var(--sv-accent)]' : 'bg-[#e0e0e0]'}`}>
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`} />
     </button>
+  )
+}
+
+function MyCosmeticsPanel({ userId }) {
+  const [cosmetics, setCosmetics] = useState([])
+  const [loading, setLoading] = useState(true)
+  const showToast = useStore((s) => s.showToast)
+
+  useEffect(() => {
+    if (!userId) return
+    setLoading(true)
+    api.userCosmetics(userId).then(setCosmetics).catch(() => {}).finally(() => setLoading(false))
+  }, [userId])
+
+  async function toggleEquip(cosmeticId, currentlyEquipped) {
+    await api.equipCosmetic(cosmeticId, !currentlyEquipped).catch(() => {})
+    setCosmetics((prev) => prev.map((c) => {
+      // Unequip others of same type when equipping
+      if (c.cosmetic_id === cosmeticId) return { ...c, equipped: !currentlyEquipped }
+      if (!currentlyEquipped && c.type === prev.find((x) => x.cosmetic_id === cosmeticId)?.type) return { ...c, equipped: false }
+      return c
+    }))
+    showToast(!currentlyEquipped ? 'Equipped!' : 'Unequipped')
+  }
+
+  const grouped = cosmetics.reduce((acc, c) => {
+    const type = c.type || 'other'
+    if (!acc[type]) acc[type] = []
+    acc[type].push(c)
+    return acc
+  }, {})
+
+  const typeLabels = {
+    avatar_decoration: '🎨 Avatar Decorations',
+    profile_effect: '✨ Profile Effects',
+    avatar_gif_unlock: '🎬 Unlocks',
+    sticker_pack: '🎯 Sticker Packs'
+  }
+
+  if (loading) return <div className="text-center py-8 text-sm text-[#999]">Loading…</div>
+  if (cosmetics.length === 0) return (
+    <div className="text-center py-12">
+      <span className="material-symbols-outlined text-[48px] text-[#ddd] mb-3 block">shopping_bag</span>
+      <p className="text-sm text-[#999]">No cosmetics yet</p>
+      <p className="text-xs text-[#bbb] mt-1">Visit the Vault to purchase decorations and effects</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(grouped).map(([type, items]) => (
+        <div key={type}>
+          <h3 className="font-comic text-xs text-[var(--sv-accent)] mb-2">{typeLabels[type] || type.toUpperCase()}</h3>
+          <div className="space-y-2">
+            {items.map((c) => (
+              <div key={c.cosmetic_id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${c.equipped ? 'border-[var(--sv-accent)] bg-[var(--sv-accent)]/5' : 'border-[#e0e0e0] bg-white'}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-[#1a1a1a] font-medium">{c.name}</div>
+                  <div className="text-[10px] text-[#999]">{c.description}</div>
+                  <span className={`inline-block mt-1 text-[9px] font-comic px-1.5 py-0.5 rounded ${c.tier === 'legendary' ? 'bg-yellow-100 text-yellow-700' : c.tier === 'epic' ? 'bg-purple-100 text-purple-700' : c.tier === 'rare' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {(c.tier || 'common').toUpperCase()}
+                  </span>
+                </div>
+                {c.type !== 'avatar_gif_unlock' && c.type !== 'sticker_pack' && (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => toggleEquip(c.cosmetic_id, c.equipped)}
+                    className={`px-3 py-1.5 rounded-lg font-comic text-xs ${c.equipped ? 'bg-[var(--sv-accent)] text-white' : 'border border-[#e0e0e0] text-[#666]'}`}
+                  >
+                    {c.equipped ? 'EQUIPPED' : 'EQUIP'}
+                  </motion.button>
+                )}
+                {c.type === 'avatar_gif_unlock' && (
+                  <span className="text-[10px] font-comic text-green-600 bg-green-50 px-2 py-1 rounded-lg">ACTIVE</span>
+                )}
+                {c.type === 'sticker_pack' && (
+                  <span className="text-[10px] font-comic text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">UNLOCKED</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

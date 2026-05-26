@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout.jsx'
 import ReactionBurst from '../components/ReactionBurst.jsx'
 import DuelCard from '../components/DuelCard.jsx'
@@ -15,7 +16,7 @@ export default function Squad() {
   const { match } = useMatch()
   const {
     squad, roles, typingUsers, chatMessages,
-    joinSquad, joinByInvite, leaveSquad, checkLeave, sendReaction, sendMessage, sendTyping,
+    joinSquad, joinByInvite, leaveSquad, checkLeave, sendReaction, sendMessage, sendTyping, markSeen,
     getInviteCode, setVisibility, promote, demote, kick,
     sendChallenge, acceptChallenge
   } = useSquad()
@@ -35,7 +36,7 @@ export default function Squad() {
   const [existingSquad, setExistingSquad] = useState(undefined) // undefined = loading, null = none, object = has squad
 
   const myRole = roles[userId] || 'member'
-  const isAdmin = myRole === 'admin'
+  const isAdmin = myRole === 'admin' || (squad?.createdBy === userId)
   const isMod = myRole === 'moderator'
 
   // Check if user already has a squad (persisted)
@@ -266,7 +267,7 @@ export default function Squad() {
         </div>
 
         {/* Chat area */}
-        <ChatArea messages={chatMessages} userId={userId} onSend={sendMessage} onTyping={sendTyping} typingUsers={typingUsers} />
+        <ChatArea messages={chatMessages} userId={userId} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} />
 
         <AnimatePresence>
           {activeDuel && (
@@ -387,13 +388,23 @@ export default function Squad() {
 }
 
 // iOS-style chat with animations and sound effects
-function ChatArea({ messages, userId, onSend, onTyping, typingUsers }) {
+function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers }) {
+  const nav = useNavigate()
   const [text, setText] = useState('')
+  const [replyTo, setReplyTo] = useState(null)
+  const [showStickers, setShowStickers] = useState(false)
+  const [showEmoji, setShowEmoji] = useState(false)
   const bottomRef = useRef(null)
   const typingTimeout = useRef(null)
+  const seenRef = useRef(new Set())
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Mark unseen messages as seen
+    if (onMarkSeen) {
+      const unseen = messages.filter((m) => m.user_id !== userId && !seenRef.current.has(m.id))
+      unseen.forEach((m) => { seenRef.current.add(m.id); onMarkSeen(m.id) })
+    }
   }, [messages.length])
 
   // Play send sound
@@ -452,8 +463,47 @@ function ChatArea({ messages, userId, onSend, onTyping, typingUsers }) {
 
   function handleSend() {
     if (!text.trim()) return
-    onSend(text.trim())
+    onSend(text.trim(), { replyTo: replyTo ? { id: replyTo.id, text: replyTo.message, username: replyTo.username } : null })
     setText('')
+    setReplyTo(null)
+    setShowStickers(false)
+    setShowEmoji(false)
+    playSendSound()
+  }
+
+  const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '⚽', '🎯', '💯']
+  const [stickerPacks, setStickerPacks] = useState([])
+  const [activePack, setActivePack] = useState(null)
+  const [packStickers, setPackStickers] = useState([])
+  const [stickerSearch, setStickerSearch] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [loadingStickers, setLoadingStickers] = useState(false)
+
+  useEffect(() => {
+    if (showStickers && stickerPacks.length === 0) {
+      api.stickerPacks().then(setStickerPacks).catch(() => {})
+    }
+  }, [showStickers])
+
+  async function openPack(pack) {
+    setActivePack(pack)
+    setLoadingStickers(true)
+    const stickers = await api.stickerPackStickers(pack.id).catch(() => [])
+    setPackStickers(stickers)
+    setLoadingStickers(false)
+  }
+
+  async function searchStickersFn(q) {
+    setStickerSearch(q)
+    if (q.length < 2) { setSearchResults([]); return }
+    const results = await api.searchStickers(q).catch(() => [])
+    setSearchResults(results)
+  }
+
+  function handleSticker(sticker) {
+    onSend('', { msgType: 'sticker', stickerId: sticker.img })
+    setShowStickers(false)
+    setActivePack(null)
     playSendSound()
   }
 
@@ -467,19 +517,61 @@ function ChatArea({ messages, userId, onSend, onTyping, typingUsers }) {
           {messages.map((msg, i) => {
             const isMe = msg.user_id === userId
             const showName = !isMe && (i === 0 || messages[i - 1]?.user_id !== msg.user_id)
+            const showAvatar = !isMe && (i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id)
+            const isSticker = msg.msg_type === 'sticker'
+            const seenBy = (msg.seen_by || []).filter((s) => s.userId !== msg.user_id)
+
             return (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 12, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${isMe ? 'justify-end' : 'justify-start'} gap-1.5`}
               >
-                <div className={`max-w-[75%] px-3.5 py-2 ${isMe
-                  ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                  : 'bg-[#f0f0f0] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}>
-                  {showName && <div className="text-[10px] font-comic opacity-70 mb-0.5">{msg.username}</div>}
-                  <div className="text-[14px] leading-snug">{msg.message}</div>
+                {/* Avatar for others */}
+                {!isMe && showAvatar && (
+                  <button onClick={() => nav(`/profile/${msg.user_id}`)} className="self-end shrink-0">
+                    <Avatar url={msg.avatar_url} name={msg.username} size={24} />
+                  </button>
+                )}
+                {!isMe && !showAvatar && <div className="w-6 shrink-0" />}
+
+                <div className="max-w-[72%] flex flex-col">
+                  {/* Reply preview */}
+                  {msg.reply_to_text && (
+                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)]/40 bg-[#e8e8e8] text-[#666]'}`}>
+                      <span className="font-comic">{msg.reply_to_username}</span>: {msg.reply_to_text.slice(0, 60)}
+                    </div>
+                  )}
+
+                  {isSticker ? (
+                    <div className="w-[120px] h-[120px]">
+                      <img src={msg.sticker_id} alt="sticker" className="w-full h-full object-contain" loading="lazy" />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setReplyTo(msg)}
+                      className={`text-left px-3.5 py-2 ${isMe
+                        ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
+                        : 'bg-[#f0f0f0] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                    >
+                      {showName && (
+                        <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
+                          className="text-[10px] font-comic opacity-70 mb-0.5 hover:opacity-100 block">{msg.username}</button>
+                      )}
+                      <div className="text-[14px] leading-snug">{msg.message}</div>
+                    </button>
+                  )}
+
+                  {/* Seen receipts (Instagram-style) */}
+                  {isMe && seenBy.length > 0 && (
+                    <div className="text-[9px] text-[#999] mt-0.5 text-right">
+                      {seenBy.length <= 3
+                        ? `Seen by ${seenBy.map((s) => s.username).join(', ')}`
+                        : `Seen by ${seenBy[0].username} and ${seenBy.length - 1} others`}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )
@@ -491,9 +583,7 @@ function ChatArea({ messages, userId, onSend, onTyping, typingUsers }) {
       {/* Typing indicator */}
       <AnimatePresence>
         {typingUsers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="px-2 pb-1">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="px-2 pb-1">
             <div className="flex items-center gap-1.5 text-[11px] text-[#999]">
               <span className="flex gap-0.5">
                 <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0 }} className="w-1.5 h-1.5 bg-[#999] rounded-full" />
@@ -506,22 +596,107 @@ function ChatArea({ messages, userId, onSend, onTyping, typingUsers }) {
         )}
       </AnimatePresence>
 
+      {/* Sticker picker (Stipop) */}
+      <AnimatePresence>
+        {showStickers && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 200, opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className="bg-[#f8f8f8] border-t border-[#e0e0e0] rounded-t-xl overflow-hidden flex flex-col">
+            {/* Search bar */}
+            <div className="px-2 pt-2 shrink-0">
+              <input type="text" value={stickerSearch} onChange={(e) => searchStickersFn(e.target.value)}
+                placeholder="Search stickers…" className="w-full bg-white border border-[#e0e0e0] rounded-lg px-3 py-1.5 text-xs text-[#1a1a1a] placeholder:text-[#bbb] focus:outline-none focus:border-[var(--sv-accent)]" />
+            </div>
+
+            {/* Search results */}
+            {searchResults.length > 0 ? (
+              <div className="flex-1 overflow-y-auto grid grid-cols-4 gap-1 p-2">
+                {searchResults.map((s) => (
+                  <button key={s.id} onClick={() => handleSticker(s)} className="aspect-square rounded-lg hover:bg-[#e8e8e8] p-1 active:scale-90 transition-transform">
+                    <img src={s.img} alt="" className="w-full h-full object-contain" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            ) : activePack ? (
+              /* Pack stickers */
+              <div className="flex-1 overflow-y-auto">
+                <button onClick={() => setActivePack(null)} className="flex items-center gap-1 px-2 py-1 text-[10px] text-[var(--sv-accent)] font-comic">
+                  <span className="material-symbols-outlined text-[14px]">arrow_back</span> Back
+                </button>
+                {loadingStickers ? (
+                  <div className="text-center py-4 text-xs text-[#999]">Loading…</div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-1 px-2 pb-2">
+                    {packStickers.map((s) => (
+                      <button key={s.id} onClick={() => handleSticker(s)} className="aspect-square rounded-lg hover:bg-[#e8e8e8] p-1 active:scale-90 transition-transform">
+                        <img src={s.img} alt="" className="w-full h-full object-contain" loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Pack list */
+              <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 p-2">
+                {stickerPacks.map((p) => (
+                  <button key={p.id} onClick={() => openPack(p)} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-[#e8e8e8] active:scale-95 transition-transform">
+                    <img src={p.img45 || p.img} alt="" className="w-10 h-10 object-contain rounded-lg" loading="lazy" />
+                    <span className="text-[9px] text-[#666] truncate w-full text-center">{p.name}</span>
+                  </button>
+                ))}
+                {stickerPacks.length === 0 && <div className="col-span-3 text-center py-4 text-xs text-[#999]">Loading packs…</div>}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Emoji picker */}
+      <AnimatePresence>
+        {showEmoji && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className="flex gap-2 p-2 bg-[#f8f8f8] border-t border-[#e0e0e0] rounded-t-xl overflow-x-auto">
+            {QUICK_EMOJIS.map((e) => (
+              <button key={e} onClick={() => { setText((p) => p + e); setShowEmoji(false) }} className="text-2xl p-1.5 rounded-xl hover:bg-[#e8e8e8] active:scale-90 transition-transform shrink-0">{e}</button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reply preview bar */}
+      <AnimatePresence>
+        {replyTo && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className="flex items-center gap-2 px-3 py-2 bg-[#f0f0f0] border-t border-[#e0e0e0]">
+            <div className="flex-1 min-w-0 border-l-2 border-[var(--sv-accent)] pl-2">
+              <div className="text-[10px] font-comic text-[var(--sv-accent)]">{replyTo.username}</div>
+              <div className="text-xs text-[#666] truncate">{replyTo.message?.slice(0, 60) || 'Sticker'}</div>
+            </div>
+            <button onClick={() => setReplyTo(null)} className="text-[#999] shrink-0">
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input */}
-      <div className="flex gap-2 pt-2 shrink-0">
+      <div className="flex items-center gap-1.5 pt-2 shrink-0">
+        <button onClick={() => { setShowStickers(!showStickers); setShowEmoji(false) }}
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${showStickers ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666]'}`}>
+          <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+        </button>
+        <button onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false) }}
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${showEmoji ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666]'}`}>
+          <span className="material-symbols-outlined text-[20px]">add_reaction</span>
+        </button>
         <input type="text" value={text} onChange={(e) => handleInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Type a message…" maxLength={500}
+          placeholder="Message…" maxLength={500}
           className="flex-1 bg-[#f8f8f8] border border-[#e0e0e0] rounded-full px-4 py-2.5 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none" />
         <motion.button
           whileTap={{ scale: 0.85 }}
-          animate={text.trim() ? { scale: [1, 1.1, 1] } : {}}
           onClick={handleSend} disabled={!text.trim()}
-          className="w-10 h-10 rounded-full bg-[var(--sv-accent)] text-white flex items-center justify-center disabled:opacity-40 transition-opacity">
-          <motion.span
-            className="material-symbols-outlined text-[18px]"
-            animate={text.trim() ? { rotate: [0, -20, 0] } : { rotate: 0 }}
-            transition={{ duration: 0.3 }}
-          >send</motion.span>
+          className="w-9 h-9 rounded-full bg-[var(--sv-accent)] text-white flex items-center justify-center disabled:opacity-40 shrink-0">
+          <span className="material-symbols-outlined text-[16px]">send</span>
         </motion.button>
       </div>
     </div>

@@ -119,6 +119,32 @@ async function dbGetUserSquad(userId) {
   return rows[0] || null
 }
 
+async function dbGetChatHistory(squadId, limit = 50) {
+  if (mode !== 'postgres') return []
+  const { rows } = await query(
+    `SELECT sm.*, u.avatar_url as user_avatar
+     FROM squad_messages sm
+     LEFT JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1
+     ORDER BY sm.created_at DESC LIMIT $2`,
+    [squadId, limit]
+  )
+  return rows.reverse().map((r) => ({
+    id: r.id,
+    squad_id: r.squad_id,
+    user_id: r.user_id,
+    username: r.username,
+    avatar_url: r.user_avatar || r.avatar_url,
+    message: r.message,
+    msg_type: r.msg_type || 'text',
+    sticker_id: r.sticker_id,
+    reply_to_id: r.reply_to_id,
+    reply_to_text: r.reply_to_text,
+    reply_to_username: r.reply_to_username,
+    created_at: r.created_at
+  }))
+}
+
 async function dbListSquads(matchId) {
   if (mode !== 'postgres') return []
   const { rows } = await query(
@@ -209,6 +235,10 @@ export function registerSquadHandlers(io) {
         roles,
         createdBy: dbSquad?.created_by
       })
+
+      // Send chat history
+      const history = await dbGetChatHistory(squadId).catch(() => [])
+      if (history.length > 0) socket.emit('squad:chat_history', history)
 
       socket.to(`squad:${squadId}`).emit('squad:member_joined', {
         userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null, memberCount: members.length
@@ -351,21 +381,51 @@ export function registerSquadHandlers(io) {
       }
     })
 
-    socket.on('squad:message', async ({ text }) => {
+    socket.on('squad:message', async ({ text, replyTo, msgType, stickerId }) => {
       const user = socket.data.user
-      if (!user?.id || !text || text.trim().length === 0) return
-      const msg = text.trim().slice(0, 500)
+      if (!user?.id) return
       const squadId = getSquadIdForSocket(socket)
       if (!squadId) return
+
+      const type = msgType === 'sticker' ? 'sticker' : 'text'
+      const msg = type === 'text' ? (text || '').trim().slice(0, 500) : ''
+      if (type === 'text' && !msg) return
+
       const chatMsg = {
         id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         squad_id: squadId, user_id: user.id, username: user.username || 'Anon',
-        avatar_url: user.avatar_url || null, message: msg, created_at: new Date().toISOString()
+        avatar_url: user.avatar_url || null, message: msg,
+        msg_type: type, sticker_id: stickerId || null,
+        reply_to_id: replyTo?.id || null,
+        reply_to_text: replyTo?.text?.slice(0, 100) || null,
+        reply_to_username: replyTo?.username || null,
+        created_at: new Date().toISOString(),
+        seen_by: []
       }
       io.to(`squad:${squadId}`).emit('squad:chat_message', chatMsg)
       if (mode === 'postgres') {
-        query('INSERT INTO squad_messages (squad_id, user_id, username, message) VALUES ($1, $2, $3, $4)', [squadId, user.id, chatMsg.username, msg]).catch(() => {})
+        query(
+          `INSERT INTO squad_messages (squad_id, user_id, username, message, avatar_url, reply_to_id, reply_to_text, reply_to_username, msg_type, sticker_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [squadId, user.id, chatMsg.username, msg, chatMsg.avatar_url, chatMsg.reply_to_id, chatMsg.reply_to_text, chatMsg.reply_to_username, type, chatMsg.sticker_id]
+        ).catch(() => {})
       }
+    })
+
+    // Seen receipts
+    socket.on('squad:mark_seen', async ({ messageId }) => {
+      const user = socket.data.user
+      if (!user?.id || !messageId) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      if (mode === 'postgres') {
+        await query(
+          'INSERT INTO message_seen (message_id, squad_id, user_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [messageId, squadId, user.id]
+        ).catch(() => {})
+      }
+      // Broadcast seen to squad
+      io.to(`squad:${squadId}`).emit('squad:message_seen', { messageId, userId: user.id, username: user.username || 'Anon' })
     })
 
     socket.on('squad:typing', () => {

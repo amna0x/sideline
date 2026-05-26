@@ -13,6 +13,8 @@ import friendsRouter from './routes/friends.js'
 import shareRouter from './routes/share.js'
 import devRouter from './routes/dev.js'
 import authRouter from './routes/auth.js'
+import cosmeticsRouter from './routes/cosmetics.js'
+import stickersRouter from './routes/stickers.js'
 import { apiLimiter } from './middleware/rateLimit.js'
 
 export function createApp() {
@@ -51,6 +53,8 @@ export function createApp() {
   app.use('/api/friends', friendsRouter)
   app.use('/api/share', shareRouter)
   app.use('/api/auth', authRouter)
+  app.use('/api/cosmetics', cosmeticsRouter)
+  app.use('/api/stickers', stickersRouter)
   if (process.env.DEV_TOOLS === '1') {
     app.use('/api/dev', devRouter)
     console.log('[app] dev routes enabled at /api/dev (DEV_TOOLS=1)')

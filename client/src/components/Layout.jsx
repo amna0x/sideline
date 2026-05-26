@@ -134,6 +134,11 @@ function TopBar({ title, points }) {
                 <span className="material-symbols-outlined text-[18px] text-[#666]">notifications</span>
                 Push Alerts
               </Link>
+              <button onClick={() => { setSettingsMenu(false); window.location.reload() }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors border-t border-[#f0f0f0]">
+                <span className="material-symbols-outlined text-[18px] text-[#666]">refresh</span>
+                Reload App
+              </button>
               <Link to="/settings?tab=signout" onClick={() => setSettingsMenu(false)}
                 className="flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-[#f0f0f0]">
                 <span className="material-symbols-outlined text-[18px]">logout</span>

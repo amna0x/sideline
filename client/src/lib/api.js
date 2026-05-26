@@ -93,5 +93,17 @@ export const api = {
 
   // Squad
   squadInvite: (code) => request(`/api/squad/invite/${code}`),
-  squadMessages: (squadId) => request(`/api/squad/${encodeURIComponent(squadId)}/messages`)
+  squadMessages: (squadId) => request(`/api/squad/${encodeURIComponent(squadId)}/messages`),
+
+  // Cosmetics
+  cosmetics: () => request('/api/cosmetics'),
+  userCosmetics: (userId) => request(`/api/cosmetics/user/${userId}`),
+  purchaseCosmetic: (cosmeticId) => request('/api/cosmetics/purchase', { method: 'POST', body: JSON.stringify({ cosmetic_id: cosmeticId }) }),
+  equipCosmetic: (cosmeticId, equipped) => request('/api/cosmetics/equip', { method: 'POST', body: JSON.stringify({ cosmetic_id: cosmeticId, equipped }) }),
+  hasGifUnlock: (userId) => request(`/api/cosmetics/has-gif/${userId}`),
+
+  // Stickers (Stipop)
+  stickerPacks: (page = 1) => request(`/api/stickers/packs?page=${page}`),
+  stickerPackStickers: (packId) => request(`/api/stickers/packs/${packId}`),
+  searchStickers: (q) => request(`/api/stickers/search?q=${encodeURIComponent(q)}`)
 }

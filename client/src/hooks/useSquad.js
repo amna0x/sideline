@@ -26,8 +26,11 @@ export function useSquad() {
         setSquad(state)
         setSquadMembers(state.members)
         setRoles(state.roles || {})
-        setChatMessages([])
         useStore.getState().pushNotification({ type: 'squad', title: `JOINED ${state.name}`, message: `${state.memberCount} members`, icon: '👥', duration: 3000 })
+      })
+
+      s.on('squad:chat_history', (messages) => {
+        setChatMessages(messages)
       })
 
       s.on('squad:member_joined', (member) => {
@@ -47,6 +50,17 @@ export function useSquad() {
       s.on('squad:chat_message', (msg) => {
         setChatMessages((prev) => [...prev.slice(-99), msg])
         setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
+      })
+
+      s.on('squad:message_seen', ({ messageId, userId: seenBy, username }) => {
+        setChatMessages((prev) => prev.map((m) => {
+          if (m.id === messageId) {
+            const seenList = m.seen_by || []
+            if (seenList.find((s) => s.userId === seenBy)) return m
+            return { ...m, seen_by: [...seenList, { userId: seenBy, username }] }
+          }
+          return m
+        }))
       })
 
       s.on('squad:user_typing', ({ userId, username }) => {
@@ -152,8 +166,17 @@ export function useSquad() {
     socketRef.current?.emit('squad:reaction', { emoji })
   }, [])
 
-  const sendMessage = useCallback((text) => {
-    socketRef.current?.emit('squad:message', { text })
+  const sendMessage = useCallback((text, opts = {}) => {
+    socketRef.current?.emit('squad:message', {
+      text,
+      replyTo: opts.replyTo || null,
+      msgType: opts.msgType || 'text',
+      stickerId: opts.stickerId || null
+    })
+  }, [])
+
+  const markSeen = useCallback((messageId) => {
+    socketRef.current?.emit('squad:mark_seen', { messageId })
   }, [])
 
   const sendTyping = useCallback(() => {
@@ -196,7 +219,7 @@ export function useSquad() {
   return {
     squad, roles, typingUsers, chatMessages,
     joinSquad, joinByInvite, leaveSquad, checkLeave,
-    sendReaction, sendMessage, sendTyping, getInviteCode,
+    sendReaction, sendMessage, sendTyping, markSeen, getInviteCode,
     setVisibility, promote, demote, kick,
     sendChallenge, acceptChallenge, submitDuelPick
   }
