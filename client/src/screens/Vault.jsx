@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import VaultCard from '../components/VaultCard.jsx'
 import { useVault } from '../hooks/useVault.js'
 import { useStore } from '../store/index.js'
+import { api } from '../lib/api.js'
 
 const TIERS = ['all', 'common', 'rare', 'epic', 'legendary', 'mythic']
 
@@ -24,12 +25,30 @@ export default function Vault() {
   const [detailItem, setDetailItem] = useState(null)
   const [confirmBuy, setConfirmBuy] = useState(null)
   const [buying, setBuying] = useState(false)
+  const [mainTab, setMainTab] = useState('items')
+  const [cosmeticsList, setCosmeticsList] = useState([])
+  const [cosmeticsLoading, setCosmeticsLoading] = useState(false)
+  const [cosmeticOwned, setCosmeticOwned] = useState([])
+  const userId = useStore((s) => s.user?.id)
 
   const ownedById = useMemo(() => Object.fromEntries((owned || []).map((o) => [o.vault_item_id, o])), [owned])
   const filtered = useMemo(
     () => (items || []).filter((i) => tier === 'all' || i.tier === tier),
     [items, tier]
   )
+
+  // Load cosmetics when tab is active
+  useEffect(() => {
+    if (mainTab !== 'cosmetics') return
+    setCosmeticsLoading(true)
+    Promise.all([
+      api.cosmetics().catch(() => []),
+      userId ? api.userCosmetics(userId).catch(() => []) : Promise.resolve([])
+    ]).then(([all, owned]) => {
+      setCosmeticsList(all)
+      setCosmeticOwned(owned)
+    }).finally(() => setCosmeticsLoading(false))
+  }, [mainTab, userId])
 
   function handleClick(item) {
     const o = ownedById[item.id]
@@ -86,6 +105,19 @@ export default function Vault() {
         <h1 className="font-h2 text-h2 text-primary-container">THE VAULT</h1>
         <p className="text-on-surface-variant text-sm mb-4">Collectibles, badges, frames, and Adidas drops.</p>
 
+        {/* Main tabs: Items / Cosmetics */}
+        <div className="flex border border-[#565449] rounded-full p-1 mb-4 bg-[#0a0a0a]">
+          <button onClick={() => setMainTab('items')}
+            className={`flex-1 py-2 text-center font-comic text-xs rounded-full transition-all ${mainTab === 'items' ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999]'}`}>
+            ITEMS
+          </button>
+          <button onClick={() => setMainTab('cosmetics')}
+            className={`flex-1 py-2 text-center font-comic text-xs rounded-full transition-all ${mainTab === 'cosmetics' ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999]'}`}>
+            COSMETICS
+          </button>
+        </div>
+
+        {mainTab === 'items' && (<>
         <div className="flex overflow-x-auto pb-2 mb-4 gap-2 hide-scrollbar snap-x">
           {TIERS.map((t) => (
             <button key={t} onClick={() => setTier(t)}
@@ -120,6 +152,21 @@ export default function Vault() {
               {filtered.length === 0 && <div className="col-span-2 text-center text-outline py-8">No items in this tier</div>}
             </motion.div>
           )}
+        </>)}
+
+        {mainTab === 'cosmetics' && (
+          <CosmeticsTab
+            cosmetics={cosmeticsList}
+            owned={cosmeticOwned}
+            loading={cosmeticsLoading}
+            points={points}
+            userId={userId}
+            showToast={showToast}
+            onPurchased={() => {
+              api.userCosmetics(userId).then(setCosmeticOwned).catch(() => {})
+            }}
+          />
+        )}
       </section>
 
       <AnimatePresence>
@@ -271,5 +318,130 @@ function PurchaseModal({ item, points, busy, onCancel, onConfirm }) {
         </div>
       </motion.div>
     </motion.div>
+  )
+}
+
+const COSMETIC_PREVIEWS = {
+  deco_fire: { icon: 'local_fire_department', color: '#ff6b3b', anim: 'pulse' },
+  deco_lightning: { icon: 'bolt', color: '#5aa8ff', anim: 'pulse' },
+  deco_crown: { icon: 'crown', color: '#ffc94a', anim: 'float' },
+  deco_stars: { icon: 'star', color: '#E8D5FF', anim: 'twinkle' },
+  deco_neon: { icon: 'blur_on', color: '#00f6ac', anim: 'pulse' },
+  effect_confetti: { icon: 'celebration', color: '#ff6b9d', anim: 'float' },
+  effect_sparkle: { icon: 'auto_awesome', color: '#ffc94a', anim: 'twinkle' },
+  effect_flames: { icon: 'whatshot', color: '#ff3b6b', anim: 'pulse' },
+  gif_unlock: { icon: 'gif_box', color: '#00f6ac', anim: 'float' },
+  sticker_bundesliga: { icon: 'sports_soccer', color: '#5aa8ff', anim: 'float' },
+  sticker_reactions: { icon: 'sentiment_very_satisfied', color: '#ffc94a', anim: 'float' }
+}
+
+const TIER_BADGE = {
+  common: { bg: 'bg-gray-100', text: 'text-gray-600' },
+  rare: { bg: 'bg-blue-100', text: 'text-blue-600' },
+  epic: { bg: 'bg-purple-100', text: 'text-purple-600' },
+  legendary: { bg: 'bg-yellow-100', text: 'text-yellow-700' }
+}
+
+function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, onPurchased }) {
+  const [buying, setBuying] = useState(null)
+  const ownedIds = new Set(owned.map((o) => o.cosmetic_id))
+
+  async function handlePurchase(cosmetic) {
+    if (ownedIds.has(cosmetic.id)) { showToast('Already owned!'); return }
+    if (points < cosmetic.xp_cost) { showToast(`Need ${(cosmetic.xp_cost - points).toLocaleString()} more XP`); return }
+    setBuying(cosmetic.id)
+    try {
+      await api.purchaseCosmetic(cosmetic.id)
+      showToast(`${cosmetic.name} unlocked!`)
+      onPurchased()
+    } catch (e) {
+      const msg = e.message || ''
+      if (msg.includes('already_owned')) showToast('Already owned')
+      else if (msg.includes('insufficient_xp')) showToast('Not enough XP')
+      else showToast('Purchase failed')
+    } finally { setBuying(null) }
+  }
+
+  if (loading) return <div className="py-12 text-center text-sm text-[#999]">Loading cosmetics…</div>
+  if (cosmetics.length === 0) return <div className="py-12 text-center text-sm text-[#999]">No cosmetics available</div>
+
+  const grouped = cosmetics.reduce((acc, c) => {
+    const type = c.type || 'other'
+    if (!acc[type]) acc[type] = []
+    acc[type].push(c)
+    return acc
+  }, {})
+
+  const typeLabels = {
+    avatar_decoration: '🎨 Avatar Decorations',
+    profile_effect: '✨ Profile Effects',
+    avatar_gif_unlock: '🎬 Unlocks',
+    sticker_pack: '🎯 Sticker Packs'
+  }
+
+  return (
+    <div className="space-y-5 pb-8">
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <Stat label="OWNED" value={owned.length} sub={`/ ${cosmetics.length}`} />
+        <Stat label="XP" value={points.toLocaleString()} />
+        <Stat label="EQUIPPED" value={owned.filter((o) => o.equipped).length} />
+      </div>
+
+      {Object.entries(grouped).map(([type, items]) => (
+        <div key={type}>
+          <h3 className="font-comic text-xs text-[var(--sv-accent)] mb-3">{typeLabels[type] || type}</h3>
+          <div className="space-y-3">
+            {items.map((c) => {
+              const isOwned = ownedIds.has(c.id)
+              const preview = COSMETIC_PREVIEWS[c.id] || { icon: 'auto_awesome', color: '#999', anim: 'pulse' }
+              const tierStyle = TIER_BADGE[c.tier] || TIER_BADGE.common
+              return (
+                <motion.div key={c.id} whileTap={{ scale: 0.98 }}
+                  className={`rounded-2xl border p-4 transition-all ${isOwned ? 'border-[var(--sv-accent)]/40 bg-[var(--sv-accent)]/5' : 'border-[#e0e0e0] bg-white'}`}>
+                  <div className="flex items-start gap-3">
+                    {/* Preview icon with animation */}
+                    <motion.div
+                      className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${preview.color}15` }}
+                      animate={preview.anim === 'pulse' ? { scale: [1, 1.08, 1] } : preview.anim === 'float' ? { y: [0, -3, 0] } : { opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                      <span className="material-symbols-outlined text-[28px]" style={{ color: preview.color, fontVariationSettings: "'FILL' 1" }}>{preview.icon}</span>
+                    </motion.div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[#1a1a1a] font-medium">{c.name}</span>
+                        <span className={`text-[9px] font-comic px-1.5 py-0.5 rounded ${tierStyle.bg} ${tierStyle.text}`}>{(c.tier || 'common').toUpperCase()}</span>
+                      </div>
+                      <p className="text-[11px] text-[#999] mt-0.5">{c.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-comic text-[var(--sv-accent)]">{c.xp_cost.toLocaleString()} XP</span>
+                      </div>
+                    </div>
+
+                    {/* Action button */}
+                    <div className="shrink-0">
+                      {isOwned ? (
+                        <span className="text-[10px] font-comic text-green-600 bg-green-50 px-2.5 py-1.5 rounded-lg">OWNED</span>
+                      ) : (
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handlePurchase(c)}
+                          disabled={buying === c.id || points < c.xp_cost}
+                          className="px-3 py-1.5 rounded-lg font-comic text-[11px] bg-[var(--sv-accent)] text-white disabled:opacity-40"
+                        >
+                          {buying === c.id ? '…' : 'BUY'}
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

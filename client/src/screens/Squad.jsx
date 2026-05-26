@@ -682,11 +682,11 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
       <div className="flex items-center gap-1.5 pt-2 shrink-0">
         <button onClick={() => { setShowStickers(!showStickers); setShowEmoji(false) }}
           className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${showStickers ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666]'}`}>
-          <span className="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+          <span className="material-symbols-outlined text-[20px]">sticky_note_2</span>
         </button>
         <button onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false) }}
           className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${showEmoji ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666]'}`}>
-          <span className="material-symbols-outlined text-[20px]">add_reaction</span>
+          <span className="material-symbols-outlined text-[20px]">mood</span>
         </button>
         <input type="text" value={text} onChange={(e) => handleInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
