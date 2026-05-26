@@ -48,6 +48,12 @@ export const useStore = create((set) => ({
   theme: 'default',
   setTheme: (theme) => set({ theme }),
 
+  // Sound effects
+  sfxEnabled: true,
+  sfxVolume: 0.8,
+  setSfxEnabled: (v) => set({ sfxEnabled: !!v }),
+  setSfxVolume: (v) => set({ sfxVolume: Math.max(0, Math.min(1, v)) }),
+
   // Squad
   squad: null,
   squadMembers: [],

@@ -9,6 +9,7 @@ import { useSquad } from '../hooks/useSquad.js'
 import { useMatch } from '../hooks/useMatch.js'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
+import SFX from '../lib/sfx.js'
 
 const REACTIONS = ['⚽', '🔥', '😱', '👏', '💀']
 
@@ -269,7 +270,8 @@ export default function Squad() {
         <div className="flex justify-center gap-2 py-2 shrink-0">
           {REACTIONS.map((emoji) => (
             <motion.button key={emoji} whileTap={{ scale: 0.8 }} onClick={() => sendReaction(emoji)}
-              className="w-10 h-10 rounded-full bg-[#f5f5f5] border border-[#e0e0e0] flex items-center justify-center text-xl hover:border-[var(--sv-accent)] transition-colors">{emoji}</motion.button>
+              className="w-10 h-10 rounded-full bg-[#f5f5f5] border border-[#e0e0e0] flex items-center justify-center text-xl hover:border-[var(--sv-accent)] transition-colors"
+              onPointerDown={() => SFX.play('reaction')}>{emoji}</motion.button>
           ))}
         </div>
 
@@ -450,40 +452,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     return () => window.visualViewport.removeEventListener('resize', onResize)
   }, [])
 
-  // Play send sound
-  function playSendSound() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.frequency.setValueAtTime(1200, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + 0.08)
-      gain.gain.setValueAtTime(0.1, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12)
-      osc.start(ctx.currentTime)
-      osc.stop(ctx.currentTime + 0.12)
-    } catch {}
-  }
-
-  // Play receive sound
-  function playReceiveSound() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(800, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.06)
-      gain.gain.setValueAtTime(0.06, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
-      osc.start(ctx.currentTime)
-      osc.stop(ctx.currentTime + 0.1)
-    } catch {}
-  }
+  // Use central sfx helper (imported at module top)
 
   // Close menus on outside click
   useEffect(() => {
@@ -501,7 +470,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
       if (last?.user_id !== userId && last?.reply_to_username) {
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
         if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
-          playReceiveSound()
+          SFX.play('receive')
         }
       }
     }
@@ -524,7 +493,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     setReplyTo(null)
     setShowStickers(false)
     setShowEmoji(false)
-    playSendSound()
+    SFX.play('send')
     setTimeout(scrollToBottom, 50)
   }
 
@@ -561,7 +530,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     onSend('', { msgType: 'sticker', stickerId: sticker.img })
     setShowStickers(false)
     setActivePack(null)
-    playSendSound()
+    SFX.play('send')
   }
 
   return (

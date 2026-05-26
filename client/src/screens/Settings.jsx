@@ -27,6 +27,10 @@ export default function Settings() {
   const [notif, setNotif] = useState(profile.notifications_enabled ?? false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const sfxEnabled = useStore((s) => s.sfxEnabled)
+  const sfxVolume = useStore((s) => s.sfxVolume)
+  const setSfxEnabled = useStore((s) => s.setSfxEnabled)
+  const setSfxVolume = useStore((s) => s.setSfxVolume)
 
   const isAdmin = isAdminUser(user)
 
@@ -190,6 +194,12 @@ export default function Settings() {
           <Card>
             <Row icon="notifications_active" title="Push Alerts" sub="Goals, predictions, XP">
               <Toggle on={notif} onClick={toggleNotif} />
+            </Row>
+            <Row icon="volume_up" title="Sound Effects" sub="UI & chat feedback">
+              <div className="flex items-center gap-2">
+                <Toggle on={sfxEnabled} onClick={() => setSfxEnabled(!sfxEnabled)} />
+                <input type="range" min="0" max="1" step="0.05" value={sfxVolume} onChange={(e) => setSfxVolume(Number(e.target.value))} className="w-28" />
+              </div>
             </Row>
           </Card>
         )}
