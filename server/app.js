@@ -20,6 +20,7 @@ export function createApp() {
   app.set('trust proxy', 1)
   app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'no-referrer-when-downgrade' },
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
