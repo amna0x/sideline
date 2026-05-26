@@ -141,7 +141,7 @@ export default function Vault() {
             <motion.div
               variants={{ show: { transition: { staggerChildren: 0.04 } } }}
               initial="hidden" animate="show"
-              className="grid grid-cols-2 gap-3 pb-8"
+              className="grid grid-cols-2 gap-3 pb-28"
             >
               {filtered.map((item) => (
                 <motion.div key={item.id}
@@ -235,7 +235,7 @@ function DetailModal({ item, owned, ownedRecord, points, onClose, onRedeem, onBu
         </div>
 
         {/* Bottom info section */}
-        <div className="bg-surface-container-low p-5">
+        <div className="bg-surface-container-low p-5 pb-8">
           <div className="flex justify-between items-center mb-4">
             <div>
               <span className="text-xs text-outline font-label-caps">COST</span>
@@ -380,7 +380,7 @@ function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, on
   }
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-5 pb-28">
       <div className="grid grid-cols-3 gap-2 mb-4">
         <Stat label="OWNED" value={owned.length} sub={`/ ${cosmetics.length}`} />
         <Stat label="XP" value={points.toLocaleString()} />

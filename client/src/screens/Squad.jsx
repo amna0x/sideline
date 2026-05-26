@@ -246,8 +246,8 @@ export default function Squad() {
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 shrink-0">
           {squadMembers.map((m) => (
             <div key={m.userId} className="flex flex-col items-center min-w-[48px]">
-              <div className={`rounded-full border-2 ${m.userId === userId ? 'border-[var(--sv-accent)]' : roles[m.userId] === 'admin' ? 'border-yellow-400' : roles[m.userId] === 'moderator' ? 'border-blue-400' : 'border-[#e0e0e0]'} p-0.5`}>
-                <Avatar url={m.avatar_url} name={m.username} size={36} />
+              <div className={`w-10 h-10 rounded-full border-2 ${m.userId === userId ? 'border-[var(--sv-accent)]' : roles[m.userId] === 'admin' ? 'border-yellow-400' : roles[m.userId] === 'moderator' ? 'border-blue-400' : 'border-[#e0e0e0]'} p-0.5 flex items-center justify-center overflow-hidden`}>
+                <Avatar url={m.avatar_url} name={m.username} size={32} />
               </div>
               <span className="text-[9px] text-[#999] mt-0.5 truncate w-12 text-center">
                 {m.userId === userId ? 'YOU' : m.username}

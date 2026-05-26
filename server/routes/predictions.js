@@ -28,6 +28,30 @@ r.get('/upcoming/:matchId', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
+// Get user's submissions for a match (so votes persist across tab switches)
+r.get('/my/:matchId', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user.id
+    const matchId = req.params.matchId
+    if (mode === 'memory') {
+      const subs = [...mem.user_predictions.values()].filter((s) => s.user_id === userId)
+      const map = {}
+      subs.forEach((s) => { map[s.prediction_id] = s.selected_option })
+      return res.json(map)
+    }
+    const { query: dbQuery } = await import('../db/postgres.js')
+    const { rows } = await dbQuery(
+      `SELECT up.prediction_id, up.selected_option FROM user_predictions up
+       JOIN predictions p ON p.id = up.prediction_id
+       WHERE up.user_id = $1 AND p.match_id = $2`,
+      [userId, matchId]
+    )
+    const map = {}
+    rows.forEach((r) => { map[r.prediction_id] = r.selected_option })
+    res.json(map)
+  } catch (e) { next(e) }
+})
+
 r.post('/submit', writeLimiter, requireAuth, validate({ body: submitSchema }), async (req, res, next) => {
   try {
     const userId = req.user.id

@@ -24,6 +24,12 @@ export function usePredictions(matchId) {
       ])
       setActive(a || [])
       setUpcoming(u || [])
+      // Load user's existing submissions so votes persist across tab switches
+      const userId = useStore.getState().user?.id
+      if (userId) {
+        const mySubs = await api.get(`/api/predictions/my/${matchId}`).catch(() => ({}))
+        if (mySubs && typeof mySubs === 'object') setSubmissions((cur) => ({ ...cur, ...mySubs }))
+      }
     } catch (e) { setError(e) }
     finally { setLoading(false) }
   }, [matchId])
