@@ -5,6 +5,7 @@ import Layout from '../components/Layout.jsx'
 import ReactionBurst from '../components/ReactionBurst.jsx'
 import DuelCard from '../components/DuelCard.jsx'
 import Avatar from '../components/Avatar.jsx'
+import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { useSquad } from '../hooks/useSquad.js'
 import { useMatch } from '../hooks/useMatch.js'
 import { useStore } from '../store/index.js'
@@ -121,12 +122,13 @@ export default function Squad() {
       <Layout title="SQUAD">
         <section className="px-4 pt-6 relative overflow-hidden">
           <ReactionBurst />
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-6">
-            <span className="text-5xl mb-3 block">🎯</span>
-            <h1 className="font-comic text-3xl text-[var(--sv-accent)] mb-2">SQUAD UP</h1>
-            <p className="text-[#999] text-sm">Join a room, react together, chat with friends</p>
-          </motion.div>
-
+          <HeaderArtCard
+            variant="squad"
+            eyebrow="Watch party"
+            title="Squad up"
+            sub="Join a room, react together, and chat with friends."
+            className="mb-5"
+          />
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
             className="bg-white border border-[#e0e0e0] rounded-2xl p-4 mb-3">
             <label className="font-comic text-xs text-[var(--sv-accent)] mb-2 block">CREATE OR JOIN</label>

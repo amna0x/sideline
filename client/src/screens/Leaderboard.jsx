@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, LayoutGroup } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import LeaderboardRow from '../components/LeaderboardRow.jsx'
+import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { api } from '../lib/api.js'
 import { useStore } from '../store/index.js'
 import { useSocket } from '../hooks/useSocket.js'
@@ -41,12 +42,13 @@ export default function Leaderboard() {
   return (
     <Layout title="LEADERBOARD">
       <section className="px-4 pt-4">
-        <motion.h1
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="font-comic text-4xl text-primary-container text-center mb-4 chromatic"
-          data-text="LEADERBOARD"
-        >LEADERBOARD</motion.h1>
+        <HeaderArtCard
+          variant="world"
+          eyebrow="Global chase"
+          title="Leaderboard"
+          sub="Climb the table across matchday, month, and all time."
+          className="mb-4"
+        />
 
         <div className="flex p-1 bg-surface-container-low border-2 border-outline-variant/60 rounded-full mb-5">
           {TABS.map((t) => (

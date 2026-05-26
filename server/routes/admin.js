@@ -11,7 +11,7 @@ const r = Router()
 
 const grantSchema = z.object({
   user_id: z.string().min(1).max(64),
-  points: z.number().int().min(0).optional().default(0),
+  points: z.number().int().optional().default(0),
   vault_all: z.boolean().optional().default(false)
 }).strict()
 
@@ -34,15 +34,15 @@ r.post('/grant', requireAuth, validate({ body: grantSchema }), async (req, res, 
       })
     }
 
-    if (points > 0) {
+    if (points !== 0) {
       if (mode === 'postgres') {
         const { rows } = await query(
-          'UPDATE users SET points_total = COALESCE(points_total, 0) + $1 WHERE id = $2 RETURNING *',
+          'UPDATE users SET points_total = GREATEST(0, COALESCE(points_total, 0) + $1) WHERE id = $2 RETURNING *',
           [points, user_id]
         )
         user = rows[0] || user
       } else {
-        user.points_total = (user.points_total || 0) + points
+        user.points_total = Math.max(0, (user.points_total || 0) + points)
         db.users.set(user_id, user)
       }
     }

@@ -49,22 +49,22 @@ r.post('/purchase', requireAuth, async (req, res, next) => {
     )
     if (owned.length > 0) return res.status(400).json({ error: 'already_owned' })
 
-    // Check XP (admins bypass)
+    // Check XP
     const user = await getUser(userId)
-    if (!isAdmin(req.user) && (!user || (user.points_total || 0) < cosmetic.xp_cost)) {
+    if (!user || (user.points_total || 0) < cosmetic.xp_cost) {
       return res.status(400).json({ error: 'insufficient_xp', required: cosmetic.xp_cost, current: user?.points_total || 0 })
     }
 
-    // Deduct XP (skip for admins)
-    if (!isAdmin(req.user)) {
-      await query('UPDATE users SET points_total = points_total - $1 WHERE id = $2', [cosmetic.xp_cost, userId])
-    }
+    const { rows: [updatedUser] } = await query(
+      'UPDATE users SET points_total = GREATEST(0, points_total - $1) WHERE id = $2 RETURNING points_total',
+      [cosmetic.xp_cost, userId]
+    )
     await query(
       'INSERT INTO user_cosmetics (user_id, cosmetic_id) VALUES ($1, $2)',
       [userId, cosmetic_id]
     )
 
-    const newBalance = isAdmin(req.user) ? (user?.points_total || 0) : (user?.points_total || 0) - cosmetic.xp_cost
+    const newBalance = updatedUser?.points_total ?? Math.max(0, (user?.points_total || 0) - cosmetic.xp_cost)
     res.json({ ok: true, new_balance: newBalance })
   } catch (e) { next(e) }
 })

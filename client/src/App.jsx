@@ -76,7 +76,7 @@ function SplashScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[#f8f8f8]"
+      className="fixed inset-y-0 left-1/2 z-[200] flex w-full max-w-full -translate-x-1/2 items-center justify-center bg-[#f8f8f8] shadow-[0_0_40px_rgba(0,0,0,0.1)] sm:max-w-[480px] lg:max-w-[420px]"
     >
       <motion.div
         initial={{ y: 16, opacity: 0, scale: 0.94 }}

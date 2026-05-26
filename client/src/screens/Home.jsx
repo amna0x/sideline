@@ -3,6 +3,7 @@ import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts'
 import { motion } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import MatchHero from '../components/MatchHero.jsx'
+import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { useMatch } from '../hooks/useMatch.js'
 import { useStore } from '../store/index.js'
 
@@ -30,6 +31,14 @@ export default function Home() {
       <div className="absolute inset-0 tactical-grid pointer-events-none -z-10" />
       <MatchHero match={match} />
       {error && <Retry onClick={reload} />}
+      <div className="px-4 mt-4">
+        <HeaderArtCard
+          variant="trophy"
+          eyebrow="Matchday boost"
+          title="Your team is ready"
+          sub="Follow the live pulse, react fast, and collect XP."
+        />
+      </div>
 
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4 px-4 mt-4 pb-32">
         <motion.section variants={fadeUp}>

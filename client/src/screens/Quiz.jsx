@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LineChart, Line, ResponsiveContainer } from 'recharts'
 import Layout from '../components/Layout.jsx'
+import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { useMatch } from '../hooks/useMatch.js'
 import { api } from '../lib/api.js'
 import { useStore } from '../store/index.js'
@@ -76,6 +77,13 @@ export default function Quiz() {
   return (
     <Layout title="BL IQ">
       <section className="px-4 pt-4">
+        <HeaderArtCard
+          variant="star"
+          eyebrow="Fan IQ"
+          title="Beat the clock"
+          sub="Answer fast to stack your score before full time."
+          className="mb-4"
+        />
         <div className="flex items-center justify-between mb-1">
           <span className="font-label-caps text-label-caps text-on-surface-variant">QUESTION {idx + 1} / {questions.length}</span>
           <span className="font-label-caps text-label-caps text-primary-container">SCORE: {score}</span>

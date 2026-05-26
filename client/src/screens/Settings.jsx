@@ -320,8 +320,8 @@ function AdminPanel() {
   async function grantXP(amountOverride) {
     const amount = Number(amountOverride ?? xpAmount)
     const targetId = selectedUser?.id
-    if (!targetId || !Number.isInteger(amount) || amount <= 0) {
-      pushNotification({ type: 'goal', title: 'INVALID XP', message: targetId ? 'Enter a positive whole number' : 'Select a user first', duration: 3000 })
+    if (!targetId || !Number.isInteger(amount) || amount === 0) {
+      pushNotification({ type: 'goal', title: 'INVALID XP', message: targetId ? 'Enter a non-zero whole number' : 'Select a user first', duration: 3000 })
       return
     }
 
@@ -330,11 +330,12 @@ function AdminPanel() {
       const r = await api.adminGrant({ user_id: targetId, points: amount })
       if (targetId === currentUser?.id) useStore.getState().setPoints(r.points_total)
       setTargetUser((prev) => prev && prev.id === targetId ? { ...prev, points_total: r.points_total } : prev)
+      const adding = amount > 0
       pushNotification({
         type: 'xp',
-        title: `+${amount.toLocaleString()} XP`,
+        title: `${adding ? '+' : '-'}${Math.abs(amount).toLocaleString()} XP`,
         message: `${selectedName} now has ${Number(r.points_total).toLocaleString()}`,
-        points: amount,
+        points: Math.abs(amount),
         icon: '🪙',
         duration: 4000
       })
@@ -347,6 +348,15 @@ function AdminPanel() {
 
   async function grantBigXP() {
     await grantXP(25000)
+  }
+
+  async function removeXP(amountOverride) {
+    const amount = Number(amountOverride ?? xpAmount)
+    if (!Number.isInteger(amount) || amount <= 0) {
+      pushNotification({ type: 'goal', title: 'INVALID XP', message: 'Enter a positive whole number to remove', duration: 3000 })
+      return
+    }
+    await grantXP(-amount)
   }
 
   async function grantAllVault() {
@@ -435,10 +445,15 @@ function AdminPanel() {
 
       <Card>
         <div className="p-4 space-y-4">
-          <h3 className="font-comic text-sm text-[var(--sv-accent)]">XP GRANT</h3>
+          <h3 className="font-comic text-sm text-[var(--sv-accent)]">XP CONTROL</h3>
           <div className="grid grid-cols-3 gap-2">
             {[1000, 25000, 100000].map((amount) => (
               <Btn key={amount} label={`+${amount >= 1000 ? `${amount / 1000}K` : amount}`} onClick={() => grantXP(amount)} disabled={busy} />
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[1000, 25000, 100000].map((amount) => (
+              <Btn key={amount} label={`-${amount >= 1000 ? `${amount / 1000}K` : amount}`} onClick={() => removeXP(amount)} disabled={busy} tone="danger" />
             ))}
           </div>
           <div className="flex gap-2">
@@ -451,7 +466,9 @@ function AdminPanel() {
               className="flex-1 min-w-0 bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-3 py-2.5 text-sm text-[#1a1a1a] focus:border-[var(--sv-accent)] focus:outline-none"
             />
             <Btn label="ADD XP" onClick={() => grantXP()} disabled={busy} />
+            <Btn label="REMOVE" onClick={() => removeXP()} disabled={busy} tone="danger" />
           </div>
+          <p className="text-[10px] text-[#999]">Removing XP is clamped at 0.</p>
         </div>
       </Card>
 
@@ -469,13 +486,13 @@ function AdminPanel() {
   )
 }
 
-function Btn({ label, onClick, disabled }) {
+function Btn({ label, onClick, disabled, tone }) {
   return (
     <motion.button
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       disabled={disabled}
-      className="py-2.5 px-3 rounded-xl font-comic text-[12px] bg-[var(--sv-accent)] text-white disabled:opacity-40"
+      className={`py-2.5 px-3 rounded-xl font-comic text-[12px] text-white disabled:opacity-40 ${tone === 'danger' ? 'bg-red-500' : 'bg-[var(--sv-accent)]'}`}
     >{label}</motion.button>
   )
 }

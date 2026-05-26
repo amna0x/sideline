@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import VaultCard from '../components/VaultCard.jsx'
+import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { useVault } from '../hooks/useVault.js'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
@@ -105,6 +106,13 @@ export default function Vault() {
       <section className="px-4 pt-4 pb-32">
         <h1 className="font-h2 text-h2 text-primary-container">THE VAULT</h1>
         <p className="text-on-surface-variant text-sm mb-4">Collectibles, badges, frames, and Adidas drops.</p>
+        <HeaderArtCard
+          variant="cup"
+          eyebrow="World-class drops"
+          title="Build your cabinet"
+          sub="Unlock badges, frames, and matchday collectibles."
+          className="mb-4"
+        />
 
         {/* Main tabs: Items / Cosmetics */}
         <div className="flex border border-[#565449] rounded-full p-1 mb-4 bg-[#0a0a0a]">
@@ -219,7 +227,7 @@ function DetailModal({ item, owned, ownedRecord, points, onClose, onRedeem, onBu
           <div className="absolute top-4 left-4 px-2 py-1 rounded-md text-[10px] font-label-caps" style={{ color: t, backgroundColor: `${t}15` }}>
             {(item.tier || 'common').toUpperCase()}
           </div>
-          <div className="absolute top-4 right-4 text-[10px] font-label-caps text-outline">
+          <div className="absolute top-4 right-4 text-[10px] font-label-caps text-white/45">
             {item.remaining_supply}/{item.total_supply}
           </div>
 
@@ -233,8 +241,8 @@ function DetailModal({ item, owned, ownedRecord, points, onClose, onRedeem, onBu
             {item.type === 'adidas_card' ? 'sports_soccer' : item.type === 'badge' ? 'military_tech' : item.type === 'profile_frame' ? 'badge' : 'emoji_events'}
           </motion.span>
 
-          <h2 className="font-comic text-xl text-on-surface mt-4 text-center">{item.name}</h2>
-          <p className="text-sm text-on-surface-variant mt-1 text-center capitalize">{item.type?.replace('_', ' ')}</p>
+          <h2 className="font-comic text-xl text-white mt-4 text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">{item.name}</h2>
+          <p className="text-sm text-white/70 mt-1 text-center capitalize">{item.type?.replace('_', ' ')}</p>
         </div>
 
         {/* Bottom info section */}

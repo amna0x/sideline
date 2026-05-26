@@ -4,6 +4,7 @@ import Layout from '../components/Layout.jsx'
 import PredictionCard from '../components/PredictionCard.jsx'
 import LeaderboardRow from '../components/LeaderboardRow.jsx'
 import MatchHero from '../components/MatchHero.jsx'
+import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { useMatch } from '../hooks/useMatch.js'
 import { usePredictions } from '../hooks/usePredictions.js'
 import { api } from '../lib/api.js'
@@ -41,6 +42,14 @@ export default function Predict() {
   return (
     <Layout title="PREDICT">
       <MatchHero match={match} />
+      <div className="px-4 mt-4">
+        <HeaderArtCard
+          variant="star"
+          eyebrow="Prediction streak"
+          title="Pick the moment"
+          sub="Lock your call before the next live event opens."
+        />
+      </div>
 
       <motion.div variants={stagger} initial="hidden" animate="show" className="px-4 mt-5 space-y-4 pb-32">
         <motion.section variants={fadeUp}>
