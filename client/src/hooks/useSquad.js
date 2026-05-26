@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useStore } from '../store/index.js'
 import { getSocket } from '../lib/socket.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
+import { api } from '../lib/api.js'
 
 export function useSquad() {
   const squad = useStore((s) => s.squad)
@@ -45,12 +46,30 @@ export function useSquad() {
           }
           return { squadMembers: [...prev.squadMembers, member] }
         })
+        // Refresh from server to avoid stale/missing avatar URLs
+        (async () => {
+          try {
+            const sid = useStore.getState().squad?.id
+            if (!sid) return
+            const members = await api.get(`/api/squad/${encodeURIComponent(sid)}/members`).catch(() => null)
+            if (members) useStore.getState().setSquadMembers(members)
+          } catch (e) {}
+        })()
       })
 
       s.on('squad:member_left', ({ userId, memberCount }) => {
         useStore.setState((prev) => ({
           squadMembers: prev.squadMembers.filter((m) => m.userId !== userId)
         }))
+        // Refresh members list to keep avatars consistent
+        (async () => {
+          try {
+            const sid = useStore.getState().squad?.id
+            if (!sid) return
+            const members = await api.get(`/api/squad/${encodeURIComponent(sid)}/members`).catch(() => null)
+            if (members) useStore.getState().setSquadMembers(members)
+          } catch (e) {}
+        })()
       })
 
       s.on('squad:reaction_burst', (reaction) => addReaction(reaction))
