@@ -12,9 +12,9 @@ export function useSquad() {
   const updateDuel = useStore((s) => s.updateDuel)
   const showToast = useStore((s) => s.showToast)
   const socketRef = useRef(null)
-  const [chatMessages, setChatMessages] = useState([])
   const [typingUsers, setTypingUsers] = useState([])
   const [roles, setRoles] = useState({})
+  const chatMessages = useStore((s) => s.squadChat)
 
   useEffect(() => {
     let cancelled = false
@@ -30,7 +30,7 @@ export function useSquad() {
       })
 
       s.on('squad:chat_history', (messages) => {
-        setChatMessages(messages)
+        useStore.getState().setSquadChat(messages)
       })
 
       s.on('squad:member_joined', (member) => {
@@ -48,12 +48,12 @@ export function useSquad() {
       s.on('squad:reaction_burst', (reaction) => addReaction(reaction))
 
       s.on('squad:chat_message', (msg) => {
-        setChatMessages((prev) => [...prev.slice(-99), msg])
+        useStore.getState().appendSquadChat(msg)
         setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
       })
 
       s.on('squad:message_seen', ({ messageId, userId: seenBy, username }) => {
-        setChatMessages((prev) => prev.map((m) => {
+        useStore.getState().setSquadChat(useStore.getState().squadChat.map((m) => {
           if (m.id === messageId) {
             const seenList = m.seen_by || []
             if (seenList.find((s) => s.userId === seenBy)) return m
@@ -88,7 +88,7 @@ export function useSquad() {
       s.on('squad:kicked', ({ squadName }) => {
         setSquad(null)
         setSquadMembers([])
-        setChatMessages([])
+        useStore.getState().setSquadChat([])
         setRoles({})
         useStore.getState().showToast(`You were removed from ${squadName}`)
       })
@@ -144,7 +144,7 @@ export function useSquad() {
     socketRef.current?.emit('squad:leave')
     setSquad(null)
     setSquadMembers([])
-    setChatMessages([])
+    useStore.getState().setSquadChat([])
     setRoles({})
   }, [setSquad, setSquadMembers])
 

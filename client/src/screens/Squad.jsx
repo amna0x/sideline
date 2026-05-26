@@ -220,12 +220,10 @@ export default function Squad() {
               <span className="text-xs text-[#999]">{squadMembers.length} watching · {squad.visibility === 'private' ? '🔒 Private' : '🌐 Public'}</span>
             </div>
             <div className="flex gap-1.5">
-              {(isAdmin || isMod) && (
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowManage(true)}
-                  className="px-2 py-1 rounded-lg font-comic text-xs border border-[#e0e0e0] text-[#666]">
-                  <span className="material-symbols-outlined text-[14px]">settings</span>
-                </motion.button>
-              )}
+              <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowManage(true)}
+                className="px-2 py-1 rounded-lg font-comic text-xs border border-[#e0e0e0] text-[#666]">
+                <span className="material-symbols-outlined text-[14px]">settings</span>
+              </motion.button>
               <motion.button whileTap={{ scale: 0.9 }} onClick={() => getInviteCode()}
                 className="px-2 py-1 rounded-lg font-comic text-xs border border-[var(--sv-accent)] text-[var(--sv-accent)]">
                 <span className="material-symbols-outlined text-[14px]">link</span>

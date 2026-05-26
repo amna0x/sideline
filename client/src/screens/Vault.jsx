@@ -344,22 +344,30 @@ const TIER_BADGE = {
 
 function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, onPurchased }) {
   const [buying, setBuying] = useState(null)
+  const [confirmItem, setConfirmItem] = useState(null)
+  const setPoints = useStore((s) => s.setPoints)
   const ownedIds = new Set(owned.map((o) => o.cosmetic_id))
 
   async function handlePurchase(cosmetic) {
     if (ownedIds.has(cosmetic.id)) { showToast('Already owned!'); return }
     if (points < cosmetic.xp_cost) { showToast(`Need ${(cosmetic.xp_cost - points).toLocaleString()} more XP`); return }
-    setBuying(cosmetic.id)
+    setConfirmItem(cosmetic)
+  }
+
+  async function confirmPurchase() {
+    if (!confirmItem) return
+    setBuying(confirmItem.id)
     try {
-      await api.purchaseCosmetic(cosmetic.id)
-      showToast(`${cosmetic.name} unlocked!`)
+      const result = await api.purchaseCosmetic(confirmItem.id)
+      if (result.new_balance != null) setPoints(result.new_balance)
+      showToast(`${confirmItem.name} unlocked!`)
       onPurchased()
     } catch (e) {
       const msg = e.message || ''
       if (msg.includes('already_owned')) showToast('Already owned')
       else if (msg.includes('insufficient_xp')) showToast('Not enough XP')
       else showToast('Purchase failed')
-    } finally { setBuying(null) }
+    } finally { setBuying(null); setConfirmItem(null) }
   }
 
   if (loading) return <div className="py-12 text-center text-sm text-[#999]">Loading cosmetics…</div>
@@ -442,6 +450,28 @@ function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, on
           </div>
         </div>
       ))}
+
+      {/* Purchase confirmation */}
+      {confirmItem && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={() => setConfirmItem(null)}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[300px] bg-white rounded-2xl border border-[#e0e0e0] p-5 shadow-lg">
+            <h3 className="font-comic text-lg text-[#1a1a1a] text-center mb-1">Purchase?</h3>
+            <p className="text-sm text-[#666] text-center mb-4">{confirmItem.name}</p>
+            <div className="bg-[#f8f8f8] rounded-xl p-3 mb-4 space-y-1">
+              <div className="flex justify-between text-sm"><span className="text-[#999]">Cost</span><span className="text-[#1a1a1a] font-comic">{confirmItem.xp_cost.toLocaleString()} XP</span></div>
+              <div className="flex justify-between text-sm"><span className="text-[#999]">Balance</span><span className="text-[#1a1a1a] font-comic">{points.toLocaleString()} XP</span></div>
+              <div className="h-px bg-[#e0e0e0]" />
+              <div className="flex justify-between text-sm"><span className="text-[#999]">After</span><span className="text-[var(--sv-accent)] font-comic">{(points - confirmItem.xp_cost).toLocaleString()} XP</span></div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmItem(null)} className="flex-1 py-2.5 border border-[#e0e0e0] rounded-xl font-comic text-sm text-[#666]">CANCEL</button>
+              <button onClick={confirmPurchase} disabled={buying} className="flex-1 py-2.5 bg-[var(--sv-accent)] text-white rounded-xl font-comic text-sm disabled:opacity-50">{buying ? '…' : 'BUY'}</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
