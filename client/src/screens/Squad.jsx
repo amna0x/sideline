@@ -552,8 +552,8 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                 <div className="max-w-[72%] flex flex-col">
                   {/* Reply preview */}
                   {msg.reply_to_text && (
-                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)]/40 bg-[#e8e8e8] text-[#666]'}`}>
-                      <span className="font-comic">{msg.reply_to_username}</span>: {msg.reply_to_text.slice(0, 60)}
+                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)] bg-white/80 text-[#333]'}`}>
+                      <span className="font-comic text-[var(--sv-accent)]">{msg.reply_to_username}</span>: {msg.reply_to_text.slice(0, 60)}
                     </div>
                   )}
 
@@ -566,11 +566,11 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                       onClick={() => setReplyTo(msg)}
                       className={`text-left px-3.5 py-2 ${isMe
                         ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                        : 'bg-[#f0f0f0] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                        : 'bg-white/95 text-[#1a1a1a] rounded-[18px] rounded-bl-[4px] shadow-sm border border-black/5'}`}
                     >
                       {showName && (
                         <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
-                          className="text-[10px] font-comic opacity-70 mb-0.5 hover:opacity-100 block">{msg.username}</button>
+                          className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
                       )}
                       <div className="text-[14px] leading-snug">{msg.message}</div>
                     </button>
