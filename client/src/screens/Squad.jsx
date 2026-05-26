@@ -403,6 +403,22 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   const [showEmoji, setShowEmoji] = useState(false)
   const [menuOpen, setMenuOpen] = useState(null)
   function toggleMenu(id) { setMenuOpen((p) => (p === id ? null : id)) }
+  const [editingId, setEditingId] = useState(null)
+  const [editingText, setEditingText] = useState('')
+
+  function startEdit(msg) {
+    setEditingId(msg.id)
+    setEditingText(msg.message || '')
+    setMenuOpen(null)
+  }
+
+  function cancelEdit() { setEditingId(null); setEditingText('') }
+
+  function submitEdit(id) {
+    if (!editingText.trim()) return
+    onEdit?.(id, editingText.trim())
+    cancelEdit()
+  }
   const bottomRef = useRef(null)
   const chatContainerRef = useRef(null)
   const typingTimeout = useRef(null)
@@ -598,17 +614,27 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                   ) : (
                     <div className="relative">
                       <button
-                        onClick={() => setReplyTo(msg)}
-                        className={`text-left px-3.5 py-2 group relative ${isMe
-                          ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                          : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
-                      >
+                          onClick={() => setReplyTo(msg)}
+                          onTouchStart={(e) => { msg._longpress = setTimeout(() => toggleMenu(msg.id), 600) }}
+                          onTouchEnd={(e) => { clearTimeout(msg._longpress) }}
+                          onMouseDown={(e) => { if (e.button === 0) msg._mousehold = setTimeout(() => toggleMenu(msg.id), 600) }}
+                          onMouseUp={(e) => { clearTimeout(msg._mousehold) }}
+                          className={`text-left px-3.5 py-2 group relative ${isMe
+                            ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
+                            : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                        >
                       {showName && (
                         <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
                           className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
                       )}
                       <div className="text-[14px] leading-snug">
-                        {msg.msg_type === 'deleted' || msg.deleted_at ? (
+                        {editingId === msg.id ? (
+                          <div className="flex gap-2 items-center">
+                            <input value={editingText} onChange={(e) => setEditingText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-[#e0e0e0] text-sm" />
+                            <button onClick={() => submitEdit(msg.id)} className="px-3 py-1 rounded-lg bg-[var(--sv-accent)] text-white">Save</button>
+                            <button onClick={cancelEdit} className="px-3 py-1 rounded-lg border">Cancel</button>
+                          </div>
+                        ) : msg.msg_type === 'deleted' || msg.deleted_at ? (
                           <span className="italic text-[#999]">Message deleted</span>
                         ) : (
                           <>

@@ -84,6 +84,7 @@ r.post('/purchase', writeLimiter, requireAuth, validate({ body: purchaseSchema }
       if (io) {
         io.emit('vault:supply_update', { vault_item_id, remaining_supply: item.remaining_supply - 1 })
         io.to(`user:${userId}`).emit('vault:minted', record)
+        io.to(`user:${userId}`).emit('user:points_updated', { userId, points_total: newBalance })
       }
       return res.json({ ok: true, points_total: newBalance, user_vault: record })
     }

@@ -22,7 +22,11 @@ export const useStore = create((set) => ({
 
   // Points
   points: 0,
-  setPoints: (points) => set({ points }),
+  setPoints: (points) => set((s) => ({
+    points,
+    // Also sync profile.points_total if present so UI reflects latest XP
+    user: s.user ? { ...s.user, profile: { ...(s.user.profile || {}), points_total: points } } : s.user
+  })),
   addPoints: (n) => set((s) => ({ points: s.points + n })),
 
   // Adidas drop
