@@ -9,7 +9,6 @@ import { useSquad } from '../hooks/useSquad.js'
 import { useMatch } from '../hooks/useMatch.js'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
-import SFX from '../lib/sfx.js'
 
 const REACTIONS = ['⚽', '🔥', '😱', '👏', '💀']
 
@@ -271,7 +270,7 @@ export default function Squad() {
           {REACTIONS.map((emoji) => (
             <motion.button key={emoji} whileTap={{ scale: 0.8 }} onClick={() => sendReaction(emoji)}
               className="w-10 h-10 rounded-full bg-[#f5f5f5] border border-[#e0e0e0] flex items-center justify-center text-xl hover:border-[var(--sv-accent)] transition-colors"
-              onPointerDown={() => { SFX.play('reaction'); try { if (navigator.vibrate) navigator.vibrate(8) } catch (e) {} }}>{emoji}</motion.button>
+              onPointerDown={() => { try { if (navigator.vibrate) navigator.vibrate(8) } catch (e) {} }}>{emoji}</motion.button>
           ))}
         </div>
 
@@ -396,7 +395,7 @@ export default function Squad() {
   )
 }
 
-// iOS-style chat with animations and sound effects
+// iOS-style chat with animations
 function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, typingUsers, onEdit, onDelete }) {
   const nav = useNavigate()
   const [text, setText] = useState('')
@@ -455,8 +454,6 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     return () => window.visualViewport.removeEventListener('resize', onResize)
   }, [])
 
-  // Use central sfx helper (imported at module top)
-
   // Close menus on outside click
   useEffect(() => {
     function onDocClick() { setMenuOpen(null) }
@@ -464,7 +461,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     return () => document.removeEventListener('click', onDocClick)
   }, [])
 
-  // Play sound on new messages from others
+  // Nudge when a reply arrives
   const prevCount = useRef(messages.length)
   useEffect(() => {
     if (messages.length > prevCount.current) {
@@ -473,7 +470,6 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
       if (last?.user_id !== userId && last?.reply_to_username) {
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
         if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
-          SFX.play('receive')
           try { if (navigator.vibrate) navigator.vibrate(10) } catch (e) {}
         }
       }
@@ -497,7 +493,6 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     setReplyTo(null)
     setShowStickers(false)
     setShowEmoji(false)
-    SFX.play('send')
     try { if (navigator.vibrate) navigator.vibrate(12) } catch (e) {}
     setTimeout(scrollToBottom, 50)
   }
@@ -535,7 +530,6 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     onSend('', { msgType: 'sticker', stickerId: sticker.img })
     setShowStickers(false)
     setActivePack(null)
-    SFX.play('send')
     try { if (navigator.vibrate) navigator.vibrate(12) } catch (e) {}
   }
 
@@ -646,7 +640,8 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, ease: 'easeOut' }}
-                      className="text-[9px] text-[#999] mt-0.5 text-right"
+                      className="text-[9px] text-[#999] mt-0.5 text-right min-h-[1rem] leading-none"
+                      style={{ minWidth: '100%' }}
                     >
                       {seenBy.length <= 3
                         ? `Seen by ${seenBy.map((s) => s.username).join(', ')}`
