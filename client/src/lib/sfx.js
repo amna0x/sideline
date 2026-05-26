@@ -1,8 +1,14 @@
-// Lightweight SFX helper. Uses AudioContext when possible and falls back to <audio> elements.
+// Lightweight SFX helper. Uses AudioContext and attempts to preload short audio files
+// from /sfx/*.mp3 (public). If they are missing, it falls back to oscillator tones.
 import { useStore } from '../store/index.js'
 
 const ctx = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) ? new (window.AudioContext || window.webkitAudioContext)() : null
 let buffers = {}
+const FILES = {
+  send: '/sfx/send.mp3',
+  receive: '/sfx/receive.mp3',
+  reaction: '/sfx/reaction.mp3'
+}
 
 function getVolume() {
   try {
@@ -14,6 +20,21 @@ function getVolume() {
 
 function enabled() {
   try { return !!useStore.getState().sfxEnabled } catch { return true }
+}
+
+async function preload(name) {
+  if (!ctx) return
+  if (!FILES[name]) return
+  if (buffers[name]) return
+  try {
+    const res = await fetch(FILES[name], { cache: 'no-cache' })
+    if (!res.ok) return
+    const ab = await res.arrayBuffer()
+    const decoded = await ctx.decodeAudioData(ab)
+    buffers[name] = decoded
+  } catch (e) {
+    // ignore — fallback will handle
+  }
 }
 
 async function playOsc(name) {
@@ -56,8 +77,9 @@ async function playOsc(name) {
 
 export async function play(name) {
   if (!enabled()) return
-  // If we have preloaded buffer, use it (not used by default)
-  if (buffers[name]) {
+  // Try preload once
+  if (!buffers[name] && FILES[name]) preload(name)
+  if (ctx && buffers[name]) {
     try {
       const vol = getVolume()
       const src = ctx.createBufferSource()
@@ -68,9 +90,10 @@ export async function play(name) {
       gain.connect(ctx.destination)
       src.start(0)
       return
-    } catch (e) {}
+    } catch (e) {
+      // fall through to oscillator fallback
+    }
   }
-  // Fallback to oscillator-based short sounds
   return playOsc(name)
 }
 
@@ -78,4 +101,4 @@ export function setBuffer(name, audioBuffer) {
   buffers[name] = audioBuffer
 }
 
-export default { play, setBuffer }
+export default { play, setBuffer, preload }

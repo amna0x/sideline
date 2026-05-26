@@ -618,21 +618,12 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       </span>
                       </button>
 
-                      {/* Action menu button */}
-                      {(canEdit || canDelete) && (
-                        <div className="absolute top-0 right-0">
-                          <button onClick={(e) => { e.stopPropagation(); toggleMenu(msg.id) }} className="p-1 text-[#666]">
-                            <span className="material-symbols-outlined text-[18px]">more_horiz</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Inline menu */}
+                      {/* Inline menu — opened via long-press only (three-dot removed) */}
                       {menuOpen === msg.id && (
                         <div className="absolute right-0 mt-8 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-30 w-36">
                           <button onClick={() => { setReplyTo(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Reply</button>
                           {canEdit && (
-                            <button onClick={() => { const newText = window.prompt('Edit message', msg.message); if (newText !== null && newText.trim() !== '') onEdit?.(msg.id, newText.trim()); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Edit</button>
+                            <button onClick={() => { startEdit(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Edit</button>
                           )}
                           {canDelete && (
                             <button onClick={() => { if (window.confirm('Delete this message?')) onDelete?.(msg.id); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-[#fff0f0]">Delete</button>
