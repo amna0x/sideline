@@ -55,16 +55,21 @@ r.post('/purchase', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'insufficient_xp', required: cosmetic.xp_cost, current: user?.points_total || 0 })
     }
 
-    // Deduct XP (skip for admins)
+    // Deduct XP (skip for admins) — update with RETURNING so we have authoritative value
+    let newBalance = user?.points_total || 0
     if (!isAdmin(req.user)) {
-      await query('UPDATE users SET points_total = points_total - $1 WHERE id = $2', [cosmetic.xp_cost, userId])
+      const { rows } = await query('UPDATE users SET points_total = points_total - $1 WHERE id = $2 RETURNING points_total', [cosmetic.xp_cost, userId])
+      newBalance = rows[0]?.points_total ?? newBalance - cosmetic.xp_cost
     }
+
     await query(
       'INSERT INTO user_cosmetics (user_id, cosmetic_id) VALUES ($1, $2)',
       [userId, cosmetic_id]
     )
 
-    const newBalance = isAdmin(req.user) ? (user?.points_total || 0) : (user?.points_total || 0) - cosmetic.xp_cost
+    // Emit socket update and return authoritative balance
+    const io = req.app.get('io')
+    if (io) io.to(`user:${userId}`).emit('user:points_updated', { userId, points_total: newBalance })
     res.json({ ok: true, new_balance: newBalance })
   } catch (e) { next(e) }
 })

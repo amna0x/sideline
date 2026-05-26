@@ -271,7 +271,7 @@ export default function Squad() {
           {REACTIONS.map((emoji) => (
             <motion.button key={emoji} whileTap={{ scale: 0.8 }} onClick={() => sendReaction(emoji)}
               className="w-10 h-10 rounded-full bg-[#f5f5f5] border border-[#e0e0e0] flex items-center justify-center text-xl hover:border-[var(--sv-accent)] transition-colors"
-              onPointerDown={() => SFX.play('reaction')}>{emoji}</motion.button>
+              onPointerDown={() => { SFX.play('reaction'); try { if (navigator.vibrate) navigator.vibrate(8) } catch (e) {} }}>{emoji}</motion.button>
           ))}
         </div>
 
@@ -471,6 +471,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
         if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
           SFX.play('receive')
+            try { if (navigator.vibrate) navigator.vibrate(10) } catch (e) {}
         }
       }
     }
@@ -494,6 +495,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     setShowStickers(false)
     setShowEmoji(false)
     SFX.play('send')
+    try { if (navigator.vibrate) navigator.vibrate(12) } catch (e) {}
     setTimeout(scrollToBottom, 50)
   }
 
@@ -531,6 +533,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     setShowStickers(false)
     setActivePack(null)
     SFX.play('send')
+    try { if (navigator.vibrate) navigator.vibrate(12) } catch (e) {}
   }
 
   return (
