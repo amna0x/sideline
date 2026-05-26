@@ -164,6 +164,7 @@ export default function Vault() {
             showToast={showToast}
             onPurchased={() => {
               api.userCosmetics(userId).then(setCosmeticOwned).catch(() => {})
+              api.user(userId).then((p) => useStore.getState().setUserProfile(p)).catch(() => {})
             }}
           />
         )}

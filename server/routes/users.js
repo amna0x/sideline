@@ -41,7 +41,18 @@ r.get('/:id', optionalAuth, async (req, res, next) => {
       }
     }
     const vault = await getUserVault(id)
-    res.json({ ...user, vault })
+    let equipped_cosmetics = []
+    if (mode === 'postgres') {
+      const { rows } = await query(
+        `SELECT c.id, c.name, c.type, c.tier
+         FROM user_cosmetics uc
+         JOIN cosmetics c ON c.id = uc.cosmetic_id
+         WHERE uc.user_id = $1 AND uc.equipped = true`,
+        [id]
+      )
+      equipped_cosmetics = rows
+    }
+    res.json({ ...user, vault, equipped_cosmetics })
   } catch (e) { next(e) }
 })
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import Avatar, { AdminBadge } from '../components/Avatar.jsx'
+import ProfileEffects from '../components/ProfileEffects.jsx'
 import { api } from '../lib/api.js'
 import { useStore } from '../store/index.js'
 
@@ -81,43 +82,50 @@ export default function UserProfile() {
   const cards = (profile.vault || []).filter((v) => v.type === 'collectible' || v.type === 'adidas_card')
   const badges = (profile.vault || []).filter((v) => v.type === 'badge')
 
+  const equippedDecoration = profile.equipped_cosmetics?.find(c => c.type === 'avatar_decoration')?.id
+  const equippedEffect = profile.equipped_cosmetics?.find(c => c.type === 'profile_effect')?.id
+
   return (
     <Layout title={profile.username?.toUpperCase() || 'PROFILE'}>
-      <section className="flex flex-col items-center text-center px-4 pt-6">
-        <div className="mb-3">
-          <Avatar url={profile.avatar_url} name={profile.username} size={100} />
-        </div>
-        <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">
-          {profile.username || 'User'}
-          <AdminBadge username={profile.username} />
-        </h1>
-        {profile.bio && <p className="text-sm text-[#1a1a1a] mt-2 max-w-[280px] text-center">{profile.bio}</p>}
-        <p className="text-xs text-[#999] mt-1">{(profile.tier || 'Fan').toUpperCase()}</p>
+      <div className="relative overflow-hidden bg-white border border-[#e0e0e0] rounded-3xl mx-4 mt-4 p-4 shadow-sm">
+        <ProfileEffects effectId={equippedEffect} />
+        
+        <section className="flex flex-col items-center text-center relative z-10 pt-2">
+          <div className="mb-3">
+            <Avatar url={profile.avatar_url} name={profile.username} size={100} decorationId={equippedDecoration} />
+          </div>
+          <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">
+            {profile.username || 'User'}
+            <AdminBadge username={profile.username} />
+          </h1>
+          {profile.bio && <p className="text-sm text-[#1a1a1a] mt-2 max-w-[280px] text-center">{profile.bio}</p>}
+          <p className="text-xs text-[#999] mt-1">{(profile.tier || 'Fan').toUpperCase()}</p>
 
-        {/* Action buttons */}
-        <div className="flex gap-2 mt-4">
-          {friendStatus === 'friends' && (
-            <span className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[#f0f0f0] text-[#666] flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">check</span> Friends
-            </span>
-          )}
-          {friendStatus === 'pending' && (
-            <span className="px-5 py-2.5 rounded-xl font-comic text-sm border border-[var(--sv-accent)]/30 text-[var(--sv-accent)]">
-              Request Sent
-            </span>
-          )}
-          {friendStatus === 'none' && (
-            <motion.button whileTap={{ scale: 0.95 }} onClick={addFriend}
-              className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[var(--sv-accent)] text-white">
-              Add Friend
+          {/* Action buttons */}
+          <div className="flex gap-2 mt-4">
+            {friendStatus === 'friends' && (
+              <span className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[#f0f0f0] text-[#666] flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">check</span> Friends
+              </span>
+            )}
+            {friendStatus === 'pending' && (
+              <span className="px-5 py-2.5 rounded-xl font-comic text-sm border border-[var(--sv-accent)]/30 text-[var(--sv-accent)]">
+                Request Sent
+              </span>
+            )}
+            {friendStatus === 'none' && (
+              <motion.button whileTap={{ scale: 0.95 }} onClick={addFriend}
+                className="px-5 py-2.5 rounded-xl font-comic text-sm bg-[var(--sv-accent)] text-white">
+                Add Friend
+              </motion.button>
+            )}
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => nav(-1)}
+              className="px-5 py-2.5 rounded-xl font-comic text-sm border border-[#e0e0e0] text-[#666]">
+              Back
             </motion.button>
-          )}
-          <motion.button whileTap={{ scale: 0.95 }} onClick={() => nav(-1)}
-            className="px-5 py-2.5 rounded-xl font-comic text-sm border border-[#e0e0e0] text-[#666]">
-            Back
-          </motion.button>
-        </div>
-      </section>
+          </div>
+        </section>
+      </div>
 
       <section className="grid grid-cols-3 gap-2 px-4 mt-5">
         <Stat label="ACCURACY" value={profile.predictions_made ? `${Math.round((profile.predictions_correct / profile.predictions_made) * 100)}%` : '—'} />
