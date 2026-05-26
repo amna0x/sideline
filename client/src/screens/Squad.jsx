@@ -606,9 +606,10 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                           onMouseUp={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
                           onMouseLeave={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
                           onContextMenu={(e) => { e.preventDefault(); setMenuOpen(msg.id) }}
-                          className={`text-left px-3.5 py-2 group relative ${isMe
+                          className={`select-none text-left px-3.5 py-2 group relative ${isMe
                             ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
                             : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                          style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
                         >
                       {showName && (
                         <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
@@ -765,7 +766,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[130] bg-black/35 flex items-end justify-center"
+            className="fixed inset-0 z-[130] bg-black/35 flex items-end justify-center px-3 pb-[calc(env(safe-area-inset-bottom,0px)+6.5rem)]"
             onClick={closeMenu}
           >
             <motion.div
@@ -774,7 +775,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 24, stiffness: 260 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[480px] bg-white rounded-t-3xl border-t border-[#e0e0e0] p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
+              className="w-full max-w-[480px] max-h-[calc(100dvh-10rem)] overflow-y-auto bg-white rounded-t-3xl border-t border-[#e0e0e0] p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
             >
               <div className="mx-auto h-1.5 w-12 rounded-full bg-[#e5e5e5] mb-4" />
               <div className="mb-3">
