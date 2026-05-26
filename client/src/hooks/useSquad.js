@@ -201,10 +201,14 @@ export function useSquad() {
   }, [])
 
   const editMessage = useCallback((messageId, newText) => {
+    // Optimistic update locally
+    useStore.getState().updateSquadChatMsg(messageId, { message: newText, edited_at: new Date().toISOString() })
     socketRef.current?.emit('squad:edit_message', { messageId, newText })
   }, [])
 
   const deleteMessage = useCallback((messageId) => {
+    // Optimistic local deletion marker
+    useStore.getState().updateSquadChatMsg(messageId, { deleted_at: new Date().toISOString(), message: '', msg_type: 'deleted' })
     socketRef.current?.emit('squad:delete_message', { messageId })
   }, [])
 
