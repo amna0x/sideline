@@ -607,7 +607,16 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                         <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
                           className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
                       )}
-                      <div className="text-[14px] leading-snug">{msg.message}</div>
+                      <div className="text-[14px] leading-snug">
+                        {msg.msg_type === 'deleted' || msg.deleted_at ? (
+                          <span className="italic text-[#999]">Message deleted</span>
+                        ) : (
+                          <>
+                            <span>{msg.message}</span>
+                            {msg.edited_at && <span className="text-[10px] text-[#999] ml-2">(edited)</span>}
+                          </>
+                        )}
+                      </div>
                       {/* Reply hint */}
                       <span className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-active:opacity-100 transition-opacity`}>
                         <span className="material-symbols-outlined text-[14px] text-[#999]">reply</span>
