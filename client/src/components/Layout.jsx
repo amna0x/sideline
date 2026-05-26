@@ -22,7 +22,7 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE' }
     <div className="mobile-frame text-on-background pb-28 font-body halftone relative">
       <TopBar title={title} points={points} />
       <Notifications />
-      <main className="relative z-10">{children}</main>
+      <main className="relative z-10 -mt-1">{children}</main>
       <AnimatePresence>
         {!hideNav && <BottomNav />}
       </AnimatePresence>
@@ -119,10 +119,10 @@ function TopBar({ title, points }) {
   const requestCount = incoming.length
 
   return (
-    <header className="app-topbar sticky top-0 z-40 grid grid-cols-3 items-center px-4 h-16 bg-[#061838] backdrop-blur-md text-white border-b border-white/10 rounded-b-[28px] shadow-[0_12px_28px_rgba(6,24,56,0.22)]">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-b-[28px]">
-        <span className="material-symbols-outlined absolute -top-9 left-10 text-[102px] text-white/[0.09]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-        <span className="material-symbols-outlined absolute -top-12 right-12 text-[124px] text-white/[0.075]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+    <header className="app-topbar sticky top-3 z-40 mx-4 mt-3 mb-2 grid grid-cols-3 items-center px-4 h-16 text-white rounded-[28px] shadow-[0_14px_30px_var(--topbar-shadow)]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
+        <span className="material-symbols-outlined absolute -top-9 left-10 text-[102px] text-white/[0.11] animate-float" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+        <span className="material-symbols-outlined absolute -top-12 right-12 text-[124px] text-white/[0.085] animate-float" style={{ fontVariationSettings: "'FILL' 1", animationDelay: '0.8s' }}>star</span>
         <span className="absolute inset-0 opacity-20" style={{
           backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.18) 1px, transparent 1px)',
           backgroundSize: '18px 18px'
@@ -188,7 +188,7 @@ function TopBar({ title, points }) {
           key={points}
           initial={{ scale: 1.3, color: 'var(--sv-accent)' }}
           animate={{ scale: 1, color: '' }}
-          className="font-comic text-sm text-[#ff9f5a] tabular-nums drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+          className="font-comic text-sm text-[var(--topbar-accent)] tabular-nums drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
         >{(points || 0).toLocaleString()} XP</motion.span>
         <button
           onClick={() => { setProfileMenu(!profileMenu); setSettingsMenu(false); setRequestsPanel(false) }}

@@ -33,8 +33,14 @@ export const THEMES = {
 
 const KEY = 'sideline.theme'
 
-export function applyTheme(id) {
+export function applyTheme(id, { animate = false } = {}) {
   const theme = THEMES[id] ? id : 'default'
+  if (animate) {
+    document.documentElement.classList.remove('theme-switching')
+    void document.documentElement.offsetWidth
+    document.documentElement.classList.add('theme-switching')
+    window.setTimeout(() => document.documentElement.classList.remove('theme-switching'), 520)
+  }
   document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem(KEY, theme)
 }

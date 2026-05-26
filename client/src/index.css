@@ -20,6 +20,10 @@
   --text-muted: #666666;
   --line-subtle: #e0e0e0;
   --accent-contrast: #ffffff;
+  --topbar-bg: linear-gradient(135deg, #062f36 0%, #075f58 100%);
+  --topbar-accent: #ff9f5a;
+  --topbar-border: rgba(255, 255, 255, 0.12);
+  --topbar-shadow: rgba(6, 62, 58, 0.26);
   --sv-dot-size: 1.5px;
   --sv-dot-gap: 10px;
 }
@@ -209,6 +213,44 @@ body {
   overflow-x: hidden;
 }
 
+.app-topbar {
+  background: var(--topbar-bg) !important;
+  border: 1px solid var(--topbar-border);
+  transition: background 360ms ease, border-color 360ms ease, box-shadow 360ms ease, color 360ms ease;
+}
+
+.theme-switching body,
+.theme-switching .mobile-frame,
+.theme-switching .app-topbar,
+.theme-switching nav,
+.theme-switching .comic-panel,
+.theme-switching .bg-white,
+.theme-switching .bg-white\/95,
+.theme-switching .bg-\[\#f8f8f8\],
+.theme-switching .bg-\[\#f5f5f5\],
+.theme-switching button,
+.theme-switching input,
+.theme-switching textarea {
+  transition:
+    background 420ms ease,
+    background-color 420ms ease,
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    color 420ms ease,
+    opacity 420ms ease,
+    transform 220ms ease;
+}
+
+.theme-switching .app-topbar {
+  animation: theme-bar-pop 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@keyframes theme-bar-pop {
+  0% { transform: translateY(-4px) scale(0.985); filter: saturate(0.8); }
+  60% { transform: translateY(1px) scale(1.01); filter: saturate(1.25); }
+  100% { transform: translateY(0) scale(1); filter: saturate(1); }
+}
+
 /* On tablets and larger, cap the width and add a desktop frame look */
 @media (min-width: 640px) {
   .mobile-frame {
@@ -356,7 +398,7 @@ body {
 }
 
 /* === Theme: Spiderverse (original) === */
-[data-theme="spiderverse"] { --sv-accent: #ff2d7b; --sv-cyan: #00f0ff; --sv-purple: #b44dff; --sv-green: #39ff14; }
+[data-theme="spiderverse"] { --sv-accent: #ff2d7b; --sv-cyan: #00f0ff; --sv-purple: #b44dff; --sv-green: #39ff14; --topbar-bg: linear-gradient(135deg, #070016 0%, #210039 100%); --topbar-accent: #ff4d94; --topbar-border: rgba(255,45,123,0.28); --topbar-shadow: rgba(255,45,123,0.18); }
 [data-theme="spiderverse"] body { background-color: #000; color: #e8e8e8; }
 [data-theme="spiderverse"] .mobile-frame { background-color: #000; }
 [data-theme="spiderverse"] .text-primary-container,
@@ -395,7 +437,7 @@ body {
 }
 
 /* === Theme: Mint Edge === */
-[data-theme="mint"] { --sv-accent: #00f6ac; --sv-cyan: #00d4ff; --sv-purple: #00f6ac; --sv-green: #00f6ac; }
+[data-theme="mint"] { --sv-accent: #00f6ac; --sv-cyan: #00d4ff; --sv-purple: #00f6ac; --sv-green: #00f6ac; --topbar-bg: linear-gradient(135deg, #03150f 0%, #07352a 100%); --topbar-accent: #39ffd0; --topbar-border: rgba(0,246,172,0.24); --topbar-shadow: rgba(0,246,172,0.16); }
 [data-theme="mint"] body { background-color: #000; color: #ffffff; }
 [data-theme="mint"] .mobile-frame { background-color: #000; }
 [data-theme="mint"] .tactical-grid {
@@ -422,7 +464,7 @@ body {
 [data-theme="mint"] nav { background-color: rgba(0,0,0,0.9) !important; border-color: #1f1f1f !important; }
 
 /* === Theme: Inferno === */
-[data-theme="inferno"] { --sv-accent: #ff3b6b; --sv-cyan: #ff8a4d; --sv-purple: #ff3b6b; --sv-green: #ff6b3b; }
+[data-theme="inferno"] { --sv-accent: #ff3b6b; --sv-cyan: #ff8a4d; --sv-purple: #ff3b6b; --sv-green: #ff6b3b; --topbar-bg: linear-gradient(135deg, #180207 0%, #35100a 100%); --topbar-accent: #ff8a4d; --topbar-border: rgba(255,59,107,0.24); --topbar-shadow: rgba(255,59,107,0.18); }
 [data-theme="inferno"] body { background-color: #000; color: #ffe9d6; }
 [data-theme="inferno"] .mobile-frame { background-color: #050102; }
 [data-theme="inferno"] .tactical-grid {
@@ -448,7 +490,7 @@ body {
 [data-theme="inferno"] nav { background-color: rgba(5,1,2,0.9) !important; border-color: #2a0a14 !important; }
 
 /* === Theme: Cobalt === */
-[data-theme="cobalt"] { --sv-accent: #5aa8ff; --sv-cyan: #00d4ff; --sv-purple: #5aa8ff; --sv-green: #5aa8ff; }
+[data-theme="cobalt"] { --sv-accent: #5aa8ff; --sv-cyan: #00d4ff; --sv-purple: #5aa8ff; --sv-green: #5aa8ff; --topbar-bg: linear-gradient(135deg, #020814 0%, #062453 100%); --topbar-accent: #7cc0ff; --topbar-border: rgba(90,168,255,0.24); --topbar-shadow: rgba(90,168,255,0.16); }
 [data-theme="cobalt"] body { background-color: #000; color: #e8f0ff; }
 [data-theme="cobalt"] .mobile-frame { background-color: #010410; }
 [data-theme="cobalt"] .tactical-grid {
@@ -474,7 +516,7 @@ body {
 [data-theme="cobalt"] nav { background-color: rgba(1,4,16,0.9) !important; border-color: #0c1a3a !important; }
 
 /* === Theme: Solar Flare === */
-[data-theme="solar"] { --sv-accent: #ffc94a; --sv-cyan: #ff8a4d; --sv-purple: #ffc94a; --sv-green: #ffc94a; }
+[data-theme="solar"] { --sv-accent: #ffc94a; --sv-cyan: #ff8a4d; --sv-purple: #ffc94a; --sv-green: #ffc94a; --topbar-bg: linear-gradient(135deg, #1c1202 0%, #3d2906 100%); --topbar-accent: #ffd76b; --topbar-border: rgba(255,201,74,0.24); --topbar-shadow: rgba(255,201,74,0.16); }
 [data-theme="solar"] body { background-color: #000; color: #fff5d6; }
 [data-theme="solar"] .mobile-frame { background-color: #060401; }
 [data-theme="solar"] .tactical-grid {
@@ -596,6 +638,17 @@ body {
 [data-theme="cobalt"] nav .text-\[var\(--sv-accent\)\],
 [data-theme="solar"] nav .text-\[var\(--sv-accent\)\] {
   color: var(--sv-accent) !important;
+}
+
+[data-theme="spiderverse"] .app-topbar,
+[data-theme="mint"] .app-topbar,
+[data-theme="inferno"] .app-topbar,
+[data-theme="cobalt"] .app-topbar,
+[data-theme="solar"] .app-topbar,
+.app-topbar {
+  background: var(--topbar-bg) !important;
+  border-color: var(--topbar-border) !important;
+  color: #ffffff !important;
 }
 
 /* comic-panel border in dark themes */
