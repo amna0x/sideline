@@ -83,9 +83,9 @@ export default function HeaderArtCard({ variant = 'trophy', eyebrow, title, sub,
       </motion.span>
 
       <div className="relative z-10 max-w-[62%]">
-        {eyebrow && <div className="font-comic text-[10px] text-white/70 uppercase tracking-[0.08em] mb-1">{eyebrow}</div>}
-        <h2 className="font-comic text-[22px] leading-[1.05] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]">{title}</h2>
-        {sub && <p className="mt-2 text-xs leading-snug text-white/76">{sub}</p>}
+        {eyebrow && <div className="font-comic text-[10px] uppercase tracking-[0.08em] mb-1" style={{ color: 'rgba(255,255,255,0.78)' }}>{eyebrow}</div>}
+        <h2 className="font-comic text-[22px] leading-[1.05] drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]" style={{ color: '#ffffff' }}>{title}</h2>
+        {sub && <p className="mt-2 text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.82)' }}>{sub}</p>}
       </div>
     </motion.section>
   )

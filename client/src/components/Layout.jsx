@@ -119,15 +119,23 @@ function TopBar({ title, points }) {
   const requestCount = incoming.length
 
   return (
-    <header className="sticky top-0 z-40 grid grid-cols-3 items-center px-4 h-14 bg-white/95 backdrop-blur-md text-[#1a1a1a] border-b border-black/[0.06]">
+    <header className="app-topbar sticky top-0 z-40 grid grid-cols-3 items-center px-4 h-16 bg-[#061838] backdrop-blur-md text-white border-b border-white/10 rounded-b-[28px] shadow-[0_12px_28px_rgba(6,24,56,0.22)]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-b-[28px]">
+        <span className="material-symbols-outlined absolute -top-9 left-10 text-[102px] text-white/[0.09]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+        <span className="material-symbols-outlined absolute -top-12 right-12 text-[124px] text-white/[0.075]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+        <span className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.18) 1px, transparent 1px)',
+          backgroundSize: '18px 18px'
+        }} />
+      </div>
       {/* Settings dropdown (left) */}
-      <div className="relative justify-self-start" ref={settingsRef}>
+      <div className="relative z-10 justify-self-start" ref={settingsRef}>
         <button
           onClick={() => { setSettingsMenu(!settingsMenu); setProfileMenu(false) }}
-          className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 transition-transform hover:scale-110 active:scale-95"
+          className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-white/10 transition-transform hover:scale-110 active:scale-95"
           aria-label="Settings"
         >
-          <span className="material-symbols-outlined text-[20px] text-[#666]">settings</span>
+          <span className="material-symbols-outlined text-[20px] text-white/80">settings</span>
         </button>
 
         <AnimatePresence>
@@ -170,17 +178,17 @@ function TopBar({ title, points }) {
       </div>
 
       {/* Title */}
-      <div className="flex items-center justify-center">
-        <span className="font-comic text-xl tracking-tight text-[#1a1a1a] truncate">{title}</span>
+      <div className="relative z-10 flex items-center justify-center min-w-0">
+        <span className="font-comic text-xl tracking-tight text-white truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">{title}</span>
       </div>
 
       {/* Profile dropdown (right) */}
-      <div className="flex items-center gap-2 justify-self-end relative" ref={profileRef}>
+      <div className="relative z-10 flex items-center gap-2 justify-self-end" ref={profileRef}>
         <motion.span
           key={points}
           initial={{ scale: 1.3, color: 'var(--sv-accent)' }}
           animate={{ scale: 1, color: '' }}
-          className="font-comic text-sm text-[var(--sv-accent)] tabular-nums"
+          className="font-comic text-sm text-[#ff9f5a] tabular-nums drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
         >{(points || 0).toLocaleString()} XP</motion.span>
         <button
           onClick={() => { setProfileMenu(!profileMenu); setSettingsMenu(false); setRequestsPanel(false) }}

@@ -19,7 +19,7 @@
   --text-fg: #1a1a1a;
   --text-muted: #666666;
   --line-subtle: #e0e0e0;
-  --accent-contrast: #111111;
+  --accent-contrast: #ffffff;
   --sv-dot-size: 1.5px;
   --sv-dot-gap: 10px;
 }
@@ -232,7 +232,7 @@ body {
   background-image: url('./components/footballfield.jpg');
   background-size: cover;
   background-position: center;
-  opacity: 0.25;
+  opacity: 0.45;
   pointer-events: none;
   z-index: 0;
 }
