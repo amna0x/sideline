@@ -486,12 +486,92 @@ body {
   background-color: rgba(0,0,0,0.95) !important;
 }
 
-/* comic-panel background via CSS variable */
-[data-theme="spiderverse"] { --panel-bg: #111; --surface-bg: #111; --text-fg: #e8e8e8; }
-[data-theme="mint"] { --panel-bg: #0e0e0e; --surface-bg: #0e0e0e; --text-fg: #ffffff; }
-[data-theme="inferno"] { --panel-bg: #140509; --surface-bg: #140509; --text-fg: #ffe9d6; }
-[data-theme="cobalt"] { --panel-bg: #061128; --surface-bg: #061128; --text-fg: #e8f0ff; }
-[data-theme="solar"] { --panel-bg: #181205; --surface-bg: #181205; --text-fg: #fff5d6; }
+/* Shared dark-theme surface variables */
+[data-theme="spiderverse"] { --panel-bg: #111; --surface-bg: #111; --surface-low: #0a0a0a; --surface-high: #1a1a1a; --menu-bg: #111; --menu-hover: #1a1a1a; --text-fg: #e8e8e8; --text-muted: #a0a0a0; --line-subtle: #2a2a2a; }
+[data-theme="mint"] { --panel-bg: #0e0e0e; --surface-bg: #0e0e0e; --surface-low: #0a0a0a; --surface-high: #171717; --menu-bg: #0e0e0e; --menu-hover: #171717; --text-fg: #ffffff; --text-muted: #b8b8b8; --line-subtle: #1f1f1f; }
+[data-theme="inferno"] { --panel-bg: #140509; --surface-bg: #140509; --surface-low: #0a0204; --surface-high: #1c070d; --menu-bg: #140509; --menu-hover: #1c070d; --text-fg: #ffe9d6; --text-muted: #c9a39a; --line-subtle: #2a0a14; }
+[data-theme="cobalt"] { --panel-bg: #061128; --surface-bg: #061128; --surface-low: #020611; --surface-high: #081634; --menu-bg: #061128; --menu-hover: #081634; --text-fg: #e8f0ff; --text-muted: #95accc; --line-subtle: #0c1a3a; }
+[data-theme="solar"] { --panel-bg: #181205; --surface-bg: #181205; --surface-low: #0d0a02; --surface-high: #221a08; --menu-bg: #181205; --menu-hover: #221a08; --text-fg: #fff5d6; --text-muted: #c9b58a; --line-subtle: #2a2008; }
+
+[data-theme="spiderverse"] .bg-white,
+[data-theme="mint"] .bg-white,
+[data-theme="inferno"] .bg-white,
+[data-theme="cobalt"] .bg-white,
+[data-theme="solar"] .bg-white,
+[data-theme="spiderverse"] .bg-white\/95,
+[data-theme="mint"] .bg-white\/95,
+[data-theme="inferno"] .bg-white\/95,
+[data-theme="cobalt"] .bg-white\/95,
+[data-theme="solar"] .bg-white\/95 {
+  background-color: var(--menu-bg) !important;
+  color: var(--text-fg) !important;
+}
+
+[data-theme="spiderverse"] .hover\:bg-\[\#f5f5f5\]:hover,
+[data-theme="mint"] .hover\:bg-\[\#f5f5f5\]:hover,
+[data-theme="inferno"] .hover\:bg-\[\#f5f5f5\]:hover,
+[data-theme="cobalt"] .hover\:bg-\[\#f5f5f5\]:hover,
+[data-theme="solar"] .hover\:bg-\[\#f5f5f5\]:hover,
+[data-theme="spiderverse"] .hover\:bg-black\/5:hover,
+[data-theme="mint"] .hover\:bg-black\/5:hover,
+[data-theme="inferno"] .hover\:bg-black\/5:hover,
+[data-theme="cobalt"] .hover\:bg-black\/5:hover,
+[data-theme="solar"] .hover\:bg-black\/5:hover,
+[data-theme="spiderverse"] .hover\:bg-\[\#e8e8e8\]:hover,
+[data-theme="mint"] .hover\:bg-\[\#e8e8e8\]:hover,
+[data-theme="inferno"] .hover\:bg-\[\#e8e8e8\]:hover,
+[data-theme="cobalt"] .hover\:bg-\[\#e8e8e8\]:hover,
+[data-theme="solar"] .hover\:bg-\[\#e8e8e8\]:hover {
+  background-color: var(--menu-hover) !important;
+}
+
+[data-theme="spiderverse"] .bg-red-50,
+[data-theme="mint"] .bg-red-50,
+[data-theme="inferno"] .bg-red-50,
+[data-theme="cobalt"] .bg-red-50,
+[data-theme="solar"] .bg-red-50,
+[data-theme="spiderverse"] .hover\:bg-red-50:hover,
+[data-theme="mint"] .hover\:bg-red-50:hover,
+[data-theme="inferno"] .hover\:bg-red-50:hover,
+[data-theme="cobalt"] .hover\:bg-red-50:hover,
+[data-theme="solar"] .hover\:bg-red-50:hover {
+  background-color: rgba(239,68,68,0.14) !important;
+}
+
+[data-theme="spiderverse"] header,
+[data-theme="mint"] header,
+[data-theme="inferno"] header,
+[data-theme="cobalt"] header,
+[data-theme="solar"] header,
+[data-theme="spiderverse"] nav,
+[data-theme="mint"] nav,
+[data-theme="inferno"] nav,
+[data-theme="cobalt"] nav,
+[data-theme="solar"] nav {
+  background-color: color-mix(in srgb, var(--surface-low) 92%, transparent) !important;
+  border-color: var(--line-subtle) !important;
+}
+
+[data-theme="spiderverse"] header *,
+[data-theme="mint"] header *,
+[data-theme="inferno"] header *,
+[data-theme="cobalt"] header *,
+[data-theme="solar"] header * {
+  color: var(--text-fg) !important;
+}
+
+[data-theme="spiderverse"] header .text-\[var\(--sv-accent\)\],
+[data-theme="mint"] header .text-\[var\(--sv-accent\)\],
+[data-theme="inferno"] header .text-\[var\(--sv-accent\)\],
+[data-theme="cobalt"] header .text-\[var\(--sv-accent\)\],
+[data-theme="solar"] header .text-\[var\(--sv-accent\)\],
+[data-theme="spiderverse"] nav .text-\[var\(--sv-accent\)\],
+[data-theme="mint"] nav .text-\[var\(--sv-accent\)\],
+[data-theme="inferno"] nav .text-\[var\(--sv-accent\)\],
+[data-theme="cobalt"] nav .text-\[var\(--sv-accent\)\],
+[data-theme="solar"] nav .text-\[var\(--sv-accent\)\] {
+  color: var(--sv-accent) !important;
+}
 
 /* comic-panel border in dark themes */
 [data-theme="spiderverse"] .comic-panel,

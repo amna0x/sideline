@@ -31,7 +31,7 @@ export default function Home() {
       <MatchHero match={match} />
       {error && <Retry onClick={reload} />}
 
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4 px-4 mt-4">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4 px-4 mt-4 pb-32">
         <motion.section variants={fadeUp}>
           <SectionHeader icon="thermostat" title="GAME TEMPERATURE" />
           <div className="comic-panel p-4">
