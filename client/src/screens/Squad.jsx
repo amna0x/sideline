@@ -120,7 +120,7 @@ export default function Squad() {
 
     return (
       <Layout title="SQUAD">
-        <section className="px-4 pt-6 relative overflow-hidden">
+        <section className="px-4 pt-6 pb-40 relative overflow-hidden">
           <ReactionBurst />
           <HeaderArtCard
             variant="squad"
@@ -176,7 +176,7 @@ export default function Squad() {
               <h2 className="font-comic text-xs text-[var(--sv-accent)] mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">groups</span> ACTIVE SQUADS
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-2 pb-8">
                 {rooms.sort((a, b) => b.memberCount - a.memberCount).map((r) => (
                   <motion.button key={r.id} whileTap={{ scale: 0.98 }} onClick={() => joinSquad(r.name, match?.id || 'lobby')}
                     className="w-full bg-white border border-[#e0e0e0] rounded-xl p-3 flex items-center justify-between text-left">
