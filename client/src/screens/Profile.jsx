@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import AvatarUpload from '../components/AvatarUpload.jsx'
 import Avatar, { AdminBadge } from '../components/Avatar.jsx'
+import ProfileEffects from '../components/ProfileEffects.jsx'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
@@ -93,53 +94,61 @@ export default function Profile() {
     showToast('Friend removed')
   }
 
+  const equippedDecoration = profile.equipped_cosmetics?.find(c => c.type === 'avatar_decoration')?.id
+  const equippedEffect = profile.equipped_cosmetics?.find(c => c.type === 'profile_effect')?.id
+
   return (
     <Layout title="PROFILE">
-      <section className="flex flex-col items-center text-center px-4 pt-6">
-        <div className="mb-3 relative">
-          <AvatarUpload
-            userId={user?.id}
-            currentUrl={profile.avatar_url}
-            name={profile.username}
-            size={100}
-            onUploaded={(avatar_url) => { setUserProfile({ ...profile, avatar_url }); showToast('Avatar updated') }}
-            onError={(msg) => showToast(msg)}
-          />
-        </div>
-        <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">{profile.username || user?.username || user?.user_metadata?.username || 'User'} <AdminBadge username={profile.username || user?.username || user?.email} /></h1>
-        {/* Bio */}
-        <div className="mt-2 w-full max-w-[280px]">
-          {editingBio ? (
-            <div className="flex flex-col gap-2">
-              <textarea
-                value={bioText}
-                onChange={(e) => setBioText(e.target.value.slice(0, 160))}
-                placeholder="Add a bio…"
-                rows={2}
-                maxLength={160}
-                autoFocus
-                className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-3 py-2 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none resize-none"
-              />
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-[#999]">{bioText.length}/160</span>
-                <div className="flex gap-2">
-                  <button onClick={() => { setEditingBio(false); setBioText(profile.bio || '') }} className="text-[#666] font-comic">CANCEL</button>
-                  <button onClick={saveBio} className="text-[var(--sv-accent)] font-comic">SAVE</button>
+      <div className="relative overflow-hidden bg-white border border-[#e0e0e0] rounded-3xl mx-4 mt-4 p-4 shadow-sm">
+        <ProfileEffects effectId={equippedEffect} />
+        
+        <section className="flex flex-col items-center text-center relative z-10 pt-2">
+          <div className="mb-3 relative">
+            <AvatarUpload
+              userId={user?.id}
+              currentUrl={profile.avatar_url}
+              name={profile.username}
+              size={100}
+              onUploaded={(avatar_url) => { setUserProfile({ ...profile, avatar_url }); showToast('Avatar updated') }}
+              onError={(msg) => showToast(msg)}
+              decorationId={equippedDecoration}
+            />
+          </div>
+          <h1 className="font-comic text-2xl text-[#1a1a1a] flex items-center gap-2">{profile.username || user?.username || user?.user_metadata?.username || 'User'} <AdminBadge username={profile.username || user?.username || user?.email} /></h1>
+          {/* Bio */}
+          <div className="mt-2 w-full max-w-[280px]">
+            {editingBio ? (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  value={bioText}
+                  onChange={(e) => setBioText(e.target.value.slice(0, 160))}
+                  placeholder="Add a bio…"
+                  rows={2}
+                  maxLength={160}
+                  autoFocus
+                  className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-3 py-2 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none resize-none"
+                />
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#999]">{bioText.length}/160</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setEditingBio(false); setBioText(profile.bio || '') }} className="text-[#666] font-comic">CANCEL</button>
+                    <button onClick={saveBio} className="text-[var(--sv-accent)] font-comic">SAVE</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : profile.bio ? (
-            <button onClick={() => setEditingBio(true)} className="text-sm text-[#1a1a1a] text-center hover:opacity-70 transition-opacity">
-              {profile.bio}
-            </button>
-          ) : (
-            <button onClick={() => setEditingBio(true)} className="text-xs text-[#999] hover:text-[var(--sv-accent)] transition-colors flex items-center gap-1 mx-auto">
-              <span className="material-symbols-outlined text-[14px]">edit</span>
-              Add a bio
-            </button>
-          )}
-        </div>
-      </section>
+            ) : profile.bio ? (
+              <button onClick={() => setEditingBio(true)} className="text-sm text-[#1a1a1a] text-center hover:opacity-70 transition-opacity">
+                {profile.bio}
+              </button>
+            ) : (
+              <button onClick={() => setEditingBio(true)} className="text-xs text-[#999] hover:text-[var(--sv-accent)] transition-colors flex items-center gap-1 mx-auto">
+                <span className="material-symbols-outlined text-[14px]">edit</span>
+                Add a bio
+              </button>
+            )}
+          </div>
+        </section>
+      </div>
 
       <section className="grid grid-cols-4 gap-2 px-4 mt-4">
         <Stat label="ACCURACY" value={profile.predictions_made ? `${Math.round((profile.predictions_correct / profile.predictions_made) * 100)}%` : '—'} />

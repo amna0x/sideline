@@ -339,6 +339,7 @@ function MyCosmeticsPanel({ userId }) {
   const [cosmetics, setCosmetics] = useState([])
   const [loading, setLoading] = useState(true)
   const showToast = useStore((s) => s.showToast)
+  const setUserProfile = useStore((s) => s.setUserProfile)
 
   useEffect(() => {
     if (!userId) return
@@ -354,6 +355,7 @@ function MyCosmeticsPanel({ userId }) {
       if (!currentlyEquipped && c.type === prev.find((x) => x.cosmetic_id === cosmeticId)?.type) return { ...c, equipped: false }
       return c
     }))
+    api.user(userId).then(setUserProfile).catch(() => {})
     showToast(!currentlyEquipped ? 'Equipped!' : 'Unequipped')
   }
 

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { getActivePredictions, getUpcomingPredictions, getPrediction, submitPrediction, hasUserSubmitted, mode } from '../db/index.js'
 import { db as mem } from '../db/memory.js'
+import { query } from '../db/postgres.js'
 import { requireAuth } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { writeLimiter } from '../middleware/rateLimit.js'
@@ -76,6 +77,22 @@ r.post('/submit', writeLimiter, requireAuth, validate({ body: submitSchema }), a
 
     const saved = await submitPrediction(record)
 
+    // Award +500 XP for voting/predicting
+    let newPointsTotal = 0
+    if (mode === 'postgres') {
+      const { rows } = await query(
+        'UPDATE users SET points_total = points_total + 500 WHERE id = $1 RETURNING points_total',
+        [userId]
+      )
+      newPointsTotal = rows[0]?.points_total || 0
+    } else {
+      const u = mem.users.get(userId)
+      if (u) {
+        u.points_total = (u.points_total || 0) + 500
+        newPointsTotal = u.points_total
+      }
+    }
+
     // Increment submission count on the prediction (for display)
     if (mode === 'memory') {
       const p = mem.predictions.get(prediction_id)
@@ -84,7 +101,7 @@ r.post('/submit', writeLimiter, requireAuth, validate({ body: submitSchema }), a
       // No submission_count column — handled client-side
     }
 
-    res.json({ ok: true, submission: saved })
+    res.json({ ok: true, submission: saved, new_points_total: newPointsTotal })
   } catch (e) { next(e) }
 })
 

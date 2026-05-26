@@ -80,6 +80,27 @@ export function usePredictions(matchId) {
         speed_ms: speedMs
       })
       setSubmissions((cur) => ({ ...cur, [prediction.id]: option }))
+
+      if (result && result.new_points_total != null) {
+        useStore.getState().setPoints(result.new_points_total)
+        const user = useStore.getState().user
+        if (user?.profile) {
+          useStore.getState().setUserProfile({
+            ...user.profile,
+            points_total: result.new_points_total
+          })
+        }
+      }
+
+      pushNotification({
+        type: 'xp',
+        title: 'VOTE RECORDED',
+        message: 'Earned +500 XP for voting!',
+        points: 500,
+        icon: '🪙',
+        duration: 4000
+      })
+
       return result
     } catch (e) {
       const msg = e.message || ''
