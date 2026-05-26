@@ -9,6 +9,7 @@ import { useSquad } from '../hooks/useSquad.js'
 import { useMatch } from '../hooks/useMatch.js'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
+import SFX from '../lib/sfx.js'
 
 const REACTIONS = ['⚽', '🔥', '😱', '👏', '💀']
 
@@ -270,7 +271,7 @@ export default function Squad() {
           {REACTIONS.map((emoji) => (
             <motion.button key={emoji} whileTap={{ scale: 0.8 }} onClick={() => sendReaction(emoji)}
               className="w-10 h-10 rounded-full bg-[#f5f5f5] border border-[#e0e0e0] flex items-center justify-center text-xl hover:border-[var(--sv-accent)] transition-colors"
-              onPointerDown={() => { try { if (navigator.vibrate) navigator.vibrate(8) } catch (e) {} }}>{emoji}</motion.button>
+              onPointerDown={() => { SFX.play('reaction'); try { if (navigator.vibrate) navigator.vibrate(8) } catch (e) {} }}>{emoji}</motion.button>
           ))}
         </div>
 
@@ -466,7 +467,9 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   useEffect(() => {
     if (messages.length > prevCount.current) {
       const last = messages[messages.length - 1]
-      // Only play sound if someone replied to you
+      if (last?.user_id !== userId) {
+        SFX.play('receive')
+      }
       if (last?.user_id !== userId && last?.reply_to_username) {
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
         if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
@@ -493,6 +496,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     setReplyTo(null)
     setShowStickers(false)
     setShowEmoji(false)
+    SFX.play('send')
     try { if (navigator.vibrate) navigator.vibrate(12) } catch (e) {}
     setTimeout(scrollToBottom, 50)
   }
@@ -530,11 +534,12 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
     onSend('', { msgType: 'sticker', stickerId: sticker.img })
     setShowStickers(false)
     setActivePack(null)
+    SFX.play('send')
     try { if (navigator.vibrate) navigator.vibrate(12) } catch (e) {}
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 mt-2">
+    <div className="flex-1 flex flex-col min-h-0 mt-2" onPointerDown={() => SFX.unlock()}>
       <div className="flex-1 overflow-y-auto space-y-1 px-1 pb-2">
         {messages.length === 0 && (
           <div className="text-center py-6 text-[#bbb] text-sm">No messages yet — say something!</div>
@@ -568,7 +573,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                 )}
                 {!isMe && !showAvatar && <div className="w-6 shrink-0" />}
 
-                <div className="max-w-[72%] flex flex-col">
+                <div className={`max-w-[72%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   {/* Reply preview */}
                   {msg.reply_to_text && (
                     <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)] bg-[#e8e8e8] text-[#444]'}`}>
@@ -640,8 +645,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, ease: 'easeOut' }}
-                      className="text-[9px] text-[#999] mt-0.5 text-right min-h-[1rem] leading-none"
-                      style={{ minWidth: '100%' }}
+                      className="max-w-full truncate text-[9px] text-[#999] mt-0.5 text-right min-h-[1rem] leading-none"
                     >
                       {seenBy.length <= 3
                         ? `Seen by ${seenBy.map((s) => s.username).join(', ')}`
