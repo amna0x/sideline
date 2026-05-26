@@ -274,7 +274,7 @@ export default function Squad() {
         </div>
 
         {/* Chat area */}
-        <ChatArea messages={chatMessages} userId={userId} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} onEdit={editMessage} onDelete={deleteMessage} />
+        <ChatArea messages={chatMessages} userId={userId} roles={roles} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} onEdit={editMessage} onDelete={deleteMessage} />
 
         <AnimatePresence>
           {activeDuel && (
@@ -395,12 +395,14 @@ export default function Squad() {
 }
 
 // iOS-style chat with animations and sound effects
-function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers, onEdit, onDelete }) {
+function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, typingUsers, onEdit, onDelete }) {
   const nav = useNavigate()
   const [text, setText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
   const [showStickers, setShowStickers] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(null)
+  function toggleMenu(id) { setMenuOpen((p) => (p === id ? null : id)) }
   const bottomRef = useRef(null)
   const chatContainerRef = useRef(null)
   const typingTimeout = useRef(null)
@@ -466,6 +468,13 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers,
       osc.stop(ctx.currentTime + 0.1)
     } catch {}
   }
+
+  // Close menus on outside click
+  useEffect(() => {
+    function onDocClick() { setMenuOpen(null) }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [])
 
   // Play sound on new messages from others
   const prevCount = useRef(messages.length)
@@ -554,6 +563,9 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers,
             const seenBy = (msg.seen_by || []).filter((s) => s.userId !== msg.user_id)
             // Only show seen on the last message sent by me
             const isLastSentByMe = isMe && !messages.slice(i + 1).some((m) => m.user_id === userId)
+            const myRole = roles[userId] || 'member'
+            const canEdit = isMe || myRole === 'admin' || myRole === 'moderator'
+            const canDelete = isMe || myRole === 'admin' || myRole === 'moderator'
 
             return (
               <motion.div
@@ -584,32 +596,13 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers,
                       <img src={msg.sticker_id} alt="sticker" className="w-full h-full object-contain" loading="lazy" />
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setReplyTo(msg)}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation()
-                        if (!onEdit) return
-                        if (msg.user_id !== userId) return
-                        const newText = window.prompt('Edit message', msg.message)
-                        if (newText === null) return
-                        if (newText.trim() === '') {
-                          // treat empty as delete confirmation
-                          if (window.confirm('Delete this message?')) onDelete?.(msg.id)
-                          return
-                        }
-                        onEdit(msg.id, newText.trim())
-                      }}
-                      onContextMenu={(e) => {
-                        // Right-click to delete (confirm)
-                        if (!onDelete) return
-                        if (msg.user_id !== userId) return
-                        e.preventDefault()
-                        if (window.confirm('Delete this message?')) onDelete(msg.id)
-                      }}
-                      className={`text-left px-3.5 py-2 group relative ${isMe
-                        ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                        : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
-                    >
+                    <div className="relative">
+                      <button
+                        onClick={() => setReplyTo(msg)}
+                        className={`text-left px-3.5 py-2 group relative ${isMe
+                          ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
+                          : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                      >
                       {showName && (
                         <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
                           className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
@@ -619,7 +612,30 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers,
                       <span className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-active:opacity-100 transition-opacity`}>
                         <span className="material-symbols-outlined text-[14px] text-[#999]">reply</span>
                       </span>
-                    </button>
+                      </button>
+
+                      {/* Action menu button */}
+                      {(canEdit || canDelete) && (
+                        <div className="absolute top-0 right-0">
+                          <button onClick={(e) => { e.stopPropagation(); toggleMenu(msg.id) }} className="p-1 text-[#666]">
+                            <span className="material-symbols-outlined text-[18px]">more_horiz</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Inline menu */}
+                      {menuOpen === msg.id && (
+                        <div className="absolute right-0 mt-8 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-30 w-36">
+                          <button onClick={() => { setReplyTo(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Reply</button>
+                          {canEdit && (
+                            <button onClick={() => { const newText = window.prompt('Edit message', msg.message); if (newText !== null && newText.trim() !== '') onEdit?.(msg.id, newText.trim()); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Edit</button>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => { if (window.confirm('Delete this message?')) onDelete?.(msg.id); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-[#fff0f0]">Delete</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Seen receipt — only on the last message you sent */}
