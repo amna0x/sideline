@@ -584,46 +584,45 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       <img src={msg.sticker_id} alt="sticker" className="w-full h-full object-contain" loading="lazy" />
                     </div>
                   ) : (
-                    <div className="relative">
+                    <div className={`flex items-center gap-1.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
                       <button
-                          onClick={() => setReplyTo(msg)}
-                          onTouchStart={(e) => { msg._longpress = setTimeout(() => toggleMenu(msg.id), 600) }}
-                          onTouchEnd={(e) => { clearTimeout(msg._longpress) }}
-                          onMouseDown={(e) => { if (e.button === 0) msg._mousehold = setTimeout(() => toggleMenu(msg.id), 600) }}
-                          onMouseUp={(e) => { clearTimeout(msg._mousehold) }}
-                          className={`text-left px-3.5 py-2 group relative ${isMe
-                            ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                            : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
-                        >
-                      {showName && (
-                        <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
-                          className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
-                      )}
-                      <div className="text-[14px] leading-snug">
-                        {editingId === msg.id ? (
-                          <div className="flex gap-2 items-center">
-                            <input value={editingText} onChange={(e) => setEditingText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-[#e0e0e0] text-sm" />
-                            <button onClick={() => submitEdit(msg.id)} className="px-3 py-1 rounded-lg bg-[var(--sv-accent)] text-white">Save</button>
-                            <button onClick={cancelEdit} className="px-3 py-1 rounded-lg border">Cancel</button>
-                          </div>
-                        ) : msg.msg_type === 'deleted' || msg.deleted_at ? (
-                          <span className="italic text-[#999]">Message deleted</span>
-                        ) : (
-                          <>
-                            <span>{msg.message}</span>
-                            {msg.edited_at && <span className="text-[10px] text-[#999] ml-2">(edited)</span>}
-                          </>
-                        )}
-                      </div>
-                      {/* Reply hint */}
-                      <span className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-active:opacity-100 transition-opacity`}>
-                        <span className="material-symbols-outlined text-[14px] text-[#999]">reply</span>
-                      </span>
+                        onClick={() => toggleMenu(msg.id)}
+                        className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[18px] font-bold leading-none transition-colors ${menuOpen === msg.id ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666] hover:bg-black/5'}`}
+                        aria-label="Message actions"
+                      >
+                        :
                       </button>
 
-                      {/* Inline menu — opened via long-press only (three-dot removed) */}
+                      <button
+                        onClick={() => setReplyTo(msg)}
+                        className={`relative text-left px-3.5 py-2 group ${isMe
+                          ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
+                          : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                      >
+                        {showName && (
+                          <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
+                            className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
+                        )}
+                        <div className="text-[14px] leading-snug">
+                          {editingId === msg.id ? (
+                            <div className="flex gap-2 items-center">
+                              <input value={editingText} onChange={(e) => setEditingText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-[#e0e0e0] text-sm text-[#1a1a1a]" />
+                              <button onClick={() => submitEdit(msg.id)} className="px-3 py-1 rounded-lg bg-[var(--sv-accent)] text-white">Save</button>
+                              <button onClick={cancelEdit} className="px-3 py-1 rounded-lg border">Cancel</button>
+                            </div>
+                          ) : msg.msg_type === 'deleted' || msg.deleted_at ? (
+                            <span className="italic text-[#999]">Message deleted</span>
+                          ) : (
+                            <>
+                              <span>{msg.message}</span>
+                              {msg.edited_at && <span className="text-[10px] text-[#999] ml-2">(edited)</span>}
+                            </>
+                          )}
+                        </div>
+                      </button>
+
                       {menuOpen === msg.id && (
-                        <div className="absolute right-0 mt-8 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-30 w-36">
+                        <div className={`absolute ${isMe ? 'right-0' : 'left-8'} mt-20 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-30 w-36`}>
                           <button onClick={() => { setReplyTo(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Reply</button>
                           {canEdit && (
                             <button onClick={() => { startEdit(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Edit</button>
