@@ -9,6 +9,7 @@ const liveMembers = new Map()
 const inviteCodeCache = new Map() // inviteCode -> squadId
 const reactionCooldowns = new Map()
 const duels = []
+const liveMessages = new Map()
 
 function genCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
@@ -141,8 +142,19 @@ async function dbGetChatHistory(squadId, limit = 50) {
     reply_to_id: r.reply_to_id,
     reply_to_text: r.reply_to_text,
     reply_to_username: r.reply_to_username,
-    created_at: r.created_at
+    created_at: r.created_at,
+    edited_at: r.edited_at,
+    deleted_at: r.deleted_at
   }))
+}
+
+async function dbGetMessage(messageId, squadId) {
+  const live = liveMessages.get(messageId)
+  if (mode !== 'postgres') {
+    return live?.squad_id === squadId ? live : null
+  }
+  const { rows } = await query('SELECT * FROM squad_messages WHERE id = $1 AND squad_id = $2 LIMIT 1', [messageId, squadId])
+  return rows[0] || (live?.squad_id === squadId ? live : null)
 }
 
 async function dbListSquads(matchId) {
@@ -402,14 +414,76 @@ export function registerSquadHandlers(io) {
         created_at: new Date().toISOString(),
         seen_by: []
       }
-      io.to(`squad:${squadId}`).emit('squad:chat_message', chatMsg)
       if (mode === 'postgres') {
-        query(
+        const inserted = await query(
           `INSERT INTO squad_messages (squad_id, user_id, username, message, avatar_url, reply_to_id, reply_to_text, reply_to_username, msg_type, sticker_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING id, created_at`,
           [squadId, user.id, chatMsg.username, msg, chatMsg.avatar_url, chatMsg.reply_to_id, chatMsg.reply_to_text, chatMsg.reply_to_username, type, chatMsg.sticker_id]
+        ).catch(() => null)
+        if (inserted?.rows?.[0]) {
+          chatMsg.id = inserted.rows[0].id
+          chatMsg.created_at = inserted.rows[0].created_at
+        }
+      }
+      liveMessages.set(chatMsg.id, chatMsg)
+      io.to(`squad:${squadId}`).emit('squad:chat_message', chatMsg)
+    })
+
+    socket.on('squad:message_edit', async ({ messageId, text }) => {
+      const user = socket.data.user
+      if (!user?.id || !messageId) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const msg = (text || '').trim().slice(0, 500)
+      if (!msg) return
+
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      const canModerate = roles[user.id] === 'admin' || roles[user.id] === 'moderator'
+      const existing = await dbGetMessage(messageId, squadId).catch(() => null)
+      if (!existing) return socket.emit('squad:error', { message: 'Message not found' })
+      if (existing.user_id !== user.id && !canModerate) {
+        return socket.emit('squad:error', { message: 'You cannot edit this message' })
+      }
+
+      const editedAt = new Date().toISOString()
+      if (mode === 'postgres') {
+        await query(
+          `UPDATE squad_messages
+           SET message = $1, msg_type = 'text', edited_at = NOW(), deleted_at = NULL
+           WHERE id = $2 AND squad_id = $3`,
+          [msg, messageId, squadId]
         ).catch(() => {})
       }
+      liveMessages.set(messageId, { ...(liveMessages.get(messageId) || existing || {}), message: msg, msg_type: 'text', edited_at: editedAt, deleted_at: null })
+      io.to(`squad:${squadId}`).emit('squad:message_updated', { messageId, message: msg, edited_at: editedAt })
+    })
+
+    socket.on('squad:message_delete', async ({ messageId }) => {
+      const user = socket.data.user
+      if (!user?.id || !messageId) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      const canModerate = roles[user.id] === 'admin' || roles[user.id] === 'moderator'
+      const existing = await dbGetMessage(messageId, squadId).catch(() => null)
+      if (!existing) return socket.emit('squad:error', { message: 'Message not found' })
+      if (existing.user_id !== user.id && !canModerate) {
+        return socket.emit('squad:error', { message: 'You cannot delete this message' })
+      }
+
+      const deletedAt = new Date().toISOString()
+      if (mode === 'postgres') {
+        await query(
+          `UPDATE squad_messages
+           SET message = '', msg_type = 'deleted', deleted_at = NOW()
+           WHERE id = $1 AND squad_id = $2`,
+          [messageId, squadId]
+        ).catch(() => {})
+      }
+      liveMessages.set(messageId, { ...(liveMessages.get(messageId) || existing || {}), message: '', msg_type: 'deleted', deleted_at: deletedAt })
+      io.to(`squad:${squadId}`).emit('squad:message_deleted', { messageId, deleted_at: deletedAt })
     })
 
     // Seen receipts

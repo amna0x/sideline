@@ -71,7 +71,7 @@ export const useStore = create((set) => ({
   setSquadChat: (msgs) => set({ squadChat: msgs }),
   appendSquadChat: (msg) => set((s) => ({ squadChat: [...s.squadChat.slice(-99), msg] })),
   updateSquadChatMsg: (id, update) => set((s) => ({ squadChat: s.squadChat.map((m) => m.id === id ? { ...m, ...update } : m) })),
-  addReaction: (r) => set((s) => ({ reactions: [...s.reactions.slice(-19), { ...r, id: Date.now() + Math.random() }] })),
+  addReaction: (r) => set((s) => ({ reactions: [...s.reactions.slice(-19), { ...r, id: Date.now() + Math.random(), createdAt: Date.now() }] })),
   clearReactions: () => set({ reactions: [] }),
   setActiveDuel: (duel) => set({ activeDuel: duel }),
   updateDuel: (update) => set((s) => ({

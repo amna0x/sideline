@@ -66,6 +66,18 @@ export function useSquad() {
         }))
       })
 
+      s.on('squad:message_updated', ({ messageId, message, edited_at }) => {
+        useStore.getState().updateSquadChatMsg(messageId, { message, edited_at })
+      })
+
+      s.on('squad:message_deleted', ({ messageId, deleted_at }) => {
+        useStore.getState().updateSquadChatMsg(messageId, {
+          message: '',
+          msg_type: 'deleted',
+          deleted_at
+        })
+      })
+
       s.on('squad:user_typing', ({ userId, username }) => {
         setTypingUsers((prev) => {
           const exists = prev.find((u) => u.userId === userId)
@@ -134,7 +146,7 @@ export function useSquad() {
       if (socketRef.current) {
         const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
           'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
-          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
+          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:message_updated', 'squad:message_deleted', 'squad:challenge_received', 'squad:challenge_sent',
           'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
         events.forEach((e) => socketRef.current.off(e))
       }
@@ -186,6 +198,14 @@ export function useSquad() {
     })
   }, [])
 
+  const editMessage = useCallback((messageId, text) => {
+    socketRef.current?.emit('squad:message_edit', { messageId, text })
+  }, [])
+
+  const deleteMessage = useCallback((messageId) => {
+    socketRef.current?.emit('squad:message_delete', { messageId })
+  }, [])
+
   const markSeen = useCallback((messageId) => {
     socketRef.current?.emit('squad:mark_seen', { messageId })
   }, [])
@@ -232,6 +252,7 @@ export function useSquad() {
     joinSquad, joinByInvite, leaveSquad, checkLeave,
     sendReaction, sendMessage, sendTyping, markSeen, getInviteCode,
     setVisibility, promote, demote, kick,
-    sendChallenge, acceptChallenge, submitDuelPick
+    sendChallenge, acceptChallenge, submitDuelPick,
+    editMessage, deleteMessage
   }
 }

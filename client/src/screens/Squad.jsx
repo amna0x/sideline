@@ -585,7 +585,9 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                     </div>
                   ) : (
                     <div className="relative">
-                        <button
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={(e) => {
                             if (longPressRef.current) {
                               clearTimeout(longPressRef.current)
@@ -603,7 +605,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                           onMouseUp={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
                           onMouseLeave={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
                           onContextMenu={(e) => { e.preventDefault(); setMenuOpen(msg.id) }}
-                          className={`select-none text-left px-3.5 py-2 group relative ${isMe
+                          className={`select-none text-left px-3.5 py-2 group relative cursor-pointer ${isMe
                             ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
                             : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
                           style={{ userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
@@ -615,9 +617,9 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       <div className="text-[14px] leading-snug">
                         {editingId === msg.id ? (
                           <div className="flex gap-2 items-center">
-                            <input value={editingText} onChange={(e) => setEditingText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-[#e0e0e0] text-sm" />
-                            <button onClick={() => submitEdit(msg.id)} className="px-3 py-1 rounded-lg bg-[var(--sv-accent)] text-white">Save</button>
-                            <button onClick={cancelEdit} className="px-3 py-1 rounded-lg border">Cancel</button>
+                            <input value={editingText} onChange={(e) => setEditingText(e.target.value)} onClick={(e) => e.stopPropagation()} className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-[#e0e0e0] bg-white text-[#1a1a1a] text-sm focus:outline-none focus:border-[var(--sv-accent)]" />
+                            <button onClick={(e) => { e.stopPropagation(); submitEdit(msg.id) }} className="px-3 py-1 rounded-lg bg-white text-[var(--sv-accent)] text-xs font-comic">Save</button>
+                            <button onClick={(e) => { e.stopPropagation(); cancelEdit() }} className="px-3 py-1 rounded-lg border border-white/40 text-xs font-comic">Cancel</button>
                           </div>
                         ) : msg.msg_type === 'deleted' || msg.deleted_at ? (
                           <span className="italic text-[#999]">Message deleted</span>
@@ -632,7 +634,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       <span className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-active:opacity-100 transition-opacity`}>
                         <span className="material-symbols-outlined text-[14px] text-[#999]">reply</span>
                       </span>
-                      </button>
+                      </div>
 
                     </div>
                   )}

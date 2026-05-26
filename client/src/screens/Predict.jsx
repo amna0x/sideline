@@ -42,7 +42,7 @@ export default function Predict() {
     <Layout title="PREDICT">
       <MatchHero match={match} />
 
-      <motion.div variants={stagger} initial="hidden" animate="show" className="px-4 mt-5 space-y-4">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="px-4 mt-5 space-y-4 pb-32">
         <motion.section variants={fadeUp}>
           <div className="flex items-center gap-2 mb-3">
             <span className="material-symbols-outlined text-[var(--sv-accent)] text-[18px]">radar</span>

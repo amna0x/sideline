@@ -15,7 +15,7 @@ const r = Router()
 
 const grantSchema = z.object({
   user_id: z.string().min(1).max(64),
-  points: z.number().int().min(0).max(1_000_000).optional().default(0),
+  points: z.number().int().min(0).optional().default(0),
   vault_all: z.boolean().optional().default(false)
 }).strict()
 

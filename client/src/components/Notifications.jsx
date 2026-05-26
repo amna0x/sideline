@@ -22,7 +22,7 @@ function NotifCard({ notif, index, onDismiss }) {
   const dismiss = useCallback(() => onDismiss(), [onDismiss])
 
   useEffect(() => {
-    const duration = notif.duration || 4000
+    const duration = Math.min(notif.duration || 2000, 2000)
     const start = Date.now()
     const frame = () => {
       const elapsed = Date.now() - start

@@ -1,13 +1,19 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { useMemo, useRef } from 'react'
 import { useStore } from '../store/index.js'
 
 export default function ReactionBurst() {
   const reactions = useStore((s) => s.reactions)
+  const mountedAt = useRef(Date.now())
+  const visibleReactions = useMemo(
+    () => reactions.filter((r) => (r.createdAt || 0) >= mountedAt.current).slice(-8),
+    [reactions]
+  )
 
   return (
     <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
       <AnimatePresence>
-        {reactions.slice(-8).map((r) => (
+        {visibleReactions.map((r) => (
           <Burst key={r.id} emoji={r.emoji} username={r.username} />
         ))}
       </AnimatePresence>

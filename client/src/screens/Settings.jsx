@@ -272,30 +272,96 @@ export default function Settings() {
 
 function AdminPanel() {
   const pushNotification = useStore((s) => s.pushNotification)
-  const addPoints = useStore((s) => s.addPoints)
   const match = useStore((s) => s.match)
   const setMatch = useStore((s) => s.setMatch)
+  const currentUser = useStore((s) => s.user)
+  const currentPoints = useStore((s) => s.points)
+  const [targetQuery, setTargetQuery] = useState('')
+  const [targetUser, setTargetUser] = useState(null)
+  const [userResults, setUserResults] = useState([])
+  const [xpAmount, setXpAmount] = useState('25000')
+  const [busy, setBusy] = useState(false)
 
-  async function grantBigXP() {
-    const user = useStore.getState().user
-    if (!user?.id) return
+  useEffect(() => {
+    const q = targetQuery.trim()
+    if (q.length < 2) {
+      setUserResults([])
+      return
+    }
+    const t = setTimeout(() => {
+      api.searchUsers(q).then(setUserResults).catch(() => setUserResults([]))
+    }, 180)
+    return () => clearTimeout(t)
+  }, [targetQuery])
+
+  const selectedUser = targetUser || (targetQuery.trim() ? null : currentUser)
+  const selectedName = selectedUser?.username || selectedUser?.profile?.username || selectedUser?.email || selectedUser?.id || 'Current user'
+
+  function pickUser(user) {
+    setTargetUser(user)
+    setTargetQuery(user.username || user.id)
+    setUserResults([])
+  }
+
+  async function loadUserById() {
+    const id = targetQuery.trim()
+    if (!id) return
+    setBusy(true)
     try {
-      const r = await api.post('/api/dev/grant', { user_id: user.id, points: 25000 })
-      useStore.getState().setPoints(r.points_total)
-      pushNotification({ type: 'xp', title: '+25,000 XP', message: `Total ${r.points_total.toLocaleString()}`, points: 25000, icon: '🪙', duration: 4000 })
+      const user = await api.user(id)
+      pickUser(user)
     } catch (e) {
-      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+      pushNotification({ type: 'goal', title: 'USER NOT FOUND', message: id.slice(0, 60), duration: 3000 })
+    } finally {
+      setBusy(false)
     }
   }
 
-  async function grantAllVault() {
-    const user = useStore.getState().user
-    if (!user?.id) return
+  async function grantXP(amountOverride) {
+    const amount = Number(amountOverride ?? xpAmount)
+    const targetId = selectedUser?.id
+    if (!targetId || !Number.isInteger(amount) || amount <= 0) {
+      pushNotification({ type: 'goal', title: 'INVALID XP', message: targetId ? 'Enter a positive whole number' : 'Select a user first', duration: 3000 })
+      return
+    }
+
+    setBusy(true)
     try {
-      const r = await api.post('/api/dev/grant', { user_id: user.id, vault_all: true })
-      pushNotification({ type: 'vault', title: 'VAULT UNLOCKED', message: `${r.granted_count} items granted`, icon: '🗝️', duration: 4000 })
+      const r = await api.devGrant({ user_id: targetId, points: amount })
+      if (targetId === currentUser?.id) useStore.getState().setPoints(r.points_total)
+      setTargetUser((prev) => prev && prev.id === targetId ? { ...prev, points_total: r.points_total } : prev)
+      pushNotification({
+        type: 'xp',
+        title: `+${amount.toLocaleString()} XP`,
+        message: `${selectedName} now has ${Number(r.points_total).toLocaleString()}`,
+        points: amount,
+        icon: '🪙',
+        duration: 4000
+      })
     } catch (e) {
       pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function grantBigXP() {
+    await grantXP(25000)
+  }
+
+  async function grantAllVault() {
+    if (!selectedUser?.id) {
+      pushNotification({ type: 'goal', title: 'SELECT USER', message: 'Choose a user first', duration: 3000 })
+      return
+    }
+    setBusy(true)
+    try {
+      const r = await api.devGrant({ user_id: selectedUser.id, vault_all: true })
+      pushNotification({ type: 'vault', title: 'VAULT UNLOCKED', message: `${selectedName}: ${r.granted_count} items granted`, icon: '🗝️', duration: 4000 })
+    } catch (e) {
+      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -313,14 +379,89 @@ function AdminPanel() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-16">
       <Card>
-        <div className="p-4">
-          <h3 className="font-comic text-sm text-[var(--sv-accent)] mb-3">ADMIN TOOLS</h3>
+        <div className="p-4 space-y-4">
+          <div>
+            <h3 className="font-comic text-sm text-[var(--sv-accent)] mb-1">TARGET USER</h3>
+            <p className="text-xs text-[#999]">Search username or paste a user ID.</p>
+          </div>
+
+          <div className="relative">
+            <div className="flex gap-2">
+              <input
+                value={targetQuery}
+                onChange={(e) => { setTargetQuery(e.target.value); setTargetUser(null) }}
+                placeholder="Username or user ID"
+                className="flex-1 min-w-0 bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-3 py-2.5 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none"
+              />
+              <button
+                onClick={loadUserById}
+                disabled={busy || !targetQuery.trim()}
+                className="px-3 py-2.5 rounded-xl border border-[var(--sv-accent)] text-[var(--sv-accent)] font-comic text-xs disabled:opacity-40"
+              >
+                LOAD
+              </button>
+            </div>
+            {userResults.length > 0 && !targetUser && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e0e0e0] rounded-xl shadow-lg z-30 overflow-hidden">
+                {userResults.map((u) => (
+                  <button key={u.id} onClick={() => pickUser(u)} className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-[#f5f5f5] border-b border-[#f0f0f0] last:border-b-0">
+                    <div className="min-w-0">
+                      <span className="block text-sm text-[#1a1a1a] font-medium truncate">{u.username || u.id}</span>
+                      <span className="block text-[10px] text-[#999] truncate">{u.id}</span>
+                    </div>
+                    <span className="shrink-0 text-[10px] text-[#999]">{Number(u.points_total || 0).toLocaleString()} XP</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl bg-[#f8f8f8] border border-[#e0e0e0] p-3">
+            <div className="text-[10px] font-comic text-[#999] mb-1">SELECTED</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-[#1a1a1a] truncate">{selectedUser ? selectedName : 'No user selected'}</div>
+                <div className="text-[10px] text-[#999] truncate">{selectedUser?.id || 'Choose a search result or load an ID'}</div>
+              </div>
+              <div className="shrink-0 text-xs font-comic text-[var(--sv-accent)]">
+                {Number(selectedUser?.points_total ?? (selectedUser?.id === currentUser?.id ? currentPoints : 0)).toLocaleString()} XP
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-4 space-y-4">
+          <h3 className="font-comic text-sm text-[var(--sv-accent)]">XP GRANT</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {[1000, 25000, 100000].map((amount) => (
+              <Btn key={amount} label={`+${amount >= 1000 ? `${amount / 1000}K` : amount}`} onClick={() => grantXP(amount)} disabled={busy} />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={xpAmount}
+              onChange={(e) => setXpAmount(e.target.value)}
+              className="flex-1 min-w-0 bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-3 py-2.5 text-sm text-[#1a1a1a] focus:border-[var(--sv-accent)] focus:outline-none"
+            />
+            <Btn label="ADD XP" onClick={() => grantXP()} disabled={busy} />
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-4 space-y-3">
+          <h3 className="font-comic text-sm text-[var(--sv-accent)]">ACTIONS</h3>
           <div className="grid grid-cols-2 gap-2">
-            <Btn label="🪙 +25K XP" onClick={grantBigXP} />
-            <Btn label="🗝️ All Vault" onClick={grantAllVault} />
-            <Btn label="🚀 Simulator" onClick={startSimulator} />
+            <Btn label="🪙 +25K XP" onClick={grantBigXP} disabled={busy} />
+            <Btn label="🗝️ All Vault" onClick={grantAllVault} disabled={busy} />
+            <Btn label="🚀 Simulator" onClick={startSimulator} disabled={busy} />
           </div>
         </div>
       </Card>
@@ -328,12 +469,13 @@ function AdminPanel() {
   )
 }
 
-function Btn({ label, onClick }) {
+function Btn({ label, onClick, disabled }) {
   return (
     <motion.button
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className="py-2.5 px-3 rounded-xl font-comic text-[12px] bg-[var(--sv-accent)] text-white"
+      disabled={disabled}
+      className="py-2.5 px-3 rounded-xl font-comic text-[12px] bg-[var(--sv-accent)] text-white disabled:opacity-40"
     >{label}</motion.button>
   )
 }
