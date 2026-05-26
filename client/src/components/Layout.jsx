@@ -23,7 +23,9 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE' }
       <TopBar title={title} points={points} />
       <Notifications />
       <main className="relative z-10">{children}</main>
-      {!hideNav && <BottomNav />}
+      <AnimatePresence>
+        {!hideNav && <BottomNav />}
+      </AnimatePresence>
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -299,7 +301,13 @@ const NAV = [
 function BottomNav() {
   const { pathname } = useLocation()
   return (
-    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center h-16 px-2 bg-white/95 backdrop-blur-xl border border-black/[0.06] rounded-full w-[92%] max-w-[420px] shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
+    <motion.nav
+      initial={{ y: 96, opacity: 0, scale: 0.96 }}
+      animate={{ y: 0, opacity: 1, scale: 1 }}
+      exit={{ y: 96, opacity: 0, scale: 0.96 }}
+      transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center h-16 px-2 bg-white/95 backdrop-blur-xl border border-black/[0.06] rounded-full w-[92%] max-w-[420px] shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
+    >
       {NAV.map((n) => {
         const active = pathname === n.to || (n.to !== '/' && pathname.startsWith(n.to))
         return (
@@ -326,6 +334,6 @@ function BottomNav() {
           </Link>
         )
       })}
-    </nav>
+    </motion.nav>
   )
 }

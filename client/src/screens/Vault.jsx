@@ -24,6 +24,7 @@ export default function Vault() {
   const [modal, setModal] = useState(null)
   const [detailItem, setDetailItem] = useState(null)
   const [confirmBuy, setConfirmBuy] = useState(null)
+  const [cosmeticModalOpen, setCosmeticModalOpen] = useState(false)
   const [buying, setBuying] = useState(false)
   const [mainTab, setMainTab] = useState('items')
   const [cosmeticsList, setCosmeticsList] = useState([])
@@ -100,7 +101,7 @@ export default function Vault() {
   }
 
   return (
-    <Layout title="THE VAULT">
+    <Layout title="THE VAULT" hideNav={!!detailItem || !!modal || !!confirmBuy || cosmeticModalOpen}>
       <section className="px-4 pt-4 pb-32">
         <h1 className="font-h2 text-h2 text-primary-container">THE VAULT</h1>
         <p className="text-on-surface-variant text-sm mb-4">Collectibles, badges, frames, and Adidas drops.</p>
@@ -166,6 +167,7 @@ export default function Vault() {
               api.userCosmetics(userId).then(setCosmeticOwned).catch(() => {})
               api.user(userId).then((p) => useStore.getState().setUserProfile(p)).catch(() => {})
             }}
+            onModalChange={setCosmeticModalOpen}
           />
         )}
       </section>
@@ -198,19 +200,19 @@ function DetailModal({ item, owned, ownedRecord, points, onClose, onRedeem, onBu
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center px-4 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+6.75rem)]" onClick={onClose}>
+                className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div
         initial={{ scale: 0.85, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 22 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[320px] max-h-[calc(100dvh-8rem)] rounded-3xl overflow-y-auto"
+        className="w-full max-w-[320px] rounded-3xl overflow-hidden"
         style={{ boxShadow: `0 0 60px ${t}33, 0 0 120px ${t}11` }}
       >
         {/* Card-shaped top section */}
         <div
-          className="min-h-[320px] max-h-[46dvh] relative flex flex-col items-center justify-center p-6"
+          className="aspect-[3/4] relative flex flex-col items-center justify-center p-6"
           style={{ background: `radial-gradient(ellipse at 50% 30%, ${t}22 0%, #0a0a0a 70%)`, borderBottom: `1px solid ${t}44` }}
         >
           {/* Tier badge */}
@@ -236,7 +238,7 @@ function DetailModal({ item, owned, ownedRecord, points, onClose, onRedeem, onBu
         </div>
 
         {/* Bottom info section */}
-        <div className="bg-surface-container-low p-5 pb-6">
+        <div className="bg-surface-container-low p-5 pb-8">
           <div className="flex justify-between items-center mb-4">
             <div>
               <span className="text-xs text-outline font-label-caps">COST</span>
@@ -277,7 +279,7 @@ function DetailModal({ item, owned, ownedRecord, points, onClose, onRedeem, onBu
 function RedeemModal({ item, code, alreadyRedeemed, onClose }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center px-4 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+6.75rem)]" onClick={onClose}>
+                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: 'spring', damping: 26 }}
@@ -299,7 +301,7 @@ function PurchaseModal({ item, points, busy, onCancel, onConfirm }) {
   const after = points - cost
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center px-4 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+6.75rem)]" onClick={busy ? undefined : onCancel}>
+                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={busy ? undefined : onCancel}>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: 'spring', damping: 26 }}
@@ -343,11 +345,16 @@ const TIER_BADGE = {
   legendary: { bg: 'bg-yellow-100', text: 'text-yellow-700' }
 }
 
-function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, onPurchased }) {
+function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, onPurchased, onModalChange }) {
   const [buying, setBuying] = useState(null)
   const [confirmItem, setConfirmItem] = useState(null)
   const setPoints = useStore((s) => s.setPoints)
   const ownedIds = new Set(owned.map((o) => o.cosmetic_id))
+
+  useEffect(() => {
+    onModalChange?.(!!confirmItem)
+    return () => onModalChange?.(false)
+  }, [confirmItem, onModalChange])
 
   async function handlePurchase(cosmetic) {
     if (ownedIds.has(cosmetic.id)) { showToast('Already owned!'); return }
@@ -454,7 +461,7 @@ function CosmeticsTab({ cosmetics, owned, loading, points, userId, showToast, on
 
       {/* Purchase confirmation */}
       {confirmItem && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center px-4 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+6.75rem)]" onClick={() => setConfirmItem(null)}>
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={() => setConfirmItem(null)}>
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-[300px] bg-white rounded-2xl border border-[#e0e0e0] p-5 shadow-lg">
