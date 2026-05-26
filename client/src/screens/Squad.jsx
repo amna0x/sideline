@@ -405,8 +405,11 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   const [showEmoji, setShowEmoji] = useState(false)
   const [menuOpen, setMenuOpen] = useState(null)
   function toggleMenu(id) { setMenuOpen((p) => (p === id ? null : id)) }
+  function closeMenu() { setMenuOpen(null) }
   const [editingId, setEditingId] = useState(null)
   const [editingText, setEditingText] = useState('')
+  const currentMenuMessage = menuOpen ? messages.find((m) => m.id === menuOpen) : null
+  const longPressRef = useRef(null)
 
   function startEdit(msg) {
     setEditingId(msg.id)
@@ -471,7 +474,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
         if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
           SFX.play('receive')
-            try { if (navigator.vibrate) navigator.vibrate(10) } catch (e) {}
+          try { if (navigator.vibrate) navigator.vibrate(10) } catch (e) {}
         }
       }
     }
@@ -552,7 +555,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
             // Only show seen on the last message sent by me
             const isLastSentByMe = isMe && !messages.slice(i + 1).some((m) => m.user_id === userId)
             const myRole = roles[userId] || 'member'
-            const canEdit = isMe
+            const canEdit = isMe || myRole === 'admin' || myRole === 'moderator'
             const canDelete = isMe || myRole === 'admin' || myRole === 'moderator'
 
             return (
@@ -584,56 +587,55 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       <img src={msg.sticker_id} alt="sticker" className="w-full h-full object-contain" loading="lazy" />
                     </div>
                   ) : (
-                    <div className={`relative flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <button
-                        onClick={() => toggleMenu(msg.id)}
-                        className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[12px] font-bold leading-none transition-colors ${menuOpen === msg.id ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666] hover:bg-black/5'}`}
-                        aria-label="Message actions"
-                      >
-                        :
-                      </button>
-
-                      <button
-                        onClick={() => setReplyTo(msg)}
-                        className={`relative text-left px-3 py-2 group ${isMe
-                          ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                          : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
-                      >
-                        {showName && (
-                          <div
-                            onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
-                            className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block cursor-pointer"
-                          >{msg.username}</div>
-                        )}
-                        <div className="text-[14px] leading-snug">
-                          {editingId === msg.id ? (
-                            <div className="flex gap-2 items-center">
-                              <input value={editingText} onChange={(e) => setEditingText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-[#e0e0e0] text-sm text-[#1a1a1a]" />
-                              <button onClick={() => submitEdit(msg.id)} className="px-3 py-1 rounded-lg bg-[var(--sv-accent)] text-white">Save</button>
-                              <button onClick={cancelEdit} className="px-3 py-1 rounded-lg border">Cancel</button>
-                            </div>
-                          ) : msg.msg_type === 'deleted' || msg.deleted_at ? (
-                            <span className="italic text-[#999]">Message deleted</span>
-                          ) : (
-                            <>
-                              <span>{msg.message}</span>
-                              {msg.edited_at && <span className="text-[10px] text-[#999] ml-2">(edited)</span>}
-                            </>
-                          )}
-                        </div>
-                      </button>
-
-                      {menuOpen === msg.id && (
-                        <div className={`absolute ${isMe ? 'right-0' : 'left-8'} top-full mt-1 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-50 w-36`}>
-                          <button onClick={() => { setReplyTo(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Reply</button>
-                          {canEdit && !msg.deleted_at && (
-                            <button onClick={() => { startEdit(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Edit</button>
-                          )}
-                          {canDelete && (
-                            <button onClick={() => { if (window.confirm('Delete this message?')) onDelete?.(msg.id); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-[#fff0f0]">Delete</button>
-                          )}
-                        </div>
+                    <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            if (longPressRef.current) {
+                              clearTimeout(longPressRef.current)
+                              longPressRef.current = null
+                              e.preventDefault()
+                              e.stopPropagation()
+                              return
+                            }
+                            setReplyTo(msg)
+                          }}
+                          onTouchStart={() => { longPressRef.current = window.setTimeout(() => { longPressRef.current = null; setMenuOpen(msg.id) }, 550) }}
+                          onTouchEnd={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
+                          onTouchMove={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
+                          onMouseDown={(e) => { if (e.button === 0) longPressRef.current = window.setTimeout(() => { longPressRef.current = null; setMenuOpen(msg.id) }, 550) }}
+                          onMouseUp={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
+                          onMouseLeave={() => { if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null } }}
+                          onContextMenu={(e) => { e.preventDefault(); setMenuOpen(msg.id) }}
+                          className={`text-left px-3.5 py-2 group relative ${isMe
+                            ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
+                            : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
+                        >
+                      {showName && (
+                        <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
+                          className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
                       )}
+                      <div className="text-[14px] leading-snug">
+                        {editingId === msg.id ? (
+                          <div className="flex gap-2 items-center">
+                            <input value={editingText} onChange={(e) => setEditingText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-[#e0e0e0] text-sm" />
+                            <button onClick={() => submitEdit(msg.id)} className="px-3 py-1 rounded-lg bg-[var(--sv-accent)] text-white">Save</button>
+                            <button onClick={cancelEdit} className="px-3 py-1 rounded-lg border">Cancel</button>
+                          </div>
+                        ) : msg.msg_type === 'deleted' || msg.deleted_at ? (
+                          <span className="italic text-[#999]">Message deleted</span>
+                        ) : (
+                          <>
+                            <span>{msg.message}</span>
+                            {msg.edited_at && <span className="text-[10px] text-[#999] ml-2">(edited)</span>}
+                          </>
+                        )}
+                      </div>
+                      {/* Reply hint */}
+                      <span className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-active:opacity-100 transition-opacity`}>
+                        <span className="material-symbols-outlined text-[14px] text-[#999]">reply</span>
+                      </span>
+                      </button>
+
                     </div>
                   )}
 
@@ -752,6 +754,57 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
             <button onClick={() => setReplyTo(null)} className="text-[#999] shrink-0">
               <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fixed action sheet for long-press menu */}
+      <AnimatePresence>
+        {currentMenuMessage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[130] bg-black/35 flex items-end justify-center"
+            onClick={closeMenu}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[480px] bg-white rounded-t-3xl border-t border-[#e0e0e0] p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
+            >
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-[#e5e5e5] mb-4" />
+              <div className="mb-3">
+                <div className="text-[10px] font-comic text-[#999] uppercase mb-1">Message actions</div>
+                <div className="text-sm text-[#1a1a1a] font-medium truncate">{currentMenuMessage.username}</div>
+                <div className="text-xs text-[#666]">
+                  {currentMenuMessage.deleted_at || currentMenuMessage.msg_type === 'deleted' ? 'Message deleted' : currentMenuMessage.message}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <button onClick={() => { setReplyTo(currentMenuMessage); closeMenu() }} className="w-full text-left px-4 py-3 rounded-2xl border border-[#e0e0e0] bg-white text-sm">Reply</button>
+                {(() => {
+                  const myRole = roles[userId] || 'member'
+                  const isMe = currentMenuMessage.user_id === userId
+                  const canEdit = isMe || myRole === 'admin' || myRole === 'moderator'
+                  const canDelete = isMe || myRole === 'admin' || myRole === 'moderator'
+                  return (
+                    <>
+                      {canEdit && (
+                        <button onClick={() => { startEdit(currentMenuMessage); closeMenu() }} className="w-full text-left px-4 py-3 rounded-2xl border border-[#e0e0e0] bg-white text-sm">Edit</button>
+                      )}
+                      {canDelete && (
+                        <button onClick={() => { onDelete?.(currentMenuMessage.id); closeMenu() }} className="w-full text-left px-4 py-3 rounded-2xl border border-red-200 bg-red-50 text-sm text-red-600">Delete</button>
+                      )}
+                    </>
+                  )
+                })()}
+                <button onClick={closeMenu} className="w-full text-left px-4 py-3 rounded-2xl border border-[#e0e0e0] bg-[#fafafa] text-sm text-[#666]">Cancel</button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

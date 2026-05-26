@@ -1,104 +1,109 @@
-// Lightweight SFX helper. Uses AudioContext and attempts to preload short audio files
-// from /sfx/*.mp3 (public). If they are missing, it falls back to oscillator tones.
 import { useStore } from '../store/index.js'
 
-const ctx = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) ? new (window.AudioContext || window.webkitAudioContext)() : null
-let buffers = {}
 const FILES = {
-  send: '/sfx/send.mp3',
-  receive: '/sfx/receive.mp3',
-  reaction: '/sfx/reaction.mp3'
+  send: '/sfx/send.wav',
+  receive: '/sfx/receive.wav',
+  reaction: '/sfx/reaction.wav'
 }
 
-function getVolume() {
-  try {
-    return useStore.getState().sfxVolume ?? 0.8
-  } catch {
-    return 0.8
+let audioContext = null
+let buffers = {}
+
+function getContext() {
+  if (typeof window === 'undefined') return null
+  if (!audioContext) {
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (!Ctx) return null
+    audioContext = new Ctx()
   }
+  return audioContext
 }
 
 function enabled() {
   try { return !!useStore.getState().sfxEnabled } catch { return true }
 }
 
+function volume() {
+  try { return Math.max(0, Math.min(1, useStore.getState().sfxVolume ?? 0.8)) } catch { return 0.8 }
+}
+
 async function preload(name) {
-  if (!ctx) return
-  if (!FILES[name]) return
-  if (buffers[name]) return
+  const ctx = getContext()
+  if (!ctx || buffers[name] || !FILES[name]) return
   try {
     const res = await fetch(FILES[name], { cache: 'no-cache' })
     if (!res.ok) return
     const ab = await res.arrayBuffer()
-    const decoded = await ctx.decodeAudioData(ab)
-    buffers[name] = decoded
-  } catch (e) {
-    // ignore — fallback will handle
+    buffers[name] = await ctx.decodeAudioData(ab)
+  } catch {
+    // Fallback oscillator will handle it.
   }
 }
 
-async function playOsc(name) {
+function playTone(name) {
+  const ctx = getContext()
   if (!ctx) return
-  try {
-    const vol = getVolume()
-    const now = ctx.currentTime
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    gain.gain.setValueAtTime(0.0001, now)
-    if (name === 'send') {
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(1200, now)
-      osc.frequency.exponentialRampToValueAtTime(1800, now + 0.08)
-      gain.gain.setValueAtTime(vol * 0.12, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12)
-      osc.start(now)
-      osc.stop(now + 0.12)
-    } else if (name === 'receive') {
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(800, now)
-      osc.frequency.exponentialRampToValueAtTime(1000, now + 0.06)
-      gain.gain.setValueAtTime(vol * 0.08, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1)
-      osc.start(now)
-      osc.stop(now + 0.1)
-    } else if (name === 'reaction') {
-      osc.type = 'triangle'
-      osc.frequency.setValueAtTime(600, now)
-      osc.frequency.exponentialRampToValueAtTime(900, now + 0.09)
-      gain.gain.setValueAtTime(vol * 0.09, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12)
-      osc.start(now)
-      osc.stop(now + 0.12)
-    }
-  } catch (e) {}
+  const gain = ctx.createGain()
+  const osc = ctx.createOscillator()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  const now = ctx.currentTime
+  const vol = volume()
+
+  if (name === 'send') {
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(1200, now)
+    osc.frequency.exponentialRampToValueAtTime(1800, now + 0.08)
+    gain.gain.setValueAtTime(vol * 0.12, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12)
+    osc.start(now)
+    osc.stop(now + 0.12)
+    return
+  }
+
+  if (name === 'receive') {
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(800, now)
+    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.06)
+    gain.gain.setValueAtTime(vol * 0.08, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1)
+    osc.start(now)
+    osc.stop(now + 0.1)
+    return
+  }
+
+  osc.type = 'triangle'
+  osc.frequency.setValueAtTime(600, now)
+  osc.frequency.exponentialRampToValueAtTime(900, now + 0.09)
+  gain.gain.setValueAtTime(vol * 0.09, now)
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12)
+  osc.start(now)
+  osc.stop(now + 0.12)
 }
 
 export async function play(name) {
   if (!enabled()) return
-  // Try preload once
-  if (!buffers[name] && FILES[name]) preload(name)
+  await preload(name)
+  const ctx = getContext()
   if (ctx && buffers[name]) {
     try {
-      const vol = getVolume()
       const src = ctx.createBufferSource()
-      src.buffer = buffers[name]
       const gain = ctx.createGain()
-      gain.gain.value = vol
+      src.buffer = buffers[name]
+      gain.gain.value = volume()
       src.connect(gain)
       gain.connect(ctx.destination)
       src.start(0)
       return
-    } catch (e) {
-      // fall through to oscillator fallback
+    } catch {
+      // fallback below
     }
   }
-  return playOsc(name)
+  playTone(name)
 }
 
-export function setBuffer(name, audioBuffer) {
-  buffers[name] = audioBuffer
+export function preloadAll() {
+  Object.keys(FILES).forEach((name) => { preload(name) })
 }
 
-export default { play, setBuffer, preload }
+export default { play, preloadAll }
