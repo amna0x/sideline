@@ -3,6 +3,7 @@ import { mode } from '../db/index.js'
 import { query } from '../db/postgres.js'
 import { db } from '../db/memory.js'
 import { generateQuiz } from '../services/gemini.js'
+import { requireAuth } from '../middleware/auth.js'
 
 const r = Router()
 
@@ -61,10 +62,11 @@ r.get('/:matchId/history', async (_req, res, _next) => {
   res.json([])
 })
 
-r.post('/answer', async (req, res, next) => {
+r.post('/answer', requireAuth, async (req, res, next) => {
   try {
-    const { user_id, question_id, answer, elapsed_seconds } = req.body || {}
-    if (!user_id || !question_id) return res.status(400).json({ error: 'missing fields' })
+    const userId = req.user.id
+    const { question_id, answer, elapsed_seconds } = req.body || {}
+    if (!question_id) return res.status(400).json({ error: 'missing fields' })
     let q
     if (mode === 'postgres') {
       const { rows } = await query('SELECT * FROM quiz_questions WHERE id = $1', [question_id])
@@ -82,10 +84,10 @@ r.post('/answer', async (req, res, next) => {
     if (mode === 'postgres') {
       await query(
         'INSERT INTO quiz_attempts (user_id, question_id, answer, correct, points_earned, elapsed_seconds) VALUES ($1, $2, $3, $4, $5, $6)',
-        [user_id, question_id, answer, correct, points_earned, elapsed_seconds]
+        [userId, question_id, answer, correct, points_earned, elapsed_seconds]
       ).catch(() => {})
       if (correct) {
-        await query('UPDATE users SET points_total = points_total + $1 WHERE id = $2', [points_earned, user_id]).catch(() => {})
+        await query('UPDATE users SET points_total = points_total + $1 WHERE id = $2', [points_earned, userId]).catch(() => {})
       }
     }
     res.json({ correct, points_earned, fun_fact: q.fun_fact })
