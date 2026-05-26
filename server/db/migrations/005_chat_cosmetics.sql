@@ -5,6 +5,8 @@ ALTER TABLE squad_messages ADD COLUMN IF NOT EXISTS reply_to_text TEXT;
 ALTER TABLE squad_messages ADD COLUMN IF NOT EXISTS reply_to_username TEXT;
 ALTER TABLE squad_messages ADD COLUMN IF NOT EXISTS msg_type TEXT DEFAULT 'text';
 ALTER TABLE squad_messages ADD COLUMN IF NOT EXISTS sticker_id TEXT;
+ALTER TABLE squad_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+ALTER TABLE squad_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 -- Seen receipts
 CREATE TABLE IF NOT EXISTS message_seen (

@@ -37,9 +37,14 @@ export function useSquad() {
       })
 
       s.on('squad:member_joined', (member) => {
-        useStore.setState((prev) => ({
-          squadMembers: [...prev.squadMembers.filter((m) => m.userId !== member.userId), member]
-        }))
+        useStore.setState((prev) => {
+          // Merge member into existing list (preserve existing avatar if present)
+          const exists = prev.squadMembers.find((m) => m.userId === member.userId)
+          if (exists) {
+            return { squadMembers: prev.squadMembers.map((m) => m.userId === member.userId ? { ...m, ...member } : m) }
+          }
+          return { squadMembers: [...prev.squadMembers, member] }
+        })
       })
 
       s.on('squad:member_left', ({ userId, memberCount }) => {
@@ -53,6 +58,15 @@ export function useSquad() {
       s.on('squad:chat_message', (msg) => {
         useStore.getState().appendSquadChat(msg)
         setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
+      })
+
+      s.on('squad:message_edited', (update) => {
+        useStore.getState().updateSquadChatMsg(update.id, { message: update.message, edited_at: update.edited_at })
+      })
+
+      s.on('squad:message_deleted', ({ id, deleted_at, deleted_by }) => {
+        // mark message as deleted; front-end will render appropriately
+        useStore.getState().updateSquadChatMsg(id, { deleted_at, message: '', msg_type: 'deleted' })
       })
 
       s.on('squad:message_seen', ({ messageId, userId: seenBy, username }) => {
@@ -132,10 +146,10 @@ export function useSquad() {
     return () => {
       cancelled = true
       if (socketRef.current) {
-        const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
-          'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
-          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
-          'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
+          const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
+            'squad:chat_message', 'squad:message_edited', 'squad:message_deleted', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
+            'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
+            'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
         events.forEach((e) => socketRef.current.off(e))
       }
     }
@@ -186,6 +200,14 @@ export function useSquad() {
     })
   }, [])
 
+  const editMessage = useCallback((messageId, newText) => {
+    socketRef.current?.emit('squad:edit_message', { messageId, newText })
+  }, [])
+
+  const deleteMessage = useCallback((messageId) => {
+    socketRef.current?.emit('squad:delete_message', { messageId })
+  }, [])
+
   const markSeen = useCallback((messageId) => {
     socketRef.current?.emit('squad:mark_seen', { messageId })
   }, [])
@@ -233,5 +255,6 @@ export function useSquad() {
     sendReaction, sendMessage, sendTyping, markSeen, getInviteCode,
     setVisibility, promote, demote, kick,
     sendChallenge, acceptChallenge, submitDuelPick
+    , editMessage, deleteMessage
   }
 }

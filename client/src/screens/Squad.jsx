@@ -19,6 +19,7 @@ export default function Squad() {
     joinSquad, joinByInvite, leaveSquad, checkLeave, sendReaction, sendMessage, sendTyping, markSeen,
     getInviteCode, setVisibility, promote, demote, kick,
     sendChallenge, acceptChallenge
+    , editMessage, deleteMessage
   } = useSquad()
   const squadMembers = useStore((s) => s.squadMembers)
   const activeDuel = useStore((s) => s.activeDuel)
@@ -273,7 +274,7 @@ export default function Squad() {
         </div>
 
         {/* Chat area */}
-        <ChatArea messages={chatMessages} userId={userId} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} />
+        <ChatArea messages={chatMessages} userId={userId} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} onEdit={editMessage} onDelete={deleteMessage} />
 
         <AnimatePresence>
           {activeDuel && (
@@ -394,7 +395,7 @@ export default function Squad() {
 }
 
 // iOS-style chat with animations and sound effects
-function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers }) {
+function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers, onEdit, onDelete }) {
   const nav = useNavigate()
   const [text, setText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
@@ -585,6 +586,26 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                   ) : (
                     <button
                       onClick={() => setReplyTo(msg)}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation()
+                        if (!onEdit) return
+                        if (msg.user_id !== userId) return
+                        const newText = window.prompt('Edit message', msg.message)
+                        if (newText === null) return
+                        if (newText.trim() === '') {
+                          // treat empty as delete confirmation
+                          if (window.confirm('Delete this message?')) onDelete?.(msg.id)
+                          return
+                        }
+                        onEdit(msg.id, newText.trim())
+                      }}
+                      onContextMenu={(e) => {
+                        // Right-click to delete (confirm)
+                        if (!onDelete) return
+                        if (msg.user_id !== userId) return
+                        e.preventDefault()
+                        if (window.confirm('Delete this message?')) onDelete(msg.id)
+                      }}
                       className={`text-left px-3.5 py-2 group relative ${isMe
                         ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
                         : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
