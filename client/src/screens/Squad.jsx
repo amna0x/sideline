@@ -216,7 +216,13 @@ export default function Squad() {
   // ROOM VIEW
   return (
     <Layout title={squad.name?.toUpperCase()}>
-      <section className="px-4 pt-4 relative overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 56px - 80px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <section
+        className="px-4 pt-4 relative overflow-hidden flex flex-col"
+        style={{
+          height: 'calc(100dvh - 5rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.75rem)'
+        }}
+      >
         <ReactionBurst />
 
         {/* Room header */}
