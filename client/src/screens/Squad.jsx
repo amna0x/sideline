@@ -552,7 +552,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
             // Only show seen on the last message sent by me
             const isLastSentByMe = isMe && !messages.slice(i + 1).some((m) => m.user_id === userId)
             const myRole = roles[userId] || 'member'
-            const canEdit = isMe || myRole === 'admin' || myRole === 'moderator'
+            const canEdit = isMe
             const canDelete = isMe || myRole === 'admin' || myRole === 'moderator'
 
             return (
@@ -584,10 +584,10 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       <img src={msg.sticker_id} alt="sticker" className="w-full h-full object-contain" loading="lazy" />
                     </div>
                   ) : (
-                    <div className={`flex items-center gap-1.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`relative flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                       <button
                         onClick={() => toggleMenu(msg.id)}
-                        className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[18px] font-bold leading-none transition-colors ${menuOpen === msg.id ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666] hover:bg-black/5'}`}
+                        className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[12px] font-bold leading-none transition-colors ${menuOpen === msg.id ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666] hover:bg-black/5'}`}
                         aria-label="Message actions"
                       >
                         :
@@ -595,13 +595,15 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
 
                       <button
                         onClick={() => setReplyTo(msg)}
-                        className={`relative text-left px-3.5 py-2 group ${isMe
+                        className={`relative text-left px-3 py-2 group ${isMe
                           ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
                           : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
                       >
                         {showName && (
-                          <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
-                            className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
+                          <div
+                            onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
+                            className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block cursor-pointer"
+                          >{msg.username}</div>
                         )}
                         <div className="text-[14px] leading-snug">
                           {editingId === msg.id ? (
@@ -622,9 +624,9 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       </button>
 
                       {menuOpen === msg.id && (
-                        <div className={`absolute ${isMe ? 'right-0' : 'left-8'} mt-20 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-30 w-36`}>
+                        <div className={`absolute ${isMe ? 'right-0' : 'left-8'} top-full mt-1 bg-white border border-[#e0e0e0] rounded-lg shadow-lg z-50 w-36`}>
                           <button onClick={() => { setReplyTo(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Reply</button>
-                          {canEdit && (
+                          {canEdit && !msg.deleted_at && (
                             <button onClick={() => { startEdit(msg); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f5f5]">Edit</button>
                           )}
                           {canDelete && (
