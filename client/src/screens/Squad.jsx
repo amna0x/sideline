@@ -532,6 +532,8 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
             const showAvatar = !isMe && (i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id)
             const isSticker = msg.msg_type === 'sticker'
             const seenBy = (msg.seen_by || []).filter((s) => s.userId !== msg.user_id)
+            // Only show seen on the last message sent by me
+            const isLastSentByMe = isMe && !messages.slice(i + 1).some((m) => m.user_id === userId)
 
             return (
               <motion.div
@@ -552,7 +554,7 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                 <div className="max-w-[72%] flex flex-col">
                   {/* Reply preview */}
                   {msg.reply_to_text && (
-                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)] bg-white/80 text-[#333]'}`}>
+                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)] bg-[#e8e8e8] text-[#444]'}`}>
                       <span className="font-comic text-[var(--sv-accent)]">{msg.reply_to_username}</span>: {msg.reply_to_text.slice(0, 60)}
                     </div>
                   )}
@@ -566,7 +568,7 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                       onClick={() => setReplyTo(msg)}
                       className={`text-left px-3.5 py-2 ${isMe
                         ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
-                        : 'bg-white/95 text-[#1a1a1a] rounded-[18px] rounded-bl-[4px] shadow-sm border border-black/5'}`}
+                        : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
                     >
                       {showName && (
                         <button onClick={(e) => { e.stopPropagation(); nav(`/profile/${msg.user_id}`) }}
@@ -576,13 +578,18 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                     </button>
                   )}
 
-                  {/* Seen receipts (Instagram-style) */}
-                  {isMe && seenBy.length > 0 && (
-                    <div className="text-[9px] text-[#999] mt-0.5 text-right">
+                  {/* Seen receipt — only on the last message you sent */}
+                  {isMe && isLastSentByMe && seenBy.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="text-[9px] text-[#999] mt-0.5 text-right"
+                    >
                       {seenBy.length <= 3
                         ? `Seen by ${seenBy.map((s) => s.username).join(', ')}`
                         : `Seen by ${seenBy[0].username} and ${seenBy.length - 1} others`}
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </motion.div>

@@ -560,3 +560,24 @@ body {
     max-width: 400px;
   }
 }
+
+
+/* Chat bubble received messages in dark themes */
+[data-theme="spiderverse"] .bg-\[\#e9e9eb\],
+[data-theme="mint"] .bg-\[\#e9e9eb\],
+[data-theme="inferno"] .bg-\[\#e9e9eb\],
+[data-theme="cobalt"] .bg-\[\#e9e9eb\],
+[data-theme="solar"] .bg-\[\#e9e9eb\] {
+  background-color: rgba(255,255,255,0.1) !important;
+  color: var(--text-fg, #fff) !important;
+}
+
+/* Chat reply preview in dark themes */
+[data-theme="spiderverse"] .bg-\[\#e8e8e8\],
+[data-theme="mint"] .bg-\[\#e8e8e8\],
+[data-theme="inferno"] .bg-\[\#e8e8e8\],
+[data-theme="cobalt"] .bg-\[\#e8e8e8\],
+[data-theme="solar"] .bg-\[\#e8e8e8\] {
+  background-color: rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.7) !important;
+}

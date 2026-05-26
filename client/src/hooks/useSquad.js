@@ -26,7 +26,10 @@ export function useSquad() {
         setSquad(state)
         setSquadMembers(state.members)
         setRoles(state.roles || {})
-        useStore.getState().pushNotification({ type: 'squad', title: `JOINED ${state.name}`, message: `${state.memberCount} members`, icon: '👥', duration: 3000 })
+        // Don't show notification on re-mount, only on fresh join
+        if (!useStore.getState().squad) {
+          useStore.getState().pushNotification({ type: 'squad', title: `JOINED ${state.name}`, message: `${state.memberCount} members`, icon: '👥', duration: 3000 })
+        }
       })
 
       s.on('squad:chat_history', (messages) => {
