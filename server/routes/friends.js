@@ -88,6 +88,9 @@ r.post('/add', writeLimiter, requireAuth, validate({ body: addSchema }), async (
       'INSERT INTO friends (user_id, friend_id, status) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
       [userId, friend_id, 'pending']
     )
+    // Notify the recipient via socket
+    const io = req.app.get('io')
+    if (io) io.to(`user:${friend_id}`).emit('friend:request_received', { from: userId, username: req.user.username })
     res.json({ ok: true })
   } catch (e) { next(e) }
 })
@@ -104,6 +107,9 @@ r.post('/accept', writeLimiter, requireAuth, validate({ body: z.object({ request
       [request_id, userId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'request_not_found' })
+    // Notify the sender their request was accepted
+    const io = req.app.get('io')
+    if (io) io.to(`user:${rows[0].user_id}`).emit('friend:request_accepted', { by: userId, username: req.user.username })
     res.json({ ok: true })
   } catch (e) { next(e) }
 })

@@ -119,6 +119,14 @@ export function useSquad() {
       s.on('squad:duel_update', (update) => updateDuel(update))
       s.on('squad:duel_result', (result) => setActiveDuel({ ...result, status: 'resolved' }))
       s.on('squad:error', ({ message }) => useStore.getState().showToast(message))
+
+      // Re-join squad on reconnect (handles tab switch / sleep / network drop)
+      s.on('connect', () => {
+        const currentSquad = useStore.getState().squad
+        if (currentSquad?.name && currentSquad?.matchId) {
+          s.emit('squad:join', { squadName: currentSquad.name, matchId: currentSquad.matchId })
+        }
+      })
     })
 
     return () => {
@@ -127,7 +135,7 @@ export function useSquad() {
         const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
           'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
           'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:challenge_received', 'squad:challenge_sent',
-          'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error']
+          'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
         events.forEach((e) => socketRef.current.off(e))
       }
     }

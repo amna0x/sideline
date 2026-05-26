@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 import Avatar from './Avatar.jsx'
 import Notifications from './Notifications.jsx'
 import { api } from '../lib/api.js'
+import { getSocket } from '../lib/socket.js'
 
 export default function Layout({ children, hideNav = false, title = 'SIDELINE' }) {
   const points = useStore((s) => s.points)
@@ -65,6 +66,23 @@ function TopBar({ title, points }) {
     if (!user?.id) return
     api.friendRequests().then(setIncoming).catch(() => {})
     api.outgoingRequests().then(setOutgoing).catch(() => {})
+    // Listen for real-time friend events
+    let socket = null
+    getSocket().then((s) => {
+      socket = s
+      s.on('friend:request_received', () => {
+        api.friendRequests().then(setIncoming).catch(() => {})
+      })
+      s.on('friend:request_accepted', () => {
+        api.outgoingRequests().then(setOutgoing).catch(() => {})
+      })
+    })
+    return () => {
+      if (socket) {
+        socket.off('friend:request_received')
+        socket.off('friend:request_accepted')
+      }
+    }
   }, [user?.id])
 
   function openRequests() {
