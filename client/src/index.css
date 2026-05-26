@@ -188,15 +188,30 @@ body {
 ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--sv-accent); }
 
-/* mobile-first 390px frame, centered on desktop */
+/* Mobile-first frame — fills the viewport on phones, capped on tablets/desktop */
 .mobile-frame {
   width: 100%;
-  max-width: 390px;
+  max-width: 100%;
   min-height: 100dvh;
   margin: 0 auto;
   background-color: #f8f8f8;
   position: relative;
   overflow-x: hidden;
+}
+
+/* On tablets and larger, cap the width and add a desktop frame look */
+@media (min-width: 640px) {
+  .mobile-frame {
+    max-width: 480px;
+  }
+}
+
+@media (min-width: 1024px) {
+  body { background-color: #e8e8e8; }
+  .mobile-frame {
+    max-width: 420px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
+  }
 }
 
 /* Football field background — default theme only, contained within mobile frame */
@@ -210,13 +225,6 @@ body {
   opacity: 0.25;
   pointer-events: none;
   z-index: 0;
-}
-
-@media (min-width: 768px) {
-  body { background-color: #e8e8e8; }
-  .mobile-frame {
-    box-shadow: 0 0 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
-  }
 }
 
 /* === Theme: Default (Sideline Cyprus) — active via :root vars === */
@@ -537,4 +545,18 @@ body {
 [data-theme="cobalt"] ::-webkit-scrollbar-thumb,
 [data-theme="solar"] ::-webkit-scrollbar-thumb {
   background: #333;
+}
+
+
+/* Constrain fixed elements (bottom nav, modals) to the mobile frame width on larger screens */
+@media (min-width: 640px) {
+  nav.fixed.bottom-3 {
+    max-width: 460px;
+  }
+}
+
+@media (min-width: 1024px) {
+  nav.fixed.bottom-3 {
+    max-width: 400px;
+  }
 }

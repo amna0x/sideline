@@ -276,7 +276,7 @@ const NAV = [
 function BottomNav() {
   const { pathname } = useLocation()
   return (
-    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center h-16 px-2 bg-white/95 backdrop-blur-xl border border-black/[0.06] rounded-full w-[92%] max-w-[370px] shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
+    <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center h-16 px-2 bg-white/95 backdrop-blur-xl border border-black/[0.06] rounded-full w-[92%] max-w-[420px] shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
       {NAV.map((n) => {
         const active = pathname === n.to || (n.to !== '/' && pathname.startsWith(n.to))
         return (

@@ -18,7 +18,21 @@ import { apiLimiter } from './middleware/rateLimit.js'
 export function createApp() {
   const app = express()
   app.set('trust proxy', 1)
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'connect-src': ["'self'", 'https:', 'wss:', 'ws:'],
+        'frame-ancestors': ["'none'"]
+      }
+    }
+  }))
   const corsOrigin = process.env.CORS_ORIGIN || '*'
   app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin.split(',').map(s => s.trim()) }))
   app.use(express.json({ limit: '256kb' }))

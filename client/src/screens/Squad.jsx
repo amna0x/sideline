@@ -309,7 +309,7 @@ export default function Squad() {
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[390px] bg-white rounded-t-2xl border-t border-[#e0e0e0] max-h-[75vh] overflow-y-auto pb-20">
+              className="w-full max-w-[480px] bg-white rounded-t-2xl border-t border-[#e0e0e0] max-h-[75vh] overflow-y-auto pb-20">
               <div className="p-4 border-b border-[#f0f0f0] flex items-center justify-between">
                 <h3 className="font-comic text-base text-[#1a1a1a]">Squad Management</h3>
                 <button onClick={() => setShowManage(false)} className="text-[#999]">
