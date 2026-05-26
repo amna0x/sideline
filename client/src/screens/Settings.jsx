@@ -10,6 +10,7 @@ import { THEMES, saveThemeToProfile } from '../lib/theme.js'
 import { getSocket } from '../lib/socket.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
 import { isAdminUser } from '../lib/admin.js'
+import SFX from '../lib/sfx.js'
 
 export default function Settings() {
   const user = useStore((s) => s.user)
@@ -17,6 +18,8 @@ export default function Settings() {
   const showToast = useStore((s) => s.showToast)
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
+  const sfxVolume = useStore((s) => s.sfxVolume)
+  const setSfxVolume = useStore((s) => s.setSfxVolume)
   const { signOut } = useAuth()
   const nav = useNavigate()
   const [searchParams] = useSearchParams()
@@ -191,6 +194,31 @@ export default function Settings() {
             <Row icon="notifications_active" title="Push Alerts" sub="Goals, predictions, XP">
               <Toggle on={notif} onClick={toggleNotif} />
             </Row>
+            <div className="p-4 border-b border-[#f0f0f0] last:border-b-0">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="material-symbols-outlined text-[#999] text-[20px]">volume_up</span>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-sm text-[#1a1a1a] font-medium">Chat Sounds</span>
+                    <span className="text-xs text-[#999] truncate">Send, reactions, direct replies</span>
+                  </div>
+                </div>
+                <button onClick={() => SFX.play('send')} className="text-[var(--sv-accent)] text-sm font-comic">TEST</button>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-[#bbb] text-[18px]">volume_down</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round(sfxVolume * 100)}
+                  onChange={(e) => setSfxVolume(Number(e.target.value) / 100)}
+                  onPointerUp={() => SFX.play('send')}
+                  className="flex-1 accent-[var(--sv-accent)]"
+                />
+                <span className="w-9 text-right text-xs text-[#999]">{Math.round(sfxVolume * 100)}%</span>
+              </div>
+            </div>
           </Card>
         )}
 

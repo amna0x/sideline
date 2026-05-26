@@ -467,12 +467,10 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   useEffect(() => {
     if (messages.length > prevCount.current) {
       const last = messages[messages.length - 1]
-      if (last?.user_id !== userId) {
-        SFX.play('receive')
-      }
       if (last?.user_id !== userId && last?.reply_to_username) {
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
         if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
+          SFX.play('receive')
           try { if (navigator.vibrate) navigator.vibrate(10) } catch (e) {}
         }
       }

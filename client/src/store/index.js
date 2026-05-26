@@ -1,5 +1,13 @@
 import { create } from 'zustand'
 
+const SFX_VOLUME_KEY = 'sideline.sfx.volume'
+
+function loadSfxVolume() {
+  if (typeof localStorage === 'undefined') return 0.8
+  const saved = Number(localStorage.getItem(SFX_VOLUME_KEY))
+  return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.8
+}
+
 export const useStore = create((set) => ({
   // Auth
   user: null,
@@ -43,6 +51,14 @@ export const useStore = create((set) => ({
   // Theme
   theme: 'default',
   setTheme: (theme) => set({ theme }),
+
+  // Sound
+  sfxVolume: loadSfxVolume(),
+  setSfxVolume: (volume) => {
+    const next = Math.min(1, Math.max(0, Number(volume) || 0))
+    if (typeof localStorage !== 'undefined') localStorage.setItem(SFX_VOLUME_KEY, String(next))
+    set({ sfxVolume: next })
+  },
 
   // Squad
   squad: null,
