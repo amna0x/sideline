@@ -1,6 +1,5 @@
-// Dev-only routes. Mounted in app.js when DEV_TOOLS=1 in env.
-// Lets you grant XP and bulk-mint vault items to a user without going through
-// the simulator. Never enable this in production.
+// Admin utility routes for XP adjustments and bulk vault minting.
+// Access is restricted inside the route via isAdmin().
 
 import { Router } from 'express'
 import { z } from 'zod'

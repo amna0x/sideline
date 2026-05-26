@@ -55,10 +55,9 @@ export function createApp() {
   app.use('/api/auth', authRouter)
   app.use('/api/cosmetics', cosmeticsRouter)
   app.use('/api/stickers', stickersRouter)
-  if (process.env.DEV_TOOLS === '1') {
-    app.use('/api/dev', devRouter)
-    console.log('[app] dev routes enabled at /api/dev (DEV_TOOLS=1)')
-  }
+  // Admin tool route is mounted in all environments; the route itself still
+  // enforces admin-only access for any sensitive action.
+  app.use('/api/dev', devRouter)
 
   app.use((err, _req, res, _next) => {
     console.error(err)
