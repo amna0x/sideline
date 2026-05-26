@@ -3,9 +3,9 @@ import { create } from 'zustand'
 const SFX_VOLUME_KEY = 'sideline.sfx.volume'
 
 function loadSfxVolume() {
-  if (typeof localStorage === 'undefined') return 0.8
+  if (typeof localStorage === 'undefined') return 1
   const saved = Number(localStorage.getItem(SFX_VOLUME_KEY))
-  return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.8
+  return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 1
 }
 
 export const useStore = create((set) => ({

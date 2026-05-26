@@ -108,7 +108,7 @@ export default function Settings() {
 
   return (
     <Layout title="SETTINGS">
-      <section className="px-4 pt-4 pb-8">
+      <section className="px-4 pt-4 pb-32">
         <h1 className="font-comic text-2xl text-[#1a1a1a] mb-4">Settings</h1>
 
         {/* Tab navigation */}
@@ -203,7 +203,13 @@ export default function Settings() {
                     <span className="text-xs text-[#999] truncate">Send, reactions, direct replies</span>
                   </div>
                 </div>
-                <button onClick={() => SFX.play('send')} className="text-[var(--sv-accent)] text-sm font-comic">TEST</button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => SFX.play('send')}
+                  className="shrink-0 px-3 py-2 rounded-lg bg-[var(--sv-accent)] text-white text-xs font-comic shadow-[0_2px_10px_rgba(223,91,48,0.2)]"
+                >
+                  TEST
+                </motion.button>
               </div>
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[#bbb] text-[18px]">volume_down</span>
