@@ -327,7 +327,7 @@ function AdminPanel() {
 
     setBusy(true)
     try {
-      const r = await api.devGrant({ user_id: targetId, points: amount })
+      const r = await api.adminGrant({ user_id: targetId, points: amount })
       if (targetId === currentUser?.id) useStore.getState().setPoints(r.points_total)
       setTargetUser((prev) => prev && prev.id === targetId ? { ...prev, points_total: r.points_total } : prev)
       pushNotification({
@@ -339,7 +339,7 @@ function AdminPanel() {
         duration: 4000
       })
     } catch (e) {
-      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Admin grant failed', duration: 4000 })
     } finally {
       setBusy(false)
     }
@@ -356,10 +356,10 @@ function AdminPanel() {
     }
     setBusy(true)
     try {
-      const r = await api.devGrant({ user_id: selectedUser.id, vault_all: true })
+      const r = await api.adminGrant({ user_id: selectedUser.id, vault_all: true })
       pushNotification({ type: 'vault', title: 'VAULT UNLOCKED', message: `${selectedName}: ${r.granted_count} items granted`, icon: '🗝️', duration: 4000 })
     } catch (e) {
-      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Enable DEV_TOOLS=1', duration: 4000 })
+      pushNotification({ type: 'goal', title: 'FAILED', message: e.message?.slice(0, 60) || 'Admin grant failed', duration: 4000 })
     } finally {
       setBusy(false)
     }

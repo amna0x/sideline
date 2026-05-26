@@ -90,7 +90,7 @@ export const api = {
   declineFriend: (requestId) => request('/api/friends/decline', { method: 'POST', body: JSON.stringify({ request_id: requestId }) }),
   removeFriend: (friendId) => request(`/api/friends/${friendId}`, { method: 'DELETE' }),
   searchUsers: (q) => request(`/api/friends/search?q=${encodeURIComponent(q)}`),
-  devGrant: (body) => request('/api/dev/grant', { method: 'POST', body: JSON.stringify(body) }),
+  adminGrant: (body) => request('/api/admin/grant', { method: 'POST', body: JSON.stringify(body) }),
 
   // Squad
   squadInvite: (code) => request(`/api/squad/invite/${code}`),
