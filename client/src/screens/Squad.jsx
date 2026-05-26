@@ -566,7 +566,7 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                   ) : (
                     <button
                       onClick={() => setReplyTo(msg)}
-                      className={`text-left px-3.5 py-2 ${isMe
+                      className={`text-left px-3.5 py-2 group relative ${isMe
                         ? 'bg-[var(--sv-accent)] text-white rounded-[18px] rounded-br-[4px]'
                         : 'bg-[#e9e9eb] text-[#1a1a1a] rounded-[18px] rounded-bl-[4px]'}`}
                     >
@@ -575,6 +575,10 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
                           className="text-[10px] font-comic text-[var(--sv-accent)] mb-0.5 hover:underline block">{msg.username}</button>
                       )}
                       <div className="text-[14px] leading-snug">{msg.message}</div>
+                      {/* Reply hint */}
+                      <span className={`absolute ${isMe ? '-left-7' : '-right-7'} top-1/2 -translate-y-1/2 opacity-0 group-active:opacity-100 transition-opacity`}>
+                        <span className="material-symbols-outlined text-[14px] text-[#999]">reply</span>
+                      </span>
                     </button>
                   )}
 
