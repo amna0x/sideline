@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState, useRef } from 'react'
 import Avatar from './Avatar.jsx'
 import Notifications from './Notifications.jsx'
+import { api } from '../lib/api.js'
 
 export default function Layout({ children, hideNav = false, title = 'SIDELINE' }) {
   const points = useStore((s) => s.points)
@@ -42,18 +43,48 @@ function TopBar({ title, points }) {
   const showToast = useStore((s) => s.showToast)
   const [profileMenu, setProfileMenu] = useState(false)
   const [settingsMenu, setSettingsMenu] = useState(false)
+  const [requestsPanel, setRequestsPanel] = useState(false)
+  const [incoming, setIncoming] = useState([])
+  const [outgoing, setOutgoing] = useState([])
   const profileRef = useRef(null)
   const settingsRef = useRef(null)
+  const requestsRef = useRef(null)
 
   useEffect(() => {
-    if (!profileMenu && !settingsMenu) return
+    if (!profileMenu && !settingsMenu && !requestsPanel) return
     function close(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileMenu(false)
       if (settingsRef.current && !settingsRef.current.contains(e.target)) setSettingsMenu(false)
+      if (requestsRef.current && !requestsRef.current.contains(e.target)) setRequestsPanel(false)
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
-  }, [profileMenu, settingsMenu])
+  }, [profileMenu, settingsMenu, requestsPanel])
+
+  useEffect(() => {
+    if (!user?.id) return
+    api.friendRequests().then(setIncoming).catch(() => {})
+    api.outgoingRequests().then(setOutgoing).catch(() => {})
+  }, [user?.id])
+
+  function openRequests() {
+    setProfileMenu(false)
+    setRequestsPanel(true)
+    api.friendRequests().then(setIncoming).catch(() => {})
+    api.outgoingRequests().then(setOutgoing).catch(() => {})
+  }
+
+  async function accept(requestId) {
+    await api.acceptFriend(requestId).catch(() => {})
+    setIncoming((r) => r.filter((req) => req.request_id !== requestId))
+    showToast('Friend added!')
+  }
+
+  async function decline(requestId) {
+    await api.declineFriend(requestId).catch(() => {})
+    setIncoming((r) => r.filter((req) => req.request_id !== requestId))
+    setOutgoing((r) => r.filter((req) => req.request_id !== requestId))
+  }
 
   function shareProfile() {
     const url = `${window.location.origin}/profile/${user?.id || ''}`
@@ -65,10 +96,12 @@ function TopBar({ title, points }) {
     setProfileMenu(false)
   }
 
+  const requestCount = incoming.length
+
   return (
-    <header className="sticky top-0 z-40 flex justify-between items-center px-4 h-14 bg-white/95 backdrop-blur-md text-[#1a1a1a] border-b border-black/[0.06]">
+    <header className="sticky top-0 z-40 grid grid-cols-3 items-center px-4 h-14 bg-white/95 backdrop-blur-md text-[#1a1a1a] border-b border-black/[0.06]">
       {/* Settings dropdown (left) */}
-      <div className="relative" ref={settingsRef}>
+      <div className="relative justify-self-start" ref={settingsRef}>
         <button
           onClick={() => { setSettingsMenu(!settingsMenu); setProfileMenu(false) }}
           className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 transition-transform hover:scale-110 active:scale-95"
@@ -112,12 +145,12 @@ function TopBar({ title, points }) {
       </div>
 
       {/* Title */}
-      <div className="flex items-center gap-2">
-        <span className="font-comic text-xl tracking-tight text-[#1a1a1a]">{title}</span>
+      <div className="flex items-center justify-center">
+        <span className="font-comic text-xl tracking-tight text-[#1a1a1a] truncate">{title}</span>
       </div>
 
       {/* Profile dropdown (right) */}
-      <div className="flex items-center gap-2 relative" ref={profileRef}>
+      <div className="flex items-center gap-2 justify-self-end relative" ref={profileRef}>
         <motion.span
           key={points}
           initial={{ scale: 1.3, color: 'var(--sv-accent)' }}
@@ -125,11 +158,14 @@ function TopBar({ title, points }) {
           className="font-comic text-sm text-[var(--sv-accent)] tabular-nums"
         >{(points || 0).toLocaleString()} XP</motion.span>
         <button
-          onClick={() => { setProfileMenu(!profileMenu); setSettingsMenu(false) }}
-          className="rounded-full overflow-hidden border-2 border-[var(--sv-accent)]/30 hover:border-[var(--sv-accent)] transition-all hover:scale-110 active:scale-95"
+          onClick={() => { setProfileMenu(!profileMenu); setSettingsMenu(false); setRequestsPanel(false) }}
+          className="w-8 h-8 rounded-full overflow-hidden border-2 border-[var(--sv-accent)]/30 hover:border-[var(--sv-accent)] transition-all hover:scale-110 active:scale-95 relative"
           aria-label="Profile menu"
         >
-          <Avatar url={user?.profile?.avatar_url} name={user?.profile?.username || user?.email} size={32} />
+          <Avatar url={user?.profile?.avatar_url} name={user?.profile?.username || user?.email} size={32} showAdminAura={false} />
+          {requestCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[var(--sv-accent)] text-white text-[9px] font-comic rounded-full flex items-center justify-center">{requestCount}</span>
+          )}
         </button>
 
         <AnimatePresence>
@@ -139,18 +175,88 @@ function TopBar({ title, points }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-12 right-0 w-44 bg-white border border-[#e0e0e0] rounded-xl shadow-lg overflow-hidden z-50"
+              className="absolute top-12 right-0 w-48 bg-white border border-[#e0e0e0] rounded-xl shadow-lg overflow-hidden z-50"
             >
               <Link to="/profile" onClick={() => setProfileMenu(false)}
                 className="flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors">
                 <span className="material-symbols-outlined text-[18px] text-[#666]">person</span>
                 View Profile
               </Link>
+              <button onClick={openRequests}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors border-t border-[#f0f0f0]">
+                <span className="material-symbols-outlined text-[18px] text-[#666]">person_add</span>
+                Friend Requests
+                {requestCount > 0 && <span className="ml-auto bg-[var(--sv-accent)] text-white text-[10px] font-comic px-1.5 py-0.5 rounded-full">{requestCount}</span>}
+              </button>
+              <Link to="/profile?tab=friends" onClick={() => setProfileMenu(false)}
+                className="flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors border-t border-[#f0f0f0]">
+                <span className="material-symbols-outlined text-[18px] text-[#666]">group</span>
+                Friends
+              </Link>
               <button onClick={shareProfile}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors border-t border-[#f0f0f0]">
                 <span className="material-symbols-outlined text-[18px] text-[#666]">share</span>
                 Share Profile
               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Friend Requests Panel */}
+        <AnimatePresence>
+          {requestsPanel && (
+            <motion.div
+              ref={requestsRef}
+              initial={{ opacity: 0, y: -8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-12 right-0 w-72 bg-white border border-[#e0e0e0] rounded-xl shadow-lg overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
+            >
+              <div className="px-4 py-3 border-b border-[#f0f0f0] flex items-center justify-between">
+                <span className="font-comic text-sm text-[#1a1a1a]">Friend Requests</span>
+                <button onClick={() => setRequestsPanel(false)} className="text-[#999] hover:text-[#1a1a1a]">
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+
+              {/* Incoming */}
+              {incoming.length > 0 && (
+                <div className="px-4 py-2">
+                  <span className="font-comic text-[10px] text-[var(--sv-accent)] uppercase">Incoming</span>
+                  <div className="mt-2 space-y-2">
+                    {incoming.map((r) => (
+                      <div key={r.request_id} className="flex items-center gap-2">
+                        <Avatar url={r.avatar_url} name={r.username} size={32} />
+                        <span className="text-sm text-[#1a1a1a] flex-1 truncate">{r.username}</span>
+                        <button onClick={() => accept(r.request_id)} className="px-2 py-1 rounded-lg text-[10px] font-comic bg-[var(--sv-accent)] text-white">ACCEPT</button>
+                        <button onClick={() => decline(r.request_id)} className="px-2 py-1 rounded-lg text-[10px] font-comic border border-[#e0e0e0] text-[#666]">DECLINE</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Outgoing */}
+              {outgoing.length > 0 && (
+                <div className="px-4 py-2 border-t border-[#f0f0f0]">
+                  <span className="font-comic text-[10px] text-[#999] uppercase">Sent</span>
+                  <div className="mt-2 space-y-2">
+                    {outgoing.map((r) => (
+                      <div key={r.request_id} className="flex items-center gap-2">
+                        <Avatar url={r.avatar_url} name={r.username} size={32} />
+                        <span className="text-sm text-[#1a1a1a] flex-1 truncate">{r.username}</span>
+                        <span className="text-[10px] text-[#999] font-comic">PENDING</span>
+                        <button onClick={() => decline(r.request_id)} className="px-2 py-1 rounded-lg text-[10px] font-comic border border-[#e0e0e0] text-[#666]">CANCEL</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {incoming.length === 0 && outgoing.length === 0 && (
+                <div className="px-4 py-6 text-center text-sm text-[#bbb]">No pending requests</div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -61,7 +61,7 @@ body {
   border-radius: 1rem;
   position: relative;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--panel-bg, #ffffff);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .comic-panel::after {
@@ -157,6 +157,20 @@ body {
 }
 .fill-icon { font-variation-settings: 'FILL' 1; }
 
+/* Admin aura animation */
+@keyframes admin-aura {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(1.15) saturate(1.2); }
+}
+.admin-aura { animation: admin-aura 3s ease-in-out infinite; }
+
+/* Smooth page transitions */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-in { animation: page-in 0.3s ease-out forwards; }
+
 .tactical-glow { box-shadow: 0 0 15px rgba(255, 45, 123, 0.2); }
 .tactical-glow-active { box-shadow: 0 0 25px rgba(0, 240, 255, 0.3); }
 .inner-glow { box-shadow: inset 0 0 10px rgba(255, 45, 123, 0.08); }
@@ -215,6 +229,99 @@ body {
   display: none;
 }
 
+/* === Shared dark theme overrides for non-default themes === */
+[data-theme="spiderverse"] .bg-white,
+[data-theme="mint"] .bg-white,
+[data-theme="inferno"] .bg-white,
+[data-theme="cobalt"] .bg-white,
+[data-theme="solar"] .bg-white {
+  background-color: var(--surface-bg, #111) !important;
+}
+
+[data-theme="spiderverse"] .text-\[\#1a1a1a\],
+[data-theme="mint"] .text-\[\#1a1a1a\],
+[data-theme="inferno"] .text-\[\#1a1a1a\],
+[data-theme="cobalt"] .text-\[\#1a1a1a\],
+[data-theme="solar"] .text-\[\#1a1a1a\] {
+  color: var(--text-fg, #fff) !important;
+}
+
+[data-theme="spiderverse"] .text-\[\#666\],
+[data-theme="mint"] .text-\[\#666\],
+[data-theme="inferno"] .text-\[\#666\],
+[data-theme="cobalt"] .text-\[\#666\],
+[data-theme="solar"] .text-\[\#666\] {
+  color: rgba(255,255,255,0.5) !important;
+}
+
+[data-theme="spiderverse"] .text-\[\#999\],
+[data-theme="mint"] .text-\[\#999\],
+[data-theme="inferno"] .text-\[\#999\],
+[data-theme="cobalt"] .text-\[\#999\],
+[data-theme="solar"] .text-\[\#999\] {
+  color: rgba(255,255,255,0.4) !important;
+}
+
+[data-theme="spiderverse"] .text-\[\#bbb\],
+[data-theme="mint"] .text-\[\#bbb\],
+[data-theme="inferno"] .text-\[\#bbb\],
+[data-theme="cobalt"] .text-\[\#bbb\],
+[data-theme="solar"] .text-\[\#bbb\] {
+  color: rgba(255,255,255,0.3) !important;
+}
+
+[data-theme="spiderverse"] .border-\[\#e0e0e0\],
+[data-theme="mint"] .border-\[\#e0e0e0\],
+[data-theme="inferno"] .border-\[\#e0e0e0\],
+[data-theme="cobalt"] .border-\[\#e0e0e0\],
+[data-theme="solar"] .border-\[\#e0e0e0\] {
+  border-color: rgba(255,255,255,0.1) !important;
+}
+
+[data-theme="spiderverse"] .border-\[\#f0f0f0\],
+[data-theme="mint"] .border-\[\#f0f0f0\],
+[data-theme="inferno"] .border-\[\#f0f0f0\],
+[data-theme="cobalt"] .border-\[\#f0f0f0\],
+[data-theme="solar"] .border-\[\#f0f0f0\] {
+  border-color: rgba(255,255,255,0.05) !important;
+}
+
+[data-theme="spiderverse"] .bg-\[\#f5f5f5\],
+[data-theme="mint"] .bg-\[\#f5f5f5\],
+[data-theme="inferno"] .bg-\[\#f5f5f5\],
+[data-theme="cobalt"] .bg-\[\#f5f5f5\],
+[data-theme="solar"] .bg-\[\#f5f5f5\],
+[data-theme="spiderverse"] .bg-\[\#f8f8f8\],
+[data-theme="mint"] .bg-\[\#f8f8f8\],
+[data-theme="inferno"] .bg-\[\#f8f8f8\],
+[data-theme="cobalt"] .bg-\[\#f8f8f8\],
+[data-theme="solar"] .bg-\[\#f8f8f8\] {
+  background-color: rgba(255,255,255,0.03) !important;
+  color: inherit !important;
+}
+
+[data-theme="spiderverse"] input,
+[data-theme="mint"] input,
+[data-theme="inferno"] input,
+[data-theme="cobalt"] input,
+[data-theme="solar"] input,
+[data-theme="spiderverse"] textarea,
+[data-theme="mint"] textarea,
+[data-theme="inferno"] textarea,
+[data-theme="cobalt"] textarea,
+[data-theme="solar"] textarea {
+  background-color: rgba(255,255,255,0.05) !important;
+  color: #fff !important;
+}
+
+[data-theme="spiderverse"] input::placeholder,
+[data-theme="mint"] input::placeholder,
+[data-theme="inferno"] input::placeholder,
+[data-theme="cobalt"] input::placeholder,
+[data-theme="solar"] input::placeholder {
+  color: rgba(255,255,255,0.3) !important;
+}
+
 /* === Theme: Spiderverse (original) === */
 [data-theme="spiderverse"] { --sv-accent: #ff2d7b; --sv-cyan: #00f0ff; --sv-purple: #b44dff; --sv-green: #39ff14; }
 [data-theme="spiderverse"] body { background-color: #000; color: #e8e8e8; }
@@ -225,16 +332,34 @@ body {
 [data-theme="spiderverse"] .bg-primary { background-color: #ff2d7b !important; color: #000 !important; }
 [data-theme="spiderverse"] .border-primary-container,
 [data-theme="spiderverse"] .border-primary { border-color: #ff2d7b !important; }
-[data-theme="spiderverse"] .text-on-surface { color: #e8e8e8 !important; }
-[data-theme="spiderverse"] .text-on-surface-variant { color: #a0a0a0 !important; }
-[data-theme="spiderverse"] .text-outline { color: #666 !important; }
-[data-theme="spiderverse"] .bg-surface-container-low { background-color: #0a0a0a !important; }
-[data-theme="spiderverse"] .bg-surface-container { background-color: #111 !important; }
+[data-theme="spiderverse"] .text-on-surface,
+[data-theme="spiderverse"] .text-\[\#1a1a1a\] { color: #e8e8e8 !important; }
+[data-theme="spiderverse"] .text-on-surface-variant,
+[data-theme="spiderverse"] .text-\[\#666\] { color: #a0a0a0 !important; }
+[data-theme="spiderverse"] .text-outline,
+[data-theme="spiderverse"] .text-\[\#999\],
+[data-theme="spiderverse"] .text-\[\#bbb\],
+[data-theme="spiderverse"] .text-\[\#ccc\] { color: #666 !important; }
+[data-theme="spiderverse"] .bg-surface-container-low,
+[data-theme="spiderverse"] .bg-\[\#f5f5f5\],
+[data-theme="spiderverse"] .bg-\[\#f8f8f8\],
+[data-theme="spiderverse"] .bg-\[\#fafafa\],
+[data-theme="spiderverse"] .bg-\[\#f0f0f0\] { background-color: #0a0a0a !important; }
+[data-theme="spiderverse"] .bg-surface-container,
+[data-theme="spiderverse"] .bg-white { background-color: #111 !important; color: #e8e8e8 !important; }
 [data-theme="spiderverse"] .bg-surface-container-highest { background-color: #1a1a1a !important; }
-[data-theme="spiderverse"] .border-outline-variant { border-color: #222 !important; }
+[data-theme="spiderverse"] .border-outline-variant,
+[data-theme="spiderverse"] .border-\[\#e0e0e0\],
+[data-theme="spiderverse"] .border-\[\#f0f0f0\],
+[data-theme="spiderverse"] .border-\[\#ddd\] { border-color: #2a2a2a !important; }
 [data-theme="spiderverse"] header { background-color: rgba(0,0,0,0.95) !important; border-color: rgba(255,255,255,0.06) !important; }
+[data-theme="spiderverse"] header * { color: #e8e8e8 !important; }
+[data-theme="spiderverse"] header .text-\[var\(--sv-accent\)\] { color: #ff2d7b !important; }
 [data-theme="spiderverse"] nav { background-color: rgba(0,0,0,0.9) !important; border-color: rgba(255,255,255,0.06) !important; }
-[data-theme="spiderverse"] .comic-panel { background: linear-gradient(135deg, rgba(255,45,123,0.02) 0%, rgba(0,240,255,0.01) 50%, transparent 100%) !important; }
+[data-theme="spiderverse"] .comic-panel { background: #0a0a0a !important; border-color: #1f1f1f !important; }
+[data-theme="spiderverse"] input, [data-theme="spiderverse"] textarea {
+  background-color: #0a0a0a !important; color: #e8e8e8 !important; border-color: #2a2a2a !important;
+}
 
 /* === Theme: Mint Edge === */
 [data-theme="mint"] { --sv-accent: #00f6ac; --sv-cyan: #00d4ff; --sv-purple: #00f6ac; --sv-green: #00f6ac; }
@@ -340,3 +465,76 @@ body {
 [data-theme="solar"] .border-outline-variant { border-color: #2a2008 !important; }
 [data-theme="solar"] header { background-color: #060401 !important; border-color: #2a2008 !important; }
 [data-theme="solar"] nav { background-color: rgba(6,4,1,0.9) !important; border-color: #2a2008 !important; }
+
+
+/* === Additional dark theme overrides for missed white elements === */
+
+/* bg-white/95 used in header and nav */
+[data-theme="spiderverse"] .bg-white\/95,
+[data-theme="mint"] .bg-white\/95,
+[data-theme="inferno"] .bg-white\/95,
+[data-theme="cobalt"] .bg-white\/95,
+[data-theme="solar"] .bg-white\/95 {
+  background-color: rgba(0,0,0,0.95) !important;
+}
+
+/* comic-panel background via CSS variable */
+[data-theme="spiderverse"] { --panel-bg: #111; --surface-bg: #111; --text-fg: #e8e8e8; }
+[data-theme="mint"] { --panel-bg: #0e0e0e; --surface-bg: #0e0e0e; --text-fg: #ffffff; }
+[data-theme="inferno"] { --panel-bg: #140509; --surface-bg: #140509; --text-fg: #ffe9d6; }
+[data-theme="cobalt"] { --panel-bg: #061128; --surface-bg: #061128; --text-fg: #e8f0ff; }
+[data-theme="solar"] { --panel-bg: #181205; --surface-bg: #181205; --text-fg: #fff5d6; }
+
+/* comic-panel border in dark themes */
+[data-theme="spiderverse"] .comic-panel,
+[data-theme="mint"] .comic-panel,
+[data-theme="inferno"] .comic-panel,
+[data-theme="cobalt"] .comic-panel,
+[data-theme="solar"] .comic-panel {
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: none !important;
+}
+
+/* bg-[#f0f0f0] used in chat bubbles */
+[data-theme="spiderverse"] .bg-\[\#f0f0f0\],
+[data-theme="mint"] .bg-\[\#f0f0f0\],
+[data-theme="inferno"] .bg-\[\#f0f0f0\],
+[data-theme="cobalt"] .bg-\[\#f0f0f0\],
+[data-theme="solar"] .bg-\[\#f0f0f0\] {
+  background-color: rgba(255,255,255,0.08) !important;
+}
+
+/* shadow overrides — remove light shadows in dark themes */
+[data-theme="spiderverse"] .shadow-lg,
+[data-theme="mint"] .shadow-lg,
+[data-theme="inferno"] .shadow-lg,
+[data-theme="cobalt"] .shadow-lg,
+[data-theme="solar"] .shadow-lg {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+}
+
+/* border-black/[0.06] used in header/nav */
+[data-theme="spiderverse"] .border-black\/\[0\.06\],
+[data-theme="mint"] .border-black\/\[0\.06\],
+[data-theme="inferno"] .border-black\/\[0\.06\],
+[data-theme="cobalt"] .border-black\/\[0\.06\],
+[data-theme="solar"] .border-black\/\[0\.06\] {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Scrollbar in dark themes */
+[data-theme="spiderverse"] ::-webkit-scrollbar-track,
+[data-theme="mint"] ::-webkit-scrollbar-track,
+[data-theme="inferno"] ::-webkit-scrollbar-track,
+[data-theme="cobalt"] ::-webkit-scrollbar-track,
+[data-theme="solar"] ::-webkit-scrollbar-track {
+  background: #111;
+}
+
+[data-theme="spiderverse"] ::-webkit-scrollbar-thumb,
+[data-theme="mint"] ::-webkit-scrollbar-thumb,
+[data-theme="inferno"] ::-webkit-scrollbar-thumb,
+[data-theme="cobalt"] ::-webkit-scrollbar-thumb,
+[data-theme="solar"] ::-webkit-scrollbar-thumb {
+  background: #333;
+}

@@ -42,3 +42,16 @@ export function applyTheme(id) {
 export function loadTheme() {
   return localStorage.getItem(KEY) || 'default'
 }
+
+export function saveThemeToProfile(userId, themeId, apiClient) {
+  if (!userId || !apiClient) return
+  apiClient.patch(`/api/users/${userId}`, { theme: themeId }).catch(() => {})
+}
+
+export function loadThemeFromProfile(profile) {
+  if (profile?.theme && THEMES[profile.theme]) {
+    localStorage.setItem(KEY, profile.theme)
+    return profile.theme
+  }
+  return null
+}

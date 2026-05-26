@@ -15,8 +15,11 @@ async function authenticateSocket(socket) {
         avatar_url: user.metadata?.avatar_url || null
       }
     }
+    // Cognito configured but token invalid — reject
+    return null
   }
-  if (auth.userId) {
+  if (!cognitoReady && auth.userId) {
+    // Local dev only — guest mode
     const id = String(auth.userId)
     return {
       id,

@@ -8,6 +8,8 @@ import { mode, getUser, createUser, updateUser, getVaultItems } from '../db/inde
 import { query } from '../db/postgres.js'
 import { db } from '../db/memory.js'
 import { validate } from '../middleware/validate.js'
+import { requireAuth } from '../middleware/auth.js'
+import { isAdmin } from './helpers.js'
 
 const r = Router()
 
@@ -17,8 +19,9 @@ const grantSchema = z.object({
   vault_all: z.boolean().optional().default(false)
 }).strict()
 
-r.post('/grant', validate({ body: grantSchema }), async (req, res, next) => {
+r.post('/grant', requireAuth, validate({ body: grantSchema }), async (req, res, next) => {
   try {
+    if (!isAdmin(req.user)) return res.status(403).json({ error: 'admin_only' })
     const { user_id, points, vault_all } = req.body
 
     // Ensure user exists

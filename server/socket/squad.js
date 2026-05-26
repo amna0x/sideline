@@ -1,67 +1,339 @@
-// Squad rooms, live reactions, and head-to-head duels — all socket-driven.
+// Squad rooms — persisted to PostgreSQL, live state via socket.
+// Squads survive server restarts. Online presence is tracked in-memory.
 
-const squads = new Map()  // squadId -> { id, name, matchId, members: Map<socketId, {userId, username, avatar_url, joinedAt}>, createdBy, createdAt }
-const duels = []          // { id, squadId, challengerId, opponentId, predictionId, challengerPick, opponentPick, result, createdAt }
-const reactionCooldowns = new Map() // `${socketId}` -> lastReactionTime
+import { mode } from '../db/index.js'
+import { query } from '../db/postgres.js'
+
+// In-memory live presence: squadId -> Map<socketId, { userId, username, avatar_url }>
+const liveMembers = new Map()
+const inviteCodeCache = new Map() // inviteCode -> squadId
+const reactionCooldowns = new Map()
+const duels = []
+
+function genCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase()
+}
+
+// --- DB helpers ---
+
+async function dbCreateSquad(id, name, matchId, inviteCode, visibility, createdBy) {
+  if (mode !== 'postgres') return
+  await query(
+    `INSERT INTO squads (id, name, match_id, invite_code, visibility, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
+    [id, name, matchId, inviteCode, visibility, createdBy]
+  )
+}
+
+async function dbAddMember(squadId, userId, role) {
+  if (mode !== 'postgres') return
+  await query(
+    `INSERT INTO squad_members (squad_id, user_id, role)
+     VALUES ($1, $2, $3) ON CONFLICT (squad_id, user_id) DO UPDATE SET role = $3`,
+    [squadId, userId, role]
+  )
+}
+
+async function dbAddMemberIfNotExists(squadId, userId) {
+  if (mode !== 'postgres') return
+  await query(
+    `INSERT INTO squad_members (squad_id, user_id, role)
+     VALUES ($1, $2, 'member') ON CONFLICT (squad_id, user_id) DO NOTHING`,
+    [squadId, userId]
+  )
+}
+
+async function dbRemoveMember(squadId, userId) {
+  if (mode !== 'postgres') return
+  await query('DELETE FROM squad_members WHERE squad_id = $1 AND user_id = $2', [squadId, userId])
+}
+
+async function dbSetRole(squadId, userId, role) {
+  if (mode !== 'postgres') return
+  await query('UPDATE squad_members SET role = $1 WHERE squad_id = $2 AND user_id = $3', [role, squadId, userId])
+}
+
+async function dbSetVisibility(squadId, visibility) {
+  if (mode !== 'postgres') return
+  await query('UPDATE squads SET visibility = $1 WHERE id = $2', [visibility, squadId])
+}
+
+async function dbGetSquad(squadId) {
+  if (mode !== 'postgres') return null
+  const { rows } = await query('SELECT * FROM squads WHERE id = $1', [squadId])
+  return rows[0] || null
+}
+
+async function dbGetSquadByInvite(code) {
+  if (mode !== 'postgres') return null
+  const { rows } = await query('SELECT * FROM squads WHERE invite_code = $1', [code])
+  return rows[0] || null
+}
+
+async function dbGetSquadMembers(squadId) {
+  if (mode !== 'postgres') return []
+  const { rows } = await query(
+    `SELECT sm.user_id, sm.role, u.username, u.avatar_url
+     FROM squad_members sm JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1`,
+    [squadId]
+  )
+  return rows
+}
+
+async function dbGetSquadRoles(squadId) {
+  if (mode !== 'postgres') return {}
+  const { rows } = await query('SELECT user_id, role FROM squad_members WHERE squad_id = $1', [squadId])
+  const roles = {}
+  rows.forEach((r) => { roles[r.user_id] = r.role })
+  return roles
+}
+
+async function dbGetNextMember(squadId, excludeUserId) {
+  if (mode !== 'postgres') return null
+  const { rows } = await query(
+    `SELECT sm.user_id, u.username FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1 AND sm.user_id != $2
+     ORDER BY sm.joined_at ASC LIMIT 1`,
+    [squadId, excludeUserId]
+  )
+  return rows[0] || null
+}
+
+async function dbDeleteSquad(squadId) {
+  if (mode !== 'postgres') return
+  await query('DELETE FROM squad_members WHERE squad_id = $1', [squadId])
+  await query('DELETE FROM squads WHERE id = $1', [squadId])
+}
+
+async function dbGetUserSquad(userId) {
+  if (mode !== 'postgres') return null
+  const { rows } = await query(
+    `SELECT s.id, s.name, s.visibility, s.invite_code, sm.role,
+       (SELECT COUNT(*) FROM squad_members WHERE squad_id = s.id)::int as member_count
+     FROM squad_members sm JOIN squads s ON s.id = sm.squad_id
+     WHERE sm.user_id = $1 LIMIT 1`,
+    [userId]
+  )
+  return rows[0] || null
+}
+
+async function dbListSquads(matchId) {
+  if (mode !== 'postgres') return []
+  const { rows } = await query(
+    `SELECT s.id, s.name, s.visibility, s.created_by, s.invite_code,
+       (SELECT COUNT(*) FROM squad_members WHERE squad_id = s.id)::int as member_count
+     FROM squads s WHERE s.match_id = $1
+     ORDER BY member_count DESC`,
+    [matchId]
+  )
+  return rows
+}
+
+// --- Exports for routes ---
+
+export async function getSquadByInviteCode(code) {
+  if (mode !== 'postgres') {
+    // Fallback in-memory for non-postgres mode
+    return null
+  }
+  return dbGetSquadByInvite(code)
+}
+
+export async function getSquadForUser(userId) {
+  if (!userId) return null
+  if (mode !== 'postgres') return null
+  return dbGetUserSquad(userId)
+}
+
+export async function listSquadsForMatch(matchId) {
+  if (mode !== 'postgres') return []
+  const squads = await dbListSquads(matchId)
+  return squads.map((s) => ({
+    id: s.id,
+    name: s.name,
+    memberCount: s.member_count,
+    createdBy: s.created_by,
+    visibility: s.visibility
+  }))
+}
+
+// --- Socket handlers ---
 
 export function registerSquadHandlers(io) {
   io.on('connection', (socket) => {
-    socket.on('squad:join', ({ squadName, matchId }) => {
+
+    socket.on('squad:join', async ({ squadName, matchId }) => {
       if (!squadName || !matchId) return
       const user = socket.data.user
       if (!user?.id) return socket.emit('squad:error', { message: 'auth required' })
 
       const squadId = `${matchId}::${squadName.toLowerCase().trim()}`
-      let squad = squads.get(squadId)
-      if (!squad) {
-        squad = {
-          id: squadId,
-          name: squadName.trim(),
-          matchId,
-          members: new Map(),
-          createdBy: user.id,
-          createdAt: Date.now()
-        }
-        squads.set(squadId, squad)
+
+      // Check if squad exists in DB, create if not
+      let squadRow = await dbGetSquad(squadId).catch(() => null)
+      if (!squadRow) {
+        const inviteCode = genCode()
+        await dbCreateSquad(squadId, squadName.trim(), matchId, inviteCode, 'public', user.id).catch(() => {})
+        await dbAddMember(squadId, user.id, 'admin').catch(() => {})
+        inviteCodeCache.set(inviteCode, squadId)
+      } else {
+        // Add as member if not already (preserve existing role if they're rejoining)
+        await dbAddMemberIfNotExists(squadId, user.id).catch(() => {})
+        if (squadRow.invite_code) inviteCodeCache.set(squadRow.invite_code, squadId)
       }
 
-      // Leave any previous squad
-      for (const [sid, s] of squads) {
-        if (s.members.has(socket.id)) {
-          s.members.delete(socket.id)
-          socket.leave(`squad:${sid}`)
-          io.to(`squad:${sid}`).emit('squad:member_left', { userId: user.id, memberCount: s.members.size })
-          if (s.members.size === 0) squads.delete(sid)
-        }
-      }
+      // Leave any previous squad socket rooms
+      leaveAllRooms(socket, io)
 
-      const member = { userId: user.id, username: user.username || user.email || 'Anon', avatar_url: user.avatar_url || null, joinedAt: Date.now() }
-      squad.members.set(socket.id, member)
+      // Track live presence
+      if (!liveMembers.has(squadId)) liveMembers.set(squadId, new Map())
+      const live = liveMembers.get(squadId)
+      live.set(socket.id, { userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null })
       socket.join(`squad:${squadId}`)
 
-      // Send full state to joiner
+      // Send full state
+      const dbSquad = await dbGetSquad(squadId).catch(() => null)
+      const members = await dbGetSquadMembers(squadId).catch(() => [])
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+
       socket.emit('squad:state', {
-        id: squad.id,
-        name: squad.name,
-        matchId: squad.matchId,
-        members: [...squad.members.values()],
-        memberCount: squad.members.size
+        id: squadId,
+        name: dbSquad?.name || squadName.trim(),
+        matchId,
+        inviteCode: dbSquad?.invite_code || '',
+        visibility: dbSquad?.visibility || 'public',
+        members: members.map((m) => ({ userId: m.user_id, username: m.username, avatar_url: m.avatar_url })),
+        memberCount: members.length,
+        roles,
+        createdBy: dbSquad?.created_by
       })
 
-      // Broadcast to others
-      socket.to(`squad:${squadId}`).emit('squad:member_joined', { ...member, memberCount: squad.members.size })
+      socket.to(`squad:${squadId}`).emit('squad:member_joined', {
+        userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null, memberCount: members.length
+      })
     })
 
-    socket.on('squad:leave', () => {
+    socket.on('squad:leave', async () => {
       const user = socket.data.user
-      for (const [sid, s] of squads) {
-        if (s.members.has(socket.id)) {
-          s.members.delete(socket.id)
-          socket.leave(`squad:${sid}`)
-          io.to(`squad:${sid}`).emit('squad:member_left', { userId: user?.id, memberCount: s.members.size })
-          if (s.members.size === 0) squads.delete(sid)
+      if (!user?.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      const isAdmin = roles[user.id] === 'admin'
+
+      if (isAdmin) {
+        // Transfer admin to next member (by join date)
+        const nextAdmin = await dbGetNextMember(squadId, user.id).catch(() => null)
+        if (nextAdmin) {
+          await dbSetRole(squadId, nextAdmin.user_id, 'admin').catch(() => {})
+          await dbRemoveMember(squadId, user.id).catch(() => {})
+          const newRoles = await dbGetSquadRoles(squadId).catch(() => ({}))
+          io.to(`squad:${squadId}`).emit('squad:roles_updated', { roles: newRoles })
+          io.to(`squad:${squadId}`).emit('squad:admin_transferred', { newAdminId: nextAdmin.user_id, newAdminName: nextAdmin.username })
+        } else {
+          // No one left — disband
+          await dbRemoveMember(squadId, user.id).catch(() => {})
+          await dbDeleteSquad(squadId).catch(() => {})
+        }
+      } else {
+        await dbRemoveMember(squadId, user.id).catch(() => {})
+      }
+
+      leaveAllRooms(socket, io)
+      const members = await dbGetSquadMembers(squadId).catch(() => [])
+      io.to(`squad:${squadId}`).emit('squad:member_left', { userId: user.id, memberCount: members.length })
+    })
+
+    // Check what happens if user leaves (for confirmation UI)
+    socket.on('squad:check_leave', async (_, callback) => {
+      const user = socket.data.user
+      if (!user?.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      const isAdmin = roles[user.id] === 'admin'
+      if (!isAdmin) {
+        socket.emit('squad:leave_info', { type: 'member' })
+        return
+      }
+      const nextAdmin = await dbGetNextMember(squadId, user.id).catch(() => null)
+      if (nextAdmin) {
+        socket.emit('squad:leave_info', { type: 'transfer', nextAdminName: nextAdmin.username })
+      } else {
+        socket.emit('squad:leave_info', { type: 'disband' })
+      }
+    })
+
+    socket.on('squad:set_visibility', async ({ visibility }) => {
+      const user = socket.data.user
+      if (!user?.id) return
+      if (visibility !== 'public' && visibility !== 'private') return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      if (roles[user.id] !== 'admin') return socket.emit('squad:error', { message: 'Only the admin can change visibility' })
+      await dbSetVisibility(squadId, visibility).catch(() => {})
+      io.to(`squad:${squadId}`).emit('squad:visibility_changed', { visibility })
+    })
+
+    socket.on('squad:promote', async ({ targetUserId }) => {
+      const user = socket.data.user
+      if (!user?.id || !targetUserId || targetUserId === user.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      if (roles[user.id] !== 'admin') return socket.emit('squad:error', { message: 'Only the admin can promote' })
+      // Demote existing moderator
+      for (const [uid, role] of Object.entries(roles)) {
+        if (role === 'moderator') await dbSetRole(squadId, uid, 'member').catch(() => {})
+      }
+      await dbSetRole(squadId, targetUserId, 'moderator').catch(() => {})
+      const newRoles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      io.to(`squad:${squadId}`).emit('squad:roles_updated', { roles: newRoles })
+    })
+
+    socket.on('squad:demote', async ({ targetUserId }) => {
+      const user = socket.data.user
+      if (!user?.id || !targetUserId) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      if (roles[user.id] !== 'admin') return socket.emit('squad:error', { message: 'Only the admin can demote' })
+      await dbSetRole(squadId, targetUserId, 'member').catch(() => {})
+      const newRoles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      io.to(`squad:${squadId}`).emit('squad:roles_updated', { roles: newRoles })
+    })
+
+    socket.on('squad:kick', async ({ targetUserId }) => {
+      const user = socket.data.user
+      if (!user?.id || !targetUserId || targetUserId === user.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      const myRole = roles[user.id]
+      if (myRole !== 'admin' && myRole !== 'moderator') return socket.emit('squad:error', { message: 'Only admin or moderator can kick' })
+      if (roles[targetUserId] === 'admin') return socket.emit('squad:error', { message: 'Cannot kick the admin' })
+      await dbRemoveMember(squadId, targetUserId).catch(() => {})
+      // Disconnect target socket
+      const live = liveMembers.get(squadId)
+      if (live) {
+        for (const [sid, m] of live) {
+          if (m.userId === targetUserId) {
+            live.delete(sid)
+            const targetSocket = io.sockets.sockets.get(sid)
+            if (targetSocket) {
+              targetSocket.leave(`squad:${squadId}`)
+              targetSocket.emit('squad:kicked', { squadName: squadId.split('::')[1] || 'Squad' })
+            }
+            break
+          }
         }
       }
+      const members = await dbGetSquadMembers(squadId).catch(() => [])
+      io.to(`squad:${squadId}`).emit('squad:member_left', { userId: targetUserId, memberCount: members.length })
     })
 
     socket.on('squad:reaction', ({ emoji }) => {
@@ -69,67 +341,85 @@ export function registerSquadHandlers(io) {
       if (!user?.id) return
       const allowed = ['⚽', '🔥', '😱', '👏', '💀']
       if (!allowed.includes(emoji)) return
-
-      // Rate limit: 1 reaction per 500ms per socket
       const now = Date.now()
       const last = reactionCooldowns.get(socket.id) || 0
       if (now - last < 500) return
       reactionCooldowns.set(socket.id, now)
-
-      // Find which squad this socket is in
-      for (const [sid, s] of squads) {
-        if (s.members.has(socket.id)) {
-          io.to(`squad:${sid}`).emit('squad:reaction_burst', {
-            emoji,
-            userId: user.id,
-            username: user.username || user.email || 'Anon',
-            ts: now
-          })
-          break
-        }
+      const squadId = getSquadIdForSocket(socket)
+      if (squadId) {
+        io.to(`squad:${squadId}`).emit('squad:reaction_burst', { emoji, userId: user.id, username: user.username || 'Anon', ts: now })
       }
+    })
+
+    socket.on('squad:message', async ({ text }) => {
+      const user = socket.data.user
+      if (!user?.id || !text || text.trim().length === 0) return
+      const msg = text.trim().slice(0, 500)
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const chatMsg = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        squad_id: squadId, user_id: user.id, username: user.username || 'Anon',
+        avatar_url: user.avatar_url || null, message: msg, created_at: new Date().toISOString()
+      }
+      io.to(`squad:${squadId}`).emit('squad:chat_message', chatMsg)
+      if (mode === 'postgres') {
+        query('INSERT INTO squad_messages (squad_id, user_id, username, message) VALUES ($1, $2, $3, $4)', [squadId, user.id, chatMsg.username, msg]).catch(() => {})
+      }
+    })
+
+    socket.on('squad:typing', () => {
+      const user = socket.data.user
+      if (!user?.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (squadId) socket.to(`squad:${squadId}`).emit('squad:user_typing', { userId: user.id, username: user.username || 'Anon' })
+    })
+
+    socket.on('squad:get_invite', async () => {
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const squadRow = await dbGetSquad(squadId).catch(() => null)
+      if (squadRow) socket.emit('squad:invite_code', { code: squadRow.invite_code, squadName: squadRow.name })
+    })
+
+    socket.on('squad:join_invite', async ({ code }) => {
+      const user = socket.data.user
+      if (!user?.id || !code) return
+      const squadRow = await dbGetSquadByInvite(code.toUpperCase()).catch(() => null)
+      if (!squadRow) return socket.emit('squad:error', { message: 'Invalid or expired invite link' })
+      const squadId = squadRow.id
+
+      leaveAllRooms(socket, io)
+      await dbAddMemberIfNotExists(squadId, user.id).catch(() => {})
+
+      if (!liveMembers.has(squadId)) liveMembers.set(squadId, new Map())
+      liveMembers.get(squadId).set(socket.id, { userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null })
+      socket.join(`squad:${squadId}`)
+
+      const members = await dbGetSquadMembers(squadId).catch(() => [])
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      socket.emit('squad:state', {
+        id: squadId, name: squadRow.name, matchId: squadRow.match_id,
+        inviteCode: squadRow.invite_code, visibility: squadRow.visibility,
+        members: members.map((m) => ({ userId: m.user_id, username: m.username, avatar_url: m.avatar_url })),
+        memberCount: members.length, roles, createdBy: squadRow.created_by
+      })
+      socket.to(`squad:${squadId}`).emit('squad:member_joined', { userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null, memberCount: members.length })
     })
 
     socket.on('squad:challenge', ({ opponentId, predictionId }) => {
       const user = socket.data.user
-      if (!user?.id || !opponentId || !predictionId) return
-      if (user.id === opponentId) return
-
-      // Find shared squad
-      let squadId = null
-      for (const [sid, s] of squads) {
-        const memberIds = [...s.members.values()].map((m) => m.userId)
-        if (memberIds.includes(user.id) && memberIds.includes(opponentId)) {
-          squadId = sid
-          break
-        }
-      }
-      if (!squadId) return socket.emit('squad:error', { message: 'not in same squad' })
-
+      if (!user?.id || !opponentId || !predictionId || user.id === opponentId) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
       const duel = {
         id: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        squadId,
-        challengerId: user.id,
-        challengerName: user.username || 'Anon',
-        opponentId,
-        predictionId,
-        challengerPick: null,
-        opponentPick: null,
-        result: null,
-        createdAt: Date.now()
+        squadId, challengerId: user.id, challengerName: user.username || 'Anon',
+        opponentId, predictionId, challengerPick: null, opponentPick: null, result: null, createdAt: Date.now()
       }
       duels.push(duel)
-
-      // Notify opponent
       const opponentSocket = findSocketByUserId(io, opponentId)
-      if (opponentSocket) {
-        opponentSocket.emit('squad:challenge_received', {
-          duelId: duel.id,
-          challengerId: user.id,
-          challengerName: duel.challengerName,
-          predictionId
-        })
-      }
+      if (opponentSocket) opponentSocket.emit('squad:challenge_received', { duelId: duel.id, challengerId: user.id, challengerName: duel.challengerName, predictionId })
       socket.emit('squad:challenge_sent', { duelId: duel.id })
     })
 
@@ -138,11 +428,9 @@ export function registerSquadHandlers(io) {
       if (!user?.id) return
       const duel = duels.find((d) => d.id === duelId && d.opponentId === user.id)
       if (!duel) return
-
-      // Notify both parties duel is active
-      const challengerSocket = findSocketByUserId(io, duel.challengerId)
+      const cs = findSocketByUserId(io, duel.challengerId)
       const payload = { duelId: duel.id, predictionId: duel.predictionId, challengerId: duel.challengerId, opponentId: duel.opponentId }
-      if (challengerSocket) challengerSocket.emit('squad:duel_active', payload)
+      if (cs) cs.emit('squad:duel_active', payload)
       socket.emit('squad:duel_active', payload)
     })
 
@@ -151,17 +439,10 @@ export function registerSquadHandlers(io) {
       if (!user?.id || !pick) return
       const duel = duels.find((d) => d.id === duelId)
       if (!duel) return
-
       if (user.id === duel.challengerId) duel.challengerPick = pick
       else if (user.id === duel.opponentId) duel.opponentPick = pick
       else return
-
-      // Notify both that a pick was locked (without revealing)
-      const update = {
-        duelId: duel.id,
-        challengerLocked: !!duel.challengerPick,
-        opponentLocked: !!duel.opponentPick
-      }
+      const update = { duelId: duel.id, challengerLocked: !!duel.challengerPick, opponentLocked: !!duel.opponentPick }
       const cs = findSocketByUserId(io, duel.challengerId)
       const os = findSocketByUserId(io, duel.opponentId)
       if (cs) cs.emit('squad:duel_update', update)
@@ -169,20 +450,39 @@ export function registerSquadHandlers(io) {
     })
 
     socket.on('disconnect', () => {
-      const user = socket.data.user
-      for (const [sid, s] of squads) {
-        if (s.members.has(socket.id)) {
-          s.members.delete(socket.id)
-          io.to(`squad:${sid}`).emit('squad:member_left', { userId: user?.id, memberCount: s.members.size })
-          if (s.members.size === 0) squads.delete(sid)
-        }
-      }
+      leaveAllRooms(socket, io)
       reactionCooldowns.delete(socket.id)
     })
   })
 }
 
-// Resolve a duel when prediction resolves (called from prediction resolution logic)
+// --- Helpers ---
+
+function getSquadIdForSocket(socket) {
+  for (const [squadId, members] of liveMembers) {
+    if (members.has(socket.id)) return squadId
+  }
+  return null
+}
+
+function leaveAllRooms(socket, io) {
+  const user = socket.data.user
+  for (const [squadId, members] of liveMembers) {
+    if (members.has(socket.id)) {
+      members.delete(socket.id)
+      socket.leave(`squad:${squadId}`)
+      io.to(`squad:${squadId}`).emit('squad:member_left', { userId: user?.id, memberCount: members.size })
+    }
+  }
+}
+
+function findSocketByUserId(io, userId) {
+  for (const [, s] of io.sockets.sockets) {
+    if (s.data.user?.id === userId) return s
+  }
+  return null
+}
+
 export function resolveDuel(io, predictionId, correctAnswer) {
   const matching = duels.filter((d) => d.predictionId === predictionId && !d.result)
   for (const duel of matching) {
@@ -191,34 +491,10 @@ export function resolveDuel(io, predictionId, correctAnswer) {
     if (cCorrect && !oCorrect) duel.result = 'challenger_wins'
     else if (!cCorrect && oCorrect) duel.result = 'opponent_wins'
     else duel.result = 'draw'
-
-    const payload = {
-      duelId: duel.id,
-      result: duel.result,
-      correctAnswer,
-      challengerPick: duel.challengerPick,
-      opponentPick: duel.opponentPick
-    }
+    const payload = { duelId: duel.id, result: duel.result, correctAnswer, challengerPick: duel.challengerPick, opponentPick: duel.opponentPick }
     const cs = findSocketByUserId(io, duel.challengerId)
     const os = findSocketByUserId(io, duel.opponentId)
     if (cs) cs.emit('squad:duel_result', payload)
     if (os) os.emit('squad:duel_result', payload)
   }
-}
-
-export function listSquadsForMatch(matchId) {
-  const out = []
-  for (const s of squads.values()) {
-    if (s.matchId === matchId) {
-      out.push({ id: s.id, name: s.name, memberCount: s.members.size, createdBy: s.createdBy })
-    }
-  }
-  return out
-}
-
-function findSocketByUserId(io, userId) {
-  for (const [, s] of io.sockets.sockets) {
-    if (s.data.user?.id === userId) return s
-  }
-  return null
 }

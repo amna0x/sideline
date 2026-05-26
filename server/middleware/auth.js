@@ -20,21 +20,16 @@ function guestFrom(req) {
 export async function requireAuth(req, res, next) {
   try {
     if (!cognitoReady) {
+      // Local dev only — trust x-user-id header for demos
       const guest = guestFrom(req)
       if (!guest) return res.status(401).json({ error: 'unauthorized' })
       req.user = guest
       return next()
     }
+    // Production: Cognito token required, no guest fallback
     const token = extractToken(req)
     const user = token ? await verifyToken(token) : null
-    if (!user) {
-      const guest = guestFrom(req)
-      if (guest) {
-        req.user = guest
-        return next()
-      }
-      return res.status(401).json({ error: 'unauthorized' })
-    }
+    if (!user) return res.status(401).json({ error: 'unauthorized' })
     req.user = user
     next()
   } catch (e) { next(e) }
@@ -47,8 +42,7 @@ export async function optionalAuth(req, _res, next) {
       return next()
     }
     const token = extractToken(req)
-    const user = token ? await verifyToken(token) : null
-    req.user = user || guestFrom(req)
+    req.user = token ? await verifyToken(token) : null
     next()
   } catch (e) { next(e) }
 }

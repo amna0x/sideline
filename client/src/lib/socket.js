@@ -15,13 +15,19 @@ async function buildAuth() {
 }
 
 export async function getSocket() {
-  if (socket) return socket
+  if (socket?.connected) return socket
+  // If socket exists but disconnected, clean it up
+  if (socket) { socket.disconnect(); socket = null }
   const auth = await buildAuth()
   socket = io(URL, { autoConnect: true, transports: ['websocket', 'polling'], auth })
   socket.on('connect', () => console.log('[socket] connected', socket.id))
   socket.on('disconnect', (reason) => console.log('[socket] disconnect', reason))
   socket.on('connect_error', (err) => console.warn('[socket] error', err.message))
   return socket
+}
+
+export function reconnectSocket() {
+  if (socket) { socket.disconnect(); socket = null }
 }
 
 export function disconnectSocket() {

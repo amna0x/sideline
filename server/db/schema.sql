@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT UNIQUE,
   email TEXT,
   avatar_url TEXT,
+  bio TEXT,
   prediction_title TEXT DEFAULT 'Rookie',
   tier TEXT DEFAULT 'fan',
   points_total INTEGER DEFAULT 0,

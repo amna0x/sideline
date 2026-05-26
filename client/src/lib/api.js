@@ -79,5 +79,19 @@ export const api = {
   submitQuiz: (body) => request('/api/quiz/answer', { method: 'POST', body: JSON.stringify(body) }),
 
   // Share
-  shareCard: (body) => request('/api/share/card', { method: 'POST', body: JSON.stringify(body) })
+  shareCard: (body) => request('/api/share/card', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Friends
+  friends: () => request('/api/friends'),
+  friendRequests: () => request('/api/friends/requests'),
+  outgoingRequests: () => request('/api/friends/requests/outgoing'),
+  addFriend: (friendId) => request('/api/friends/add', { method: 'POST', body: JSON.stringify({ friend_id: friendId }) }),
+  acceptFriend: (requestId) => request('/api/friends/accept', { method: 'POST', body: JSON.stringify({ request_id: requestId }) }),
+  declineFriend: (requestId) => request('/api/friends/decline', { method: 'POST', body: JSON.stringify({ request_id: requestId }) }),
+  removeFriend: (friendId) => request(`/api/friends/${friendId}`, { method: 'DELETE' }),
+  searchUsers: (q) => request(`/api/friends/search?q=${encodeURIComponent(q)}`),
+
+  // Squad
+  squadInvite: (code) => request(`/api/squad/invite/${code}`),
+  squadMessages: (squadId) => request(`/api/squad/${encodeURIComponent(squadId)}/messages`)
 }
