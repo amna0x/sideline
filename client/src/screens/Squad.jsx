@@ -209,7 +209,7 @@ export default function Squad() {
   // ROOM VIEW
   return (
     <Layout title={squad.name?.toUpperCase()}>
-      <section className="px-4 pt-4 relative overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 56px - 80px)' }}>
+      <section className="px-4 pt-4 relative overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 56px - 80px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <ReactionBurst />
 
         {/* Room header */}
@@ -401,17 +401,35 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
   const [showStickers, setShowStickers] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
   const bottomRef = useRef(null)
+  const chatContainerRef = useRef(null)
   const typingTimeout = useRef(null)
   const seenRef = useRef(new Set())
 
+  // Auto-scroll to bottom on new messages
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+  }
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    scrollToBottom()
     // Mark unseen messages as seen
     if (onMarkSeen) {
       const unseen = messages.filter((m) => m.user_id !== userId && !seenRef.current.has(m.id))
       unseen.forEach((m) => { seenRef.current.add(m.id); onMarkSeen(m.id) })
     }
   }, [messages.length])
+
+  // Handle iOS keyboard resize — scroll to bottom when keyboard opens
+  useEffect(() => {
+    if (!window.visualViewport) return
+    function onResize() {
+      scrollToBottom()
+    }
+    window.visualViewport.addEventListener('resize', onResize)
+    return () => window.visualViewport.removeEventListener('resize', onResize)
+  }, [])
 
   // Play send sound
   function playSendSound() {
@@ -481,6 +499,7 @@ function ChatArea({ messages, userId, onSend, onTyping, onMarkSeen, typingUsers 
     setShowStickers(false)
     setShowEmoji(false)
     playSendSound()
+    setTimeout(scrollToBottom, 50)
   }
 
   const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '⚽', '🎯', '💯']

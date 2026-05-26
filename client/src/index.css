@@ -581,3 +581,22 @@ body {
   background-color: rgba(255,255,255,0.06) !important;
   color: rgba(255,255,255,0.7) !important;
 }
+
+
+/* iOS keyboard and safe area fixes */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-frame {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent iOS bounce scroll on the body */
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* When keyboard is open on iOS, ensure input stays visible */
+input:focus, textarea:focus {
+  scroll-margin-bottom: 120px;
+}
