@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS squads (
   name TEXT NOT NULL,
   match_id TEXT NOT NULL,
   invite_code TEXT UNIQUE,
+  invite_enabled BOOLEAN DEFAULT FALSE,
   visibility TEXT CHECK (visibility IN ('public','private')) DEFAULT 'public',
   created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()

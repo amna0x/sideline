@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import Avatar, { AdminBadge } from '../components/Avatar.jsx'
 import ProfileEffects from '../components/ProfileEffects.jsx'
+import { VaultMiniCard } from '../components/VaultCard.jsx'
 import { api } from '../lib/api.js'
 import { useStore } from '../store/index.js'
 
@@ -141,7 +142,7 @@ export default function UserProfile() {
             <div>
               <span className="font-comic text-xs text-[#999]">SQUAD</span>
               {userSquad.visibility === 'private' ? (
-                <div className="text-sm text-[#666] flex items-center gap-1">🔒 Private</div>
+                <div className="text-sm text-[#666] font-comic">PRIVATE</div>
               ) : (
                 <div className="text-sm text-[#1a1a1a] font-medium">{userSquad.name}</div>
               )}
@@ -159,10 +160,7 @@ export default function UserProfile() {
           <h3 className="font-comic text-xs text-[#999] mb-2">COLLECTION ({cards.length})</h3>
           <div className="grid grid-cols-3 gap-2">
             {cards.slice(0, 6).map((c) => (
-              <div key={c.id} className="aspect-[3/4] rounded-xl bg-white border border-[#e0e0e0] p-2 flex flex-col items-center justify-center">
-                <span className="material-symbols-outlined text-[var(--sv-accent)] text-[24px]">sports_soccer</span>
-                <span className="text-[8px] text-[#999] mt-1 truncate w-full text-center">{c.name}</span>
-              </div>
+              <VaultMiniCard key={c.id} item={c} />
             ))}
           </div>
         </section>
@@ -174,8 +172,8 @@ export default function UserProfile() {
           <h3 className="font-comic text-xs text-[#999] mb-2">BADGES ({badges.length})</h3>
           <div className="flex gap-2 flex-wrap">
             {badges.map((b) => (
-              <div key={b.id} className="w-12 h-12 rounded-full bg-white border border-[#e0e0e0] flex items-center justify-center">
-                <span className="material-symbols-outlined text-[var(--sv-accent)] text-[20px]">military_tech</span>
+              <div key={b.id} className="w-24">
+                <VaultMiniCard item={b} compact />
               </div>
             ))}
           </div>

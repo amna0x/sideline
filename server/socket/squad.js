@@ -15,6 +15,29 @@ function genCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
+function canSeeInviteCode(squadRow, roles, userId) {
+  if (!squadRow) return false
+  return squadRow.visibility !== 'private' || roles[userId] === 'admin' || !!squadRow.invite_enabled
+}
+
+function emitRoomsChanged(io, squadRow, squadId) {
+  const matchId = squadRow?.match_id || squadId?.split('::')[0] || 'lobby'
+  io.emit('squad:rooms_changed', { matchId })
+}
+
+function emitInviteVisibilityChanged(io, squadId, squadRow, roles) {
+  const live = liveMembers.get(squadId)
+  if (!live) return
+  for (const [socketId, member] of live) {
+    const targetSocket = io.sockets.sockets.get(socketId)
+    if (!targetSocket) continue
+    targetSocket.emit('squad:invite_visibility_changed', {
+      inviteEnabled: !!squadRow?.invite_enabled,
+      inviteCode: canSeeInviteCode(squadRow, roles, member.userId) ? squadRow?.invite_code || '' : ''
+    })
+  }
+}
+
 // --- DB helpers ---
 
 async function dbCreateSquad(id, name, matchId, inviteCode, visibility, createdBy) {
@@ -57,6 +80,11 @@ async function dbSetRole(squadId, userId, role) {
 async function dbSetVisibility(squadId, visibility) {
   if (mode !== 'postgres') return
   await query('UPDATE squads SET visibility = $1 WHERE id = $2', [visibility, squadId])
+}
+
+async function dbSetInviteEnabled(squadId, enabled) {
+  if (mode !== 'postgres') return
+  await query('UPDATE squads SET invite_enabled = $1 WHERE id = $2', [!!enabled, squadId])
 }
 
 async function dbGetSquad(squadId) {
@@ -162,7 +190,7 @@ async function dbListSquads(matchId) {
   const { rows } = await query(
     `SELECT s.id, s.name, s.visibility, s.created_by, s.invite_code,
        (SELECT COUNT(*) FROM squad_members WHERE squad_id = s.id)::int as member_count
-     FROM squads s WHERE s.match_id = $1
+     FROM squads s WHERE s.match_id = $1 AND s.visibility = 'public'
      ORDER BY member_count DESC`,
     [matchId]
   )
@@ -217,6 +245,10 @@ export function registerSquadHandlers(io) {
         await dbAddMember(squadId, user.id, 'admin').catch(() => {})
         inviteCodeCache.set(inviteCode, squadId)
       } else {
+        const existingRoles = await dbGetSquadRoles(squadId).catch(() => ({}))
+        if (squadRow.visibility === 'private' && !existingRoles[user.id]) {
+          return socket.emit('squad:error', { message: 'This squad is private' })
+        }
         // Add as member if not already (preserve existing role if they're rejoining)
         await dbAddMemberIfNotExists(squadId, user.id).catch(() => {})
         if (squadRow.invite_code) inviteCodeCache.set(squadRow.invite_code, squadId)
@@ -240,7 +272,8 @@ export function registerSquadHandlers(io) {
         id: squadId,
         name: dbSquad?.name || squadName.trim(),
         matchId,
-        inviteCode: dbSquad?.invite_code || '',
+        inviteCode: canSeeInviteCode(dbSquad, roles, user.id) ? dbSquad?.invite_code || '' : '',
+        inviteEnabled: !!dbSquad?.invite_enabled,
         visibility: dbSquad?.visibility || 'public',
         members: members.map((m) => ({ userId: m.user_id, username: m.username, avatar_url: m.avatar_url })),
         memberCount: members.length,
@@ -250,11 +283,12 @@ export function registerSquadHandlers(io) {
 
       // Send chat history
       const history = await dbGetChatHistory(squadId).catch(() => [])
-      if (history.length > 0) socket.emit('squad:chat_history', history)
+      socket.emit('squad:chat_history', history)
 
       socket.to(`squad:${squadId}`).emit('squad:member_joined', {
         userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null, memberCount: members.length
       })
+      emitRoomsChanged(io, dbSquad, squadId)
     })
 
     socket.on('squad:leave', async () => {
@@ -287,6 +321,8 @@ export function registerSquadHandlers(io) {
       leaveAllRooms(socket, io)
       const members = await dbGetSquadMembers(squadId).catch(() => [])
       io.to(`squad:${squadId}`).emit('squad:member_left', { userId: user.id, memberCount: members.length })
+      const squadRow = await dbGetSquad(squadId).catch(() => null)
+      emitRoomsChanged(io, squadRow, squadId)
     })
 
     // Check what happens if user leaves (for confirmation UI)
@@ -318,7 +354,21 @@ export function registerSquadHandlers(io) {
       const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
       if (roles[user.id] !== 'admin') return socket.emit('squad:error', { message: 'Only the admin can change visibility' })
       await dbSetVisibility(squadId, visibility).catch(() => {})
-      io.to(`squad:${squadId}`).emit('squad:visibility_changed', { visibility })
+      const squadRow = await dbGetSquad(squadId).catch(() => null)
+      io.to(`squad:${squadId}`).emit('squad:visibility_changed', { visibility, inviteEnabled: !!squadRow?.invite_enabled })
+      emitRoomsChanged(io, squadRow, squadId)
+    })
+
+    socket.on('squad:set_invite_enabled', async ({ enabled }) => {
+      const user = socket.data.user
+      if (!user?.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      if (roles[user.id] !== 'admin') return socket.emit('squad:error', { message: 'Only the admin can change invite sharing' })
+      await dbSetInviteEnabled(squadId, !!enabled).catch(() => {})
+      const squadRow = await dbGetSquad(squadId).catch(() => null)
+      emitInviteVisibilityChanged(io, squadId, squadRow, roles)
     })
 
     socket.on('squad:promote', async ({ targetUserId }) => {
@@ -486,6 +536,27 @@ export function registerSquadHandlers(io) {
       io.to(`squad:${squadId}`).emit('squad:message_deleted', { messageId, deleted_at: deletedAt })
     })
 
+    socket.on('squad:clear_chat', async () => {
+      const user = socket.data.user
+      if (!user?.id) return
+      const squadId = getSquadIdForSocket(socket)
+      if (!squadId) return
+
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      if (roles[user.id] !== 'admin') {
+        return socket.emit('squad:error', { message: 'Only the squad admin can clear chat' })
+      }
+
+      if (mode === 'postgres') {
+        await query('DELETE FROM message_seen WHERE squad_id = $1', [squadId]).catch(() => {})
+        await query('DELETE FROM squad_messages WHERE squad_id = $1', [squadId]).catch(() => {})
+      }
+      for (const [messageId, msg] of liveMessages) {
+        if (msg.squad_id === squadId) liveMessages.delete(messageId)
+      }
+      io.to(`squad:${squadId}`).emit('squad:chat_cleared')
+    })
+
     // Seen receipts
     socket.on('squad:mark_seen', async ({ messageId }) => {
       const user = socket.data.user
@@ -510,9 +581,15 @@ export function registerSquadHandlers(io) {
     })
 
     socket.on('squad:get_invite', async () => {
+      const user = socket.data.user
+      if (!user?.id) return
       const squadId = getSquadIdForSocket(socket)
       if (!squadId) return
       const squadRow = await dbGetSquad(squadId).catch(() => null)
+      const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
+      if (!canSeeInviteCode(squadRow, roles, user.id)) {
+        return socket.emit('squad:error', { message: 'Invite code is private' })
+      }
       if (squadRow) socket.emit('squad:invite_code', { code: squadRow.invite_code, squadName: squadRow.name })
     })
 
@@ -534,11 +611,16 @@ export function registerSquadHandlers(io) {
       const roles = await dbGetSquadRoles(squadId).catch(() => ({}))
       socket.emit('squad:state', {
         id: squadId, name: squadRow.name, matchId: squadRow.match_id,
-        inviteCode: squadRow.invite_code, visibility: squadRow.visibility,
+        inviteCode: canSeeInviteCode(squadRow, roles, user.id) ? squadRow.invite_code : '',
+        inviteEnabled: !!squadRow.invite_enabled,
+        visibility: squadRow.visibility,
         members: members.map((m) => ({ userId: m.user_id, username: m.username, avatar_url: m.avatar_url })),
         memberCount: members.length, roles, createdBy: squadRow.created_by
       })
+      const history = await dbGetChatHistory(squadId).catch(() => [])
+      socket.emit('squad:chat_history', history)
       socket.to(`squad:${squadId}`).emit('squad:member_joined', { userId: user.id, username: user.username || 'Anon', avatar_url: user.avatar_url || null, memberCount: members.length })
+      emitRoomsChanged(io, squadRow, squadId)
     })
 
     socket.on('squad:challenge', ({ opponentId, predictionId }) => {

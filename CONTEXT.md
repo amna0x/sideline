@@ -18,7 +18,7 @@ Claude reads this file at start of every session (per `CLAUDE.md` first-action r
 _What is the current focus? Update this each session._
 
 - **Branch:** `chore/auth-middleware-foundation` (extended with RDS + UI fixes)
-- **In progress:** AWS RDS PostgreSQL connected as primary database. Cognito auth configured. Major UI fixes: prediction cards (error handling, vote count, 5-min timer), vault cards (expandable detail popup, epic/legendary glow effects, more items), squad emoji reactions contained to screen, leaderboard updates after predictions, avatar edit icon visibility.
+- **In progress:** AWS RDS PostgreSQL connected as primary database. Cognito auth configured. Major UI fixes: prediction cards (error handling, vote count, 5-min timer), vault cards (expandable detail popup, epic/legendary glow effects, more items), squad emoji reactions contained to screen, leaderboard updates after predictions, avatar edit icon visibility. Squad privacy and profile/vault visual consistency fixes are in the current dirty tree.
 - **Completed this session:** Unified DB layer (`server/db/index.js`) with priority: RDS → Supabase → memory. Schema deployed to RDS (`eu-north-1`). All routes refactored to use unified layer. 18/18 tests pass.
 - **Next:** PR2 OAuth (Google/GitHub via Cognito) → PR3 friends graph → PR4 notifications → PR5 chat.
 
@@ -59,6 +59,8 @@ _Non-obvious choices that future sessions should not relitigate._
 ## Session log
 
 _Append a one-liner per session. Keep newest at top. Trim entries older than ~30 days._
+
+- _2026-05-27 (privacy/profile UI) — Private squads are filtered from room lists server/client-side and refresh via `squad:rooms_changed`; private invite codes are admin-only unless invite sharing is enabled; profile private squad label is `PRIVATE`; profile cards/badges now reuse vault visuals/effects; theme contrast overrides tightened._
 
 - _2026-05-25 (DB+UI) — AWS RDS PostgreSQL connected (eu-north-1). Unified DB layer. Cognito configured. UI fixes: prediction error handling, vault card detail popup, emoji containment, leaderboard refresh, avatar edit icon. See `CHANGELOG.md`._
 - _2026-05-25 (later) — AWS Cognito replaces Supabase auth (server middleware + client SDK + socket handshake). New `POST /api/share/card` via htmlcsstoimage.com. Socket emits scoped to `match:<id>` rooms. Tests 18/18 pass, client builds. Awaiting Cognito + HCTI creds. See `CHANGELOG.md`._

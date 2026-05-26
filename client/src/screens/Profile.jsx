@@ -5,6 +5,7 @@ import Layout from '../components/Layout.jsx'
 import AvatarUpload from '../components/AvatarUpload.jsx'
 import Avatar, { AdminBadge } from '../components/Avatar.jsx'
 import ProfileEffects from '../components/ProfileEffects.jsx'
+import { VaultMiniCard } from '../components/VaultCard.jsx'
 import { useStore } from '../store/index.js'
 import { api } from '../lib/api.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
@@ -173,13 +174,7 @@ export default function Profile() {
         {tab === 'cards' && (
           <div className="grid grid-cols-2 gap-3">
             {cards.map((c) => (
-              <div key={c.id} className="aspect-[3/4] rounded-2xl bg-white border border-[#e0e0e0] p-3 flex flex-col">
-                <span className="font-label-caps text-[10px] text-[#999]">{c.tier?.toUpperCase()}</span>
-                <div className="flex-1 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[var(--sv-accent)] text-[40px]">sports_soccer</span>
-                </div>
-                <div className="text-sm text-[#1a1a1a] truncate">{c.name}</div>
-              </div>
+              <VaultMiniCard key={c.id} item={c} />
             ))}
             {cards.length === 0 && <Empty text="No vault cards yet — predict to earn drops" />}
           </div>
@@ -187,10 +182,7 @@ export default function Profile() {
         {tab === 'badges' && (
           <div className="grid grid-cols-3 gap-3">
             {badges.map((b) => (
-              <div key={b.id} className="aspect-square rounded-full bg-white border border-[#e0e0e0] flex flex-col items-center justify-center p-2">
-                <span className="material-symbols-outlined text-[var(--sv-accent)] text-[28px]">military_tech</span>
-                <span className="text-[8px] text-[#999] text-center mt-1">{b.name}</span>
-              </div>
+              <VaultMiniCard key={b.id} item={b} compact />
             ))}
             {badges.length === 0 && <Empty text="No badges earned yet" full />}
           </div>

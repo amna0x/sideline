@@ -18,14 +18,15 @@ export default function Squad() {
   const {
     squad, roles, typingUsers, chatMessages,
     joinSquad, joinByInvite, leaveSquad, checkLeave, sendReaction, sendMessage, sendTyping, markSeen,
-    getInviteCode, setVisibility, promote, demote, kick,
+    getInviteCode, setVisibility, setInviteEnabled, promote, demote, kick,
     sendChallenge, acceptChallenge
-    , editMessage, deleteMessage
+    , editMessage, deleteMessage, clearChat
   } = useSquad()
   const squadMembers = useStore((s) => s.squadMembers)
   const activeDuel = useStore((s) => s.activeDuel)
   const userId = useStore((s) => s.user?.id)
   const showToast = useStore((s) => s.showToast)
+  const roomsVersion = useStore((s) => s.squadRoomsVersion)
   const [rooms, setRooms] = useState([])
   const [joinName, setJoinName] = useState('')
   const [inviteInput, setInviteInput] = useState('')
@@ -40,6 +41,7 @@ export default function Squad() {
   const myRole = roles[userId] || 'member'
   const isAdmin = myRole === 'admin' || (squad?.createdBy === userId)
   const isMod = myRole === 'moderator'
+  const canSeeInvite = !!squad && (squad.visibility !== 'private' || isAdmin || squad.inviteEnabled)
 
   // Check if user already has a squad (persisted)
   useEffect(() => {
@@ -60,9 +62,10 @@ export default function Squad() {
     const matchId = match?.id || 'lobby'
     setLoadingRooms(true)
     api.get(`/api/squad/rooms?match_id=${matchId}`)
-      .then(setRooms).catch(() => {})
+      .then((data) => setRooms((data || []).filter((room) => room.visibility !== 'private')))
+      .catch(() => {})
       .finally(() => setLoadingRooms(false))
-  }, [match?.id, squad])
+  }, [match?.id, squad, roomsVersion])
 
   function handleJoinAttempt(name) {
     if (!name?.trim()) return
@@ -219,17 +222,19 @@ export default function Squad() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-comic text-lg text-[var(--sv-accent)]">{squad.name}</h2>
-              <span className="text-xs text-[#999]">{squadMembers.length} watching · {squad.visibility === 'private' ? '🔒 Private' : '🌐 Public'}</span>
+              <span className="text-xs text-[#999]">{squadMembers.length} watching · {squad.visibility === 'private' ? 'PRIVATE' : 'PUBLIC'}</span>
             </div>
             <div className="flex gap-1.5">
               <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowManage(true)}
                 className="px-2 py-1 rounded-lg font-comic text-xs border border-[#e0e0e0] text-[#666]">
                 <span className="material-symbols-outlined text-[14px]">settings</span>
               </motion.button>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={() => getInviteCode()}
-                className="px-2 py-1 rounded-lg font-comic text-xs border border-[var(--sv-accent)] text-[var(--sv-accent)]">
-                <span className="material-symbols-outlined text-[14px]">link</span>
-              </motion.button>
+              {canSeeInvite && (
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => getInviteCode()}
+                  className="px-2 py-1 rounded-lg font-comic text-xs border border-[var(--sv-accent)] text-[var(--sv-accent)]">
+                  <span className="material-symbols-outlined text-[14px]">link</span>
+                </motion.button>
+              )}
               <motion.button whileTap={{ scale: 0.9 }} onClick={async () => {
                 const info = await checkLeave()
                 setLeaveInfo(info)
@@ -276,7 +281,7 @@ export default function Squad() {
         </div>
 
         {/* Chat area */}
-        <ChatArea messages={chatMessages} userId={userId} roles={roles} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} onEdit={editMessage} onDelete={deleteMessage} />
+        <ChatArea messages={chatMessages} userId={userId} roles={roles} onSend={sendMessage} onTyping={sendTyping} onMarkSeen={markSeen} typingUsers={typingUsers} onEdit={editMessage} onDelete={deleteMessage} onClearChat={clearChat} />
 
         <AnimatePresence>
           {activeDuel && (
@@ -342,17 +347,39 @@ export default function Squad() {
                     </button>
                   </div>
                   <p className="text-[10px] text-[#999] mt-1">{squad.visibility === 'private' ? 'Only invite link can join' : 'Visible to everyone'}</p>
+                  {squad.visibility === 'private' && (
+                    <div className="mt-3 flex items-center justify-between gap-3 bg-[#f8f8f8] rounded-xl px-3 py-2">
+                      <div>
+                        <div className="font-comic text-xs text-[#1a1a1a]">INVITE CODE SHARING</div>
+                        <div className="text-[10px] text-[#999]">Let members view and share the private squad code</div>
+                      </div>
+                      <button
+                        onClick={() => setInviteEnabled(!squad.inviteEnabled)}
+                        className={`w-12 h-7 rounded-full p-1 transition-colors ${squad.inviteEnabled ? 'bg-[var(--sv-accent)]' : 'bg-[#d8d8d8]'}`}
+                        aria-label="Toggle invite code sharing"
+                      >
+                        <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${squad.inviteEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Invite code */}
-              <div className="p-4 border-b border-[#f0f0f0]">
-                <label className="font-comic text-xs text-[#999] mb-2 block">INVITE CODE</label>
-                <div className="flex items-center gap-2">
-                  <span className="font-comic text-lg tracking-widest text-[#1a1a1a] bg-[#f8f8f8] px-4 py-2 rounded-xl flex-1 text-center">{squad.inviteCode}</span>
-                  <button onClick={() => getInviteCode()} className="px-3 py-2 rounded-xl bg-[var(--sv-accent)] text-white font-comic text-xs">COPY</button>
+              {canSeeInvite ? (
+                <div className="p-4 border-b border-[#f0f0f0]">
+                  <label className="font-comic text-xs text-[#999] mb-2 block">INVITE CODE</label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-comic text-lg tracking-widest text-[#1a1a1a] bg-[#f8f8f8] px-4 py-2 rounded-xl flex-1 text-center">{squad.inviteCode || 'PRIVATE'}</span>
+                    <button onClick={() => getInviteCode()} className="px-3 py-2 rounded-xl bg-[var(--sv-accent)] text-white font-comic text-xs">COPY</button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-4 border-b border-[#f0f0f0]">
+                  <label className="font-comic text-xs text-[#999] mb-1 block">INVITE CODE</label>
+                  <div className="text-sm text-[#666] bg-[#f8f8f8] rounded-xl px-3 py-2">Hidden by squad admin</div>
+                </div>
+              )}
 
               {/* Members list with actions */}
               <div className="p-4">
@@ -397,7 +424,7 @@ export default function Squad() {
 }
 
 // iOS-style chat with animations
-function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, typingUsers, onEdit, onDelete }) {
+function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, typingUsers, onEdit, onDelete, onClearChat }) {
   const nav = useNavigate()
   const [text, setText] = useState('')
   const [replyTo, setReplyTo] = useState(null)
@@ -410,6 +437,8 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   const [editingText, setEditingText] = useState('')
   const currentMenuMessage = menuOpen ? messages.find((m) => m.id === menuOpen) : null
   const longPressRef = useRef(null)
+  const isSquadAdmin = roles[userId] === 'admin'
+  const commandPreview = isSquadAdmin && text.trim().toLowerCase() === '/clear'
 
   function startEdit(msg) {
     setEditingId(msg.id)
@@ -489,6 +518,14 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
 
   function handleSend() {
     if (!text.trim()) return
+    if (text.trim().toLowerCase() === '/clear' && isSquadAdmin) {
+      onClearChat?.()
+      setText('')
+      setReplyTo(null)
+      setShowStickers(false)
+      setShowEmoji(false)
+      return
+    }
     onSend(text.trim(), { replyTo: replyTo ? { id: replyTo.id, text: replyTo.message, username: replyTo.username } : null })
     setText('')
     setReplyTo(null)
@@ -805,6 +842,25 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                 <button onClick={closeMenu} className="w-full text-left px-4 py-3 rounded-2xl border border-[#e0e0e0] bg-[#fafafa] text-sm text-[#666]">Cancel</button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {commandPreview && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: 6, height: 0 }}
+            className="px-2 py-2 bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl mb-1"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px] text-[var(--sv-accent)]">terminal</span>
+              <div className="min-w-0">
+                <div className="text-xs font-comic text-[#1a1a1a]">/clear</div>
+                <div className="text-[11px] text-[#999] truncate">Clear all messages in this squad chat</div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from './hooks/useAuth.js'
 import { useStore } from './store/index.js'
 import { applyTheme, loadTheme } from './lib/theme.js'
@@ -23,6 +23,7 @@ export default function App() {
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
   const location = useLocation()
+  const [showSplash, setShowSplash] = useState(true)
 
   useEffect(() => {
     const initial = loadTheme()
@@ -31,6 +32,11 @@ export default function App() {
   }, [setTheme])
 
   useEffect(() => { if (theme) applyTheme(theme) }, [theme])
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1400)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
     <>
@@ -56,7 +62,34 @@ export default function App() {
         </Routes>
       </motion.div>
       <AdidasDropOverlay />
+      <AnimatePresence>
+        {showSplash && <SplashScreen />}
+      </AnimatePresence>
     </>
+  )
+}
+
+function SplashScreen() {
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[#f8f8f8]"
+    >
+      <motion.div
+        initial={{ y: 16, opacity: 0, scale: 0.94 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: -10, opacity: 0, scale: 0.98 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+        className="flex flex-col items-center"
+      >
+        <img src="/icon-192.png" alt="" className="w-24 h-24 rounded-3xl shadow-[0_12px_36px_rgba(223,91,48,0.22)]" />
+        <h1 className="mt-5 font-comic text-3xl text-[#1a1a1a] tracking-tight">Sideline</h1>
+        <div className="mt-3 h-1 w-20 rounded-full bg-[var(--sv-accent)]" />
+      </motion.div>
+    </motion.div>
   )
 }
 

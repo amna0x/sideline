@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import fieldImage from './footballfield.jpg'
 
 const ITEM_ICON = {
   vi_frame_olive: 'shield',
@@ -103,8 +104,12 @@ export default function VaultCard({ item, owned, points, onClick }) {
           boxShadow: t.glow
         } : undefined}
       >
+        <div
+          className="absolute inset-0 rounded-2xl opacity-[0.08] bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url(${fieldImage})` }}
+        />
         {/* Header */}
-        <div className="flex justify-between items-start mb-1">
+        <div className="relative z-10 flex justify-between items-start mb-1">
           <span
             className="font-label-caps text-[9px] px-1.5 py-0.5 rounded-sm"
             style={{
@@ -126,12 +131,12 @@ export default function VaultCard({ item, owned, points, onClick }) {
         </div>
 
         {/* Visual center */}
-        <div className="flex-grow flex items-center justify-center">
+        <div className="relative z-10 flex-grow flex items-center justify-center">
           <TierVisual tier={item.tier || 'common'} icon={itemIcon} locked={locked} />
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-1">
+        <div className="relative z-10 mt-auto pt-1">
           <h3 className="font-body-md text-[12px] font-semibold text-on-surface truncate">
             {locked ? '???' : item.name}
           </h3>
@@ -143,6 +148,46 @@ export default function VaultCard({ item, owned, points, onClick }) {
         </div>
       </div>
     </motion.button>
+  )
+}
+
+export function VaultMiniCard({ item, compact = false }) {
+  const t = TIER[item.tier] || TIER.common
+  const itemIcon = pickIcon(item, t.icon)
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className={`relative overflow-hidden rounded-2xl bg-white border p-2 flex flex-col ${compact ? 'aspect-square' : 'aspect-[3/4]'}`}
+      style={{ borderColor: t.color, boxShadow: t.glow }}
+    >
+      {(item.tier === 'epic' || item.tier === 'legendary' || item.tier === 'mythic') && (
+        <motion.div
+          className="absolute inset-0 blur-xl"
+          style={{ backgroundColor: t.color, opacity: 0.18 }}
+          animate={{ opacity: [0.12, 0.24, 0.12] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
+      <div
+        className="absolute inset-0 opacity-[0.08] bg-cover bg-center pointer-events-none"
+        style={{ backgroundImage: `url(${fieldImage})` }}
+      />
+      {!compact && (
+        <div className="relative z-10 flex justify-between items-start">
+          <span className="font-label-caps text-[8px] px-1.5 py-0.5 rounded-sm" style={{ color: t.color, backgroundColor: `${t.color}18` }}>
+            {t.label}
+          </span>
+          <span className="material-symbols-outlined text-[14px]" style={{ color: t.color, fontVariationSettings: "'FILL' 1" }}>{itemIcon}</span>
+        </div>
+      )}
+      <div className="relative z-10 flex-1 flex items-center justify-center">
+        <TierVisual tier={item.tier || 'common'} icon={itemIcon} locked={false} />
+      </div>
+      <div className="relative z-10 text-[9px] text-on-surface text-center truncate w-full font-medium">
+        {item.name}
+      </div>
+    </motion.div>
   )
 }
 

@@ -78,6 +78,11 @@ export function useSquad() {
         })
       })
 
+      s.on('squad:chat_cleared', () => {
+        useStore.getState().setSquadChat([])
+        useStore.getState().showToast('Chat cleared')
+      })
+
       s.on('squad:user_typing', ({ userId, username }) => {
         setTypingUsers((prev) => {
           const exists = prev.find((u) => u.userId === userId)
@@ -90,14 +95,43 @@ export function useSquad() {
         }, 3000)
       })
 
-      s.on('squad:visibility_changed', ({ visibility }) => {
+      s.on('squad:visibility_changed', ({ visibility, inviteEnabled }) => {
+        const { user, squad: currentSquad } = useStore.getState()
+        const currentRoles = currentSquad?.roles || {}
+        const isAdmin = currentRoles[user?.id] === 'admin' || currentSquad?.createdBy === user?.id
         useStore.setState((prev) => ({
-          squad: prev.squad ? { ...prev.squad, visibility } : null
+          squad: prev.squad ? {
+            ...prev.squad,
+            visibility,
+            ...(inviteEnabled !== undefined ? { inviteEnabled } : {}),
+            ...(visibility === 'private' && !isAdmin && !inviteEnabled ? { inviteCode: '' } : {})
+          } : null
         }))
+      })
+
+      s.on('squad:invite_visibility_changed', ({ inviteEnabled, inviteCode }) => {
+        const { user, squad: currentSquad } = useStore.getState()
+        const currentRoles = currentSquad?.roles || {}
+        const isAdmin = currentRoles[user?.id] === 'admin' || currentSquad?.createdBy === user?.id
+        useStore.setState((prev) => ({
+          squad: prev.squad ? {
+            ...prev.squad,
+            inviteEnabled,
+            ...(inviteCode !== undefined ? { inviteCode } : {}),
+            ...(!inviteEnabled && prev.squad.visibility === 'private' && !isAdmin ? { inviteCode: '' } : {})
+          } : null
+        }))
+      })
+
+      s.on('squad:rooms_changed', () => {
+        useStore.getState().bumpSquadRoomsVersion()
       })
 
       s.on('squad:roles_updated', ({ roles: newRoles }) => {
         setRoles(newRoles)
+        useStore.setState((prev) => ({
+          squad: prev.squad ? { ...prev.squad, roles: newRoles } : null
+        }))
       })
 
       s.on('squad:kicked', ({ squadName }) => {
@@ -117,6 +151,9 @@ export function useSquad() {
       })
 
       s.on('squad:invite_code', ({ code, squadName }) => {
+        useStore.setState((prev) => ({
+          squad: prev.squad ? { ...prev.squad, inviteCode: code } : null
+        }))
         const url = `${window.location.origin}/squad?invite=${code}`
         if (navigator.share) {
           navigator.share({ title: `Join ${squadName} on Sideline`, text: `Use code: ${code}`, url }).catch(() => {})
@@ -145,8 +182,8 @@ export function useSquad() {
       cancelled = true
       if (socketRef.current) {
         const events = ['squad:state', 'squad:member_joined', 'squad:member_left', 'squad:reaction_burst',
-          'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:roles_updated',
-          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:message_updated', 'squad:message_deleted', 'squad:challenge_received', 'squad:challenge_sent',
+          'squad:chat_message', 'squad:user_typing', 'squad:visibility_changed', 'squad:invite_visibility_changed', 'squad:rooms_changed', 'squad:roles_updated',
+          'squad:kicked', 'squad:admin_transferred', 'squad:leave_info', 'squad:invite_code', 'squad:message_updated', 'squad:message_deleted', 'squad:chat_cleared', 'squad:challenge_received', 'squad:challenge_sent',
           'squad:duel_active', 'squad:duel_update', 'squad:duel_result', 'squad:error', 'connect']
         events.forEach((e) => socketRef.current.off(e))
       }
@@ -206,6 +243,10 @@ export function useSquad() {
     socketRef.current?.emit('squad:message_delete', { messageId })
   }, [])
 
+  const clearChat = useCallback(() => {
+    socketRef.current?.emit('squad:clear_chat')
+  }, [])
+
   const markSeen = useCallback((messageId) => {
     socketRef.current?.emit('squad:mark_seen', { messageId })
   }, [])
@@ -220,6 +261,10 @@ export function useSquad() {
 
   const setVisibility = useCallback((visibility) => {
     socketRef.current?.emit('squad:set_visibility', { visibility })
+  }, [])
+
+  const setInviteEnabled = useCallback((enabled) => {
+    socketRef.current?.emit('squad:set_invite_enabled', { enabled })
   }, [])
 
   const promote = useCallback((targetUserId) => {
@@ -251,8 +296,8 @@ export function useSquad() {
     squad, roles, typingUsers, chatMessages,
     joinSquad, joinByInvite, leaveSquad, checkLeave,
     sendReaction, sendMessage, sendTyping, markSeen, getInviteCode,
-    setVisibility, promote, demote, kick,
+    setVisibility, setInviteEnabled, promote, demote, kick,
     sendChallenge, acceptChallenge, submitDuelPick,
-    editMessage, deleteMessage
+    editMessage, deleteMessage, clearChat
   }
 }
