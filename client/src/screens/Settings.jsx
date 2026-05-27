@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import { useStore } from '../store/index.js'
 import { useAuth } from '../hooks/useAuth.js'
@@ -30,6 +30,7 @@ export default function Settings() {
   const [notif, setNotif] = useState(profile.notifications_enabled ?? false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
 
   const isAdmin = isAdminUser(user)
 
@@ -166,27 +167,16 @@ export default function Settings() {
         )}
 
         {tab === 'themes' && (
-          <div className="grid grid-cols-2 gap-3">
-            {Object.values(THEMES).map((t) => {
-              const active = theme === t.id
-              return (
-                <motion.button
-                  key={t.id}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => { applyTheme(t.id, { animate: true }); setTheme(t.id); saveThemeToProfile(user?.id, t.id, api) }}
-                  className={`text-left rounded-xl border-2 p-3 transition-all bg-white ${active ? 'border-[var(--sv-accent)] shadow-[0_2px_12px_rgba(223,91,48,0.2)]' : 'border-[#e0e0e0] hover:border-[#ccc]'}`}
-                >
-                  <div className="flex gap-1.5 mb-2">
-                    {t.swatches.map((c) => (
-                      <span key={c} className="w-6 h-6 rounded-full border border-[#e0e0e0]" style={{ background: c }} />
-                    ))}
-                  </div>
-                  <div className="text-sm text-[#1a1a1a] font-medium">{t.name}</div>
-                  <div className="text-[10px] text-[#999] font-comic">{active ? 'ACTIVE' : 'TAP TO APPLY'}</div>
-                </motion.button>
-              )
-            })}
-          </div>
+          <ThemeDropdown
+            theme={theme}
+            open={themeMenuOpen}
+            setOpen={setThemeMenuOpen}
+            onPick={(id) => {
+              applyTheme(id, { animate: true })
+              setTheme(id)
+              saveThemeToProfile(user?.id, id, api)
+            }}
+          />
         )}
 
         {tab === 'notifications' && (
@@ -525,6 +515,84 @@ function Toggle({ on, onClick }) {
     <button onClick={onClick} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${on ? 'bg-[var(--sv-accent)]' : 'bg-[#e0e0e0]'}`}>
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`} />
     </button>
+  )
+}
+
+function ThemeDropdown({ theme, open, setOpen, onPick }) {
+  const themes = Object.values(THEMES)
+  const current = THEMES[theme] || THEMES.default
+
+  function pick(id) {
+    onPick(id)
+    setOpen(false)
+  }
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 p-4 text-left"
+          aria-expanded={open}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <ThemeSwatches theme={current} size="lg" />
+            <div className="min-w-0">
+              <div className="text-sm text-[#1a1a1a] font-medium truncate">{current.name}</div>
+              <div className="text-xs text-[#999] truncate">Theme</div>
+            </div>
+          </div>
+          <motion.span
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.18 }}
+            className="material-symbols-outlined text-[#999] text-[22px] shrink-0"
+          >
+            expand_more
+          </motion.span>
+        </button>
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="overflow-hidden border-t border-[#f0f0f0]"
+            >
+              <div className="p-2">
+                {themes.map((t) => {
+                  const active = current.id === t.id
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => pick(t.id)}
+                      className={`w-full flex items-center justify-between gap-3 px-3 py-3 rounded-xl text-left transition-colors ${active ? 'bg-[var(--sv-accent)]/10' : 'hover:bg-black/5'}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <ThemeSwatches theme={t} />
+                        <span className="text-sm text-[#1a1a1a] font-medium truncate">{t.name}</span>
+                      </div>
+                      {active && <span className="material-symbols-outlined text-[var(--sv-accent)] text-[20px] shrink-0">check</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+    </div>
+  )
+}
+
+function ThemeSwatches({ theme, size = 'sm' }) {
+  const dot = size === 'lg' ? 'w-7 h-7' : 'w-5 h-5'
+  return (
+    <div className="flex -space-x-2 shrink-0">
+      {theme.swatches.map((c) => (
+        <span key={c} className={`${dot} rounded-full border border-[#e0e0e0] shadow-sm`} style={{ background: c }} />
+      ))}
+    </div>
   )
 }
 

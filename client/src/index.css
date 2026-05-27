@@ -978,9 +978,12 @@ input:focus, textarea:focus {
 [data-theme="marple"] .mobile-frame::before,
 [data-theme="jade"] .mobile-frame::before,
 [data-theme="aurora"] .mobile-frame::before,
-[data-theme="neon"] .mobile-frame::before,
-[data-theme="liquidglass"] .mobile-frame::before {
+[data-theme="neon"] .mobile-frame::before {
   display: none;
+}
+
+[data-theme="liquidglass"] .mobile-frame::before {
+  display: block;
 }
 
 [data-theme="fightking"] .mobile-frame {

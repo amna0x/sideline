@@ -64,6 +64,8 @@ _Append a one-liner per session. Keep newest at top. Trim entries older than ~30
 
 - _2026-05-27 (chat themes) — Squad chat messages now show compact local timestamps; Spiderverse display name changed to Multiverse; added Fight King, Marple, Jade Horizon, Aurora Blossom, Neon Pulse, and Liquid Glass themes._
 
+- _2026-05-27 (theme UX) — Settings theme picker changed from a card grid to an iOS-style dropdown; Liquid Glass now keeps the football field background layer at the default opacity._
+
 - _2026-05-27 (privacy/profile UI) — Private squads are filtered from room lists server/client-side and refresh via `squad:rooms_changed`; private invite codes are admin-only unless invite sharing is enabled; profile private squad label is `PRIVATE`; profile cards/badges now reuse vault visuals/effects; theme contrast overrides tightened._
 
 - _2026-05-25 (DB+UI) — AWS RDS PostgreSQL connected (eu-north-1). Unified DB layer. Cognito configured. UI fixes: prediction error handling, vault card detail popup, emoji containment, leaderboard refresh, avatar edit icon. See `CHANGELOG.md`._
