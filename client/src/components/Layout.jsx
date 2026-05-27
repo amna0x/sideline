@@ -120,7 +120,7 @@ function TopBar({ title, points }) {
   const requestCount = incoming.length
 
   return (
-    <header className="app-topbar sticky top-3 z-40 mx-4 mt-3 mb-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 h-16 text-white rounded-[28px] shadow-[0_14px_30px_var(--topbar-shadow)]">
+    <header className="app-topbar sticky top-3 z-40 mx-4 mt-3 mb-2 grid grid-cols-[1fr_auto_1fr] items-center px-4 h-16 text-white rounded-[28px] shadow-[0_14px_30px_var(--topbar-shadow)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
         <span className="material-symbols-outlined absolute -top-11 left-16 text-[118px] text-white/[0.10] animate-float rotate-[-18deg]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
         <span className="material-symbols-outlined absolute -bottom-12 right-20 text-[94px] text-white/[0.065] animate-float rotate-[24deg] scale-x-125 scale-y-90" style={{ fontVariationSettings: "'FILL' 1", animationDelay: '0.8s' }}>star</span>
@@ -180,8 +180,8 @@ function TopBar({ title, points }) {
       </div>
 
       {/* Title */}
-      <div className="relative z-10 flex items-center justify-center min-w-0">
-        <span className="font-comic text-[clamp(0.9rem,3.2vw,1.08rem)] tracking-tight text-[#f6e8db] truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">{title}</span>
+      <div className="relative z-10 flex items-center justify-center min-w-0 px-3 justify-self-center">
+        <span className="font-comic text-[clamp(0.9rem,3.2vw,1.08rem)] tracking-[0.02em] text-[#e5cab2] truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.34)]">{title}</span>
       </div>
 
       {/* Profile dropdown (right) */}
