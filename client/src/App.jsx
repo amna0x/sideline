@@ -89,9 +89,7 @@ function SplashScreen() {
         transition={{ type: 'spring', damping: 22, stiffness: 260 }}
         className="flex flex-col items-center"
       >
-        <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-gradient-to-br from-[var(--sv-accent)] to-[var(--sv-purple)] text-white shadow-lg">
-          <span className="material-symbols-outlined text-[56px] fill-icon">sports_soccer</span>
-        </div>
+        <img src="/icon-192.png" alt="" className="w-24 h-24 rounded-3xl shadow-[0_12px_36px_rgba(223,91,48,0.22)]" />
         <h1 className="mt-5 font-comic text-3xl text-[#1a1a1a] tracking-tight">Sideline</h1>
         <div className="mt-3 h-1 w-20 rounded-full bg-[var(--sv-accent)]" />
       </motion.div>
