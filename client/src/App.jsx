@@ -80,7 +80,7 @@ function SplashScreen() {
       exit={{ opacity: 0, scale: 1.1 }}
       transition={{ duration: 0.4, ease: 'easeInOut' }}
       style={{ backgroundColor: 'var(--surface-bg, #f8f8f8)' }}
-      className="fixed inset-y-0 left-1/2 z-[200] flex w-full max-w-full -translate-x-1/2 items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.1)] sm:max-w-[480px] lg:max-w-[420px]"
+      className="fixed inset-y-0 inset-x-0 mx-auto z-[200] flex w-full max-w-full items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.1)] sm:max-w-[480px] lg:max-w-[420px]"
     >
       <div className="flex flex-col items-center">
         <motion.div
