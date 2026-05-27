@@ -639,6 +639,23 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
         )}
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => {
+            // System messages (leave / kick)
+            if (msg.msg_type === 'system') {
+              return (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex justify-center py-1"
+                >
+                  <span className="text-[11px] italic text-[#999] bg-[#f5f5f5] px-3 py-1 rounded-full">
+                    {msg.message}
+                  </span>
+                </motion.div>
+              )
+            }
+
             const isMe = msg.user_id === userId
             const isLastInBlock = i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id
             const showName = !isMe && isLastInBlock

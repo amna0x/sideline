@@ -152,29 +152,46 @@ async function dbGetUserSquad(userId) {
 
 async function dbGetChatHistory(squadId, limit = 50) {
   if (mode !== 'postgres') return []
-  const { rows } = await query(
-    `SELECT sm.*, u.avatar_url as user_avatar,
-      COALESCE(
-        (
-          SELECT json_agg(
-            json_build_object(
-              'userId', ms.user_id,
-              'username', COALESCE(su.username, 'Member')
+  let rows = []
+
+  try {
+    const result = await query(
+      `SELECT sm.*, u.avatar_url as user_avatar,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'userId', ms.user_id,
+                'username', COALESCE(su.username, 'Member')
+              )
+              ORDER BY ms.seen_at
             )
-            ORDER BY ms.seen_at
-          )
-          FROM message_seen ms
-          LEFT JOIN users su ON su.id = ms.user_id
-          WHERE ms.message_id = sm.id
-        ),
-        '[]'::json
-      ) AS seen_by
-     FROM squad_messages sm
-     LEFT JOIN users u ON u.id = sm.user_id
-     WHERE sm.squad_id = $1
-     ORDER BY sm.created_at DESC LIMIT $2`,
-    [squadId, limit]
-  )
+            FROM message_seen ms
+            LEFT JOIN users su ON su.id = ms.user_id
+            WHERE ms.message_id = sm.id
+          ),
+          '[]'::json
+        ) AS seen_by
+       FROM squad_messages sm
+       LEFT JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1
+       ORDER BY sm.created_at DESC LIMIT $2`,
+      [squadId, limit]
+    )
+    rows = result.rows || []
+  } catch (e) {
+    // Fallback for environments where message_seen table/query path is unavailable.
+    const result = await query(
+      `SELECT sm.*, u.avatar_url as user_avatar
+       FROM squad_messages sm
+       LEFT JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1
+       ORDER BY sm.created_at DESC LIMIT $2`,
+      [squadId, limit]
+    )
+    rows = result.rows || []
+  }
+
   return rows.reverse().map((r) => ({
     id: r.id,
     squad_id: r.squad_id,
@@ -345,6 +362,31 @@ export function registerSquadHandlers(io) {
       leaveAllRooms(socket)
       const members = await dbGetSquadMembers(squadId).catch(() => [])
       io.to(`squad:${squadId}`).emit('squad:member_left', { userId: user.id, memberCount: members.length })
+
+      // System message: "user left the squad"
+      const leaveName = user.username || 'Anon'
+      const leaveMsg = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        squad_id: squadId, user_id: 'system', username: 'System',
+        avatar_url: null, message: `${leaveName} left the squad`,
+        msg_type: 'system', sticker_id: null,
+        reply_to_id: null, reply_to_text: null, reply_to_username: null,
+        created_at: new Date().toISOString(), seen_by: []
+      }
+      if (mode === 'postgres') {
+        const inserted = await query(
+          `INSERT INTO squad_messages (squad_id, user_id, username, message, msg_type)
+           VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`,
+          [squadId, 'system', 'System', leaveMsg.message, 'system']
+        ).catch(() => null)
+        if (inserted?.rows?.[0]) {
+          leaveMsg.id = inserted.rows[0].id
+          leaveMsg.created_at = inserted.rows[0].created_at
+        }
+      }
+      liveMessages.set(leaveMsg.id, leaveMsg)
+      io.to(`squad:${squadId}`).emit('squad:chat_message', leaveMsg)
+
       const squadRow = await dbGetSquad(squadId).catch(() => null)
       emitRoomsChanged(io, squadRow, squadId)
     })
@@ -432,9 +474,18 @@ export function registerSquadHandlers(io) {
       const myRole = roles[user.id]
       if (myRole !== 'admin' && myRole !== 'moderator') return socket.emit('squad:error', { message: 'Only admin or moderator can kick' })
       if (roles[targetUserId] === 'admin') return socket.emit('squad:error', { message: 'Cannot kick the admin' })
+
+      // Resolve kicked user's username before removing them
+      let kickedUsername = 'Member'
+      const live = liveMembers.get(squadId)
+      if (live) {
+        for (const [, m] of live) {
+          if (m.userId === targetUserId) { kickedUsername = m.username || 'Member'; break }
+        }
+      }
+
       await dbRemoveMember(squadId, targetUserId).catch(() => {})
       // Disconnect target socket
-      const live = liveMembers.get(squadId)
       if (live) {
         for (const [sid, m] of live) {
           if (m.userId === targetUserId) {
@@ -450,6 +501,30 @@ export function registerSquadHandlers(io) {
       }
       const members = await dbGetSquadMembers(squadId).catch(() => [])
       io.to(`squad:${squadId}`).emit('squad:member_left', { userId: targetUserId, memberCount: members.length })
+
+      // System message: "user was kicked by admin/mod"
+      const kickerName = user.username || 'Anon'
+      const kickMsg = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        squad_id: squadId, user_id: 'system', username: 'System',
+        avatar_url: null, message: `${kickedUsername} was kicked by ${kickerName}`,
+        msg_type: 'system', sticker_id: null,
+        reply_to_id: null, reply_to_text: null, reply_to_username: null,
+        created_at: new Date().toISOString(), seen_by: []
+      }
+      if (mode === 'postgres') {
+        const inserted = await query(
+          `INSERT INTO squad_messages (squad_id, user_id, username, message, msg_type)
+           VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`,
+          [squadId, 'system', 'System', kickMsg.message, 'system']
+        ).catch(() => null)
+        if (inserted?.rows?.[0]) {
+          kickMsg.id = inserted.rows[0].id
+          kickMsg.created_at = inserted.rows[0].created_at
+        }
+      }
+      liveMessages.set(kickMsg.id, kickMsg)
+      io.to(`squad:${squadId}`).emit('squad:chat_message', kickMsg)
     })
 
     socket.on('squad:reaction', ({ emoji }) => {
