@@ -1,43 +1,67 @@
-# Sideline — Real-time Second-Screen for Bundesliga
+# Sideline — Real-time Second-Screen Companion for Bundesliga
 
-Sideline is a mobile-first PWA that turns every Bundesliga match into an interactive second-screen experience: live match events, predictions, collectible vault items, and realtime leaderboards — built for demos and hackathons.
+Sideline is a mobile-first progressive web app (PWA) that brings live Bundesliga matches to a second-screen experience: match events, realtime predictions, collectible vault items, squad chat, and leaderboards. This README is tailored for competition judges and contributors — concise, professional, and demo-ready.
 
-Badges: [Demo-ready] • [Mobile-first] • [React] • [Node]
+Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Quick Start](#quick-start)
+- [Architecture & Data Flow](#architecture--data-flow)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
-Highlights
-- Live match simulator for reproducible demos (30× speed)
-- Real-time events via Socket.io (matches, predictions, leaderboard, vault)
-- Collectible Vault system with minting hooks for special events
-- Mobile-first UI (target: 390px) built with React + Tailwind
+Overview
+--------
+Sideline focuses on engaging fans during live matches with low-latency interactions and visual collectible rewards. It was designed for mobile-first demos (390px target) and supports both a reproducible simulator for demos and real feeds in production.
 
-Quick Links
-- Code: [client](client/) • [server](server/)
-- Simulator timeline: `server/simulator/match_demo.json`
-- DB schema: `server/db/schema.sql`
+Features
+--------
+- Reproducible match simulator (configurable speed; demo-ready at 30×)
+- Socket.io-based realtime events scoped by match rooms
+- Prediction system with resolution and XP awards
+- Vault collectibles (mint hooks for special events)
+- Squad chat with emoji reactions and message moderation
 
 Screenshots
+-----------
+The gallery below is curated for a competition review — each image has a short caption explaining the context. Images are located in `client/public/screenshots/`. Replace the files there to update the gallery.
 
-Add app screenshots to `client/public/screenshots/` (recommended) or update the paths below. Example gallery (drop your images at the paths shown):
+- Splash / Launch — app brand and loading state
 
-<p align="center">
-  <img src="client/public/screenshots/screenshot1.png" alt="Splash" width="240" />
-  <img src="client/public/screenshots/screenshot2.png" alt="Login" width="240" />
-  <img src="client/public/screenshots/screenshot3.png" alt="Home" width="240" />
-  <img src="client/public/screenshots/screenshot4.png" alt="Squad chat" width="240" />
-  <img src="client/public/screenshots/screenshot5.png" alt="Pulse" width="240" />
-</p>
+  <p align="center">
+    <img src="client/public/screenshots/screenshot1.png" alt="Splash" width="420" />
+  </p>
 
-Tip: optimize screenshots (png/jpg/webp) for the web before adding to keep the README lightweight.
+- Login / Auth — email sign-in + guest mode for quick demos
 
-Tech Stack
-- Frontend: React 18, Vite, Tailwind CSS, Zustand
-- Backend: Node 18+, Express 4, Socket.io 4
-- Persistence: Supabase (production) with RDS/Postgres + in-memory fallback for demos
+  <p align="center">
+    <img src="client/public/screenshots/screenshot2.png" alt="Login" width="420" />
+  </p>
 
-Getting Started (Dev)
+- Home / Predict — active match, upcoming events, prediction card CTA
 
-Prereqs
-- Node >= 18
+  <p align="center">
+    <img src="client/public/screenshots/screenshot3.png" alt="Home" width="640" />
+  </p>
+
+- Squad Chat — realtime squad chat with reactions and pinned controls
+
+  <p align="center">
+    <img src="client/public/screenshots/screenshot4.png" alt="Squad chat" width="640" />
+  </p>
+
+- Live Pulse — match temperature, tactical heatmap, and live indicators
+
+  <p align="center">
+    <img src="client/public/screenshots/screenshot5.png" alt="Live pulse" width="640" />
+  </p>
+
+Quick Start
+-----------
+Prerequisites
+- Node.js 18+ (LTS recommended)
 - npm
 
 Install
@@ -48,74 +72,52 @@ npm --prefix client install
 npm --prefix server install
 ```
 
-Run locally (dev)
+Run (development)
 
 ```bash
-# start server (hot reload)
+# server (hot reload)
 npm --prefix server run dev
 
-# start client (Vite)
+# client (Vite dev server)
 npm --prefix client run dev
 ```
 
 Run the replay simulator (demo)
 
 ```bash
-# inside server or via env
+# start server with auto-simulate (demo timeline)
 AUTO_SIMULATE=1 npm --prefix server run dev
-# or use the admin demo toggle in Settings (when running the server)
 ```
 
-Real-time events
-The app uses scoped Socket.io rooms and a small set of event topics to keep clients in sync. Key events include:
+Architecture & Data Flow
+-----------------------
+- Frontend: React 18 + Vite, Tailwind CSS, Zustand for global state
+- Backend: Node 18+, Express 4, Socket.io 4
+- Persistence: Supabase (production) with optional RDS/Postgres; in-memory fallback for demos
 
-- `match:update`, `match:event`, `match:goal`
-- `prediction:new`, `prediction:resolved`
-- `leaderboard:update`
-- `vault:minted`, `vault:supply_update`
+Realtime model
+- Socket.io rooms per match: clients join `match:<id>`
+- Events: `match:update`, `match:event`, `match:goal`, `prediction:new`, `prediction:resolved`, `leaderboard:update`, `vault:minted`, `vault:supply_update`
 
-Project Layout (high level)
-
-Client (important folders)
-
-```
-client/src/
-  screens/      # Login, Home, Predict, Vault, Leaderboard, Profile, Quiz, Settings
-  components/   # MatchHero, PredictionCard, VaultCard, LeaderboardRow, Layout
-  hooks/        # useAuth, useSocket, useMatch, usePredictions, useVault
-  lib/          # supabase, api, socket, canvas (Adidas card generator)
-```
-
-Server (important folders)
-
-```
-server/
-  routes/       # matches, predictions, users, vault, leaderboard, quiz
-  socket/       # handlers + emit helpers
-  simulator/    # engine.js, match_demo.json
-  db/           # unified DB layer, schema.sql, seeds
-```
-
-Development Notes & Decisions
-
-- ESM everywhere (`"type": "module"`) — no CommonJS
-- Zustand is the chosen client state solution
-- In-memory DB fallback keeps demos runnable without cloud creds
-- Never commit service-role keys or `.env` files
+Development Notes
+-----------------
+- ESM everywhere (`"type": "module"`)
+- Keep all service keys out of the repo (never commit `.env` or service-role keys)
+- Use the in-memory DB for offline demos — toggle with `AUTO_SIMULATE`
 
 Contributing
-
+------------
 - Branch naming: `feat/`, `fix/`, `chore/`, `refactor/`, `docs/`
-- Tests: vitest (client) and node --test + supertest (server)
-- Run linters and builds before opening PRs
+- Tests: client uses Vitest; server uses `node --test` + Supertest
+- When opening a PR: include a short demo checklist and a screenshot/GIF of the key flow changed
 
 License
+-------
+MIT — add `LICENSE` at the repo root to make this explicit.
 
-- MIT (add LICENSE file if desired)
-
-More
-- Read the project guide: `CLAUDE.md`
-- Session notes and ongoing state: `CONTEXT.md`
+Acknowledgements
+---------------
+Built for demo and competition use — designed for quick, reproducible presentations.
 
 --
-Made with ⚽ and a love for realtime demos.
+For more context and session notes see `CLAUDE.md` and `CONTEXT.md`.
