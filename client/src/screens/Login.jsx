@@ -4,29 +4,6 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth.js'
 import { forgotPassword, confirmForgotPassword } from '../lib/cognito.js'
 
-const PENDING_SIGNUP_KEY = 'sideline.pending-signup'
-
-function loadPendingSignup() {
-  try {
-    const raw = sessionStorage.getItem(PENDING_SIGNUP_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
-}
-
-function savePendingSignup(payload) {
-  try {
-    sessionStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(payload))
-  } catch {}
-}
-
-function clearPendingSignup() {
-  try {
-    sessionStorage.removeItem(PENDING_SIGNUP_KEY)
-  } catch {}
-}
-
 export default function Login() {
   const { signIn, signUp, signInAsGuest, confirmSignUp, resendConfirmation } = useAuth()
   const nav = useNavigate()
@@ -40,15 +17,9 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [pendingSignup, setPendingSignup] = useState(null)
 
-  useEffect(() => {
-    const pending = loadPendingSignup()
-    if (!pending?.email) return
-    setPendingSignup(pending)
-    setEmail(pending.email)
-    setUsername(pending.username || '')
-    setMode('confirm')
-    setError('Check your inbox and spam/junk folder for the verification code.')
-  }, [])
+  const normalizedEmail = email.trim().toLowerCase()
+  const pendingEmail = pendingSignup?.email?.trim().toLowerCase() || ''
+  const showPendingNotice = mode === 'login' && pendingEmail && normalizedEmail && pendingEmail === normalizedEmail
 
   function friendlyError(err) {
     const msg = err?.message || String(err)
@@ -57,6 +28,9 @@ export default function Login() {
     }
     if (msg.includes('InvalidPasswordException')) {
       return 'Password must be at least 8 characters.'
+    }
+    if (msg.includes('UserNotConfirmedException') || msg.includes('User is not confirmed')) {
+      return 'This email is not verified yet. Check your inbox and spam/junk folder for the code, or resend it below.'
     }
     if (msg.includes('NotAuthorizedException') || msg.includes('Incorrect username or password')) {
       return 'Wrong email or password.'
@@ -90,24 +64,33 @@ export default function Login() {
             }
           } catch {}
         }
-        await signIn(loginEmail, password)
+        try {
+          await signIn(loginEmail, password)
+        } catch (err) {
+          const msg = err?.message || String(err)
+          if (msg.includes('UserNotConfirmedException') || msg.includes('User is not confirmed')) {
+            const pending = { email: loginEmail, username: loginEmail.split('@')[0] }
+            setPendingSignup(pending)
+            setMode('confirm')
+            setError('This email is not verified yet. Check your inbox and spam/junk folder for the code, or resend it below.')
+            return
+          }
+          throw err
+        }
         nav('/', { replace: true })
       } else if (mode === 'signup') {
         const result = await signUp(email, password, username || email.split('@')[0])
         if (result?.userConfirmed) {
-          clearPendingSignup()
           await signIn(email, password)
           nav('/', { replace: true })
         } else {
           const pending = { email, username: username || email.split('@')[0] }
           setPendingSignup(pending)
-          savePendingSignup(pending)
           setMode('confirm')
           setError('Check your inbox and spam/junk folder for the verification code.')
         }
       } else if (mode === 'confirm') {
         await confirmSignUp(email, code.trim())
-        clearPendingSignup()
         await signIn(email, password)
         nav('/', { replace: true })
       } else if (mode === 'forgot') {
@@ -139,7 +122,6 @@ export default function Login() {
   }
 
   async function onUseDifferentEmail() {
-    clearPendingSignup()
     setPendingSignup(null)
     setMode('signup')
     setEmail('')
@@ -182,7 +164,7 @@ export default function Login() {
             </div>
           )}
 
-          {pendingSignup?.email && mode !== 'confirm' && (
+          {showPendingNotice && (
             <div className="mb-5 rounded-2xl border border-[#f2d9a6] bg-[#fff8e8] p-4">
               <p className="font-comic text-xs uppercase tracking-widest text-[#9a6a00]">Verification pending</p>
               <p className="mt-1 text-sm text-[#5f4a18]">
@@ -230,7 +212,13 @@ export default function Login() {
 
             {(mode === 'login' || mode === 'signup' || mode === 'forgot' || mode === 'reset') && (
               <Field label={mode === 'login' ? 'EMAIL OR USERNAME' : 'EMAIL'} icon="mail">
-                <input value={email} onChange={(e) => setEmail(e.target.value)} required type={mode === 'login' ? 'text' : 'email'}
+                <input value={email} onChange={(e) => {
+                  const next = e.target.value
+                  setEmail(next)
+                  if (pendingSignup?.email && pendingSignup.email.trim().toLowerCase() !== next.trim().toLowerCase()) {
+                    setPendingSignup(null)
+                  }
+                }} required type={mode === 'login' ? 'text' : 'email'}
                   placeholder={mode === 'login' ? 'email or username' : 'user@sideline.pro'}
                   disabled={mode === 'reset'}
                   className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl p-3 text-[#1a1a1a] placeholder-[#bbb] focus:outline-none focus:border-[var(--sv-accent)] transition-colors disabled:opacity-60" />
