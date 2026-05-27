@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useStore } from '../store/index.js'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import Avatar from './Avatar.jsx'
 import Notifications from './Notifications.jsx'
 import { api } from '../lib/api.js'
@@ -24,7 +25,7 @@ export default function Layout({ children, hideNav = false, title = 'SIDELINE' }
       <Notifications />
       <main className="relative z-10 -mt-1">{children}</main>
       <AnimatePresence>
-        {!hideNav && <BottomNav />}
+        {!hideNav && <BottomNavPortal />}
       </AnimatePresence>
       <AnimatePresence>
         {toast && (
@@ -315,7 +316,7 @@ function BottomNav() {
       animate={{ x: '-50%', y: 0, opacity: 1, scale: 1 }}
       exit={{ x: '-50%', y: 96, opacity: 0, scale: 0.96 }}
       transition={{ type: 'spring', damping: 24, stiffness: 260 }}
-      className="fixed bottom-3 left-1/2 z-50 flex justify-around items-center h-16 px-2 bg-white/95 backdrop-blur-xl border border-black/[0.06] rounded-full w-[92%] max-w-[420px] shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
+      className="bottom-nav fixed left-1/2 z-50 flex justify-around items-center h-16 px-2 bg-white/95 backdrop-blur-xl border border-black/[0.06] rounded-full w-[92%] max-w-[420px] shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
     >
       {NAV.map((n) => {
         const active = pathname === n.to || (n.to !== '/' && pathname.startsWith(n.to))
@@ -345,4 +346,9 @@ function BottomNav() {
       })}
     </motion.nav>
   )
+}
+
+function BottomNavPortal() {
+  if (typeof document === 'undefined') return null
+  return createPortal(<BottomNav />, document.body)
 }

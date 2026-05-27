@@ -6,8 +6,38 @@ export const THEMES = {
   },
   spiderverse: {
     id: 'spiderverse',
-    name: 'Spiderverse',
+    name: 'Multiverse',
     swatches: ['#000000', '#ff2d7b', '#00f0ff']
+  },
+  fightking: {
+    id: 'fightking',
+    name: 'Fight King',
+    swatches: ['#F3EBD4', '#2B2D33', '#F16B3A', '#F7F2E4']
+  },
+  marple: {
+    id: 'marple',
+    name: 'Marple',
+    swatches: ['#242424', '#CA2851', '#FF6766', '#FFE3B3']
+  },
+  jade: {
+    id: 'jade',
+    name: 'Jade Horizon',
+    swatches: ['#B7E5BA', '#5CA87C', '#288760', '#1A5140']
+  },
+  aurora: {
+    id: 'aurora',
+    name: 'Aurora Blossom',
+    swatches: ['#F9D4E0', '#EB96FF', '#0B5777', '#193153']
+  },
+  neon: {
+    id: 'neon',
+    name: 'Neon Pulse',
+    swatches: ['#0B6623', '#FF0F7B', '#4C9A2A', '#A9D6E5']
+  },
+  liquidglass: {
+    id: 'liquidglass',
+    name: 'Liquid Glass',
+    swatches: ['#F4E7DC', '#8D6BFF', '#76EFE1', '#F7F4EF']
   },
   mint: {
     id: 'mint',

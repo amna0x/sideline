@@ -14,6 +14,12 @@ import SFX from '../lib/sfx.js'
 
 const REACTIONS = ['⚽', '🔥', '😱', '👏', '💀']
 
+function formatMessageTime(value) {
+  const date = value ? new Date(value) : null
+  if (!date || Number.isNaN(date.getTime())) return ''
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
 export default function Squad() {
   const { match } = useMatch()
   const {
@@ -599,6 +605,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
             const myRole = roles[userId] || 'member'
             const canEdit = isMe || myRole === 'admin' || myRole === 'moderator'
             const canDelete = isMe || myRole === 'admin' || myRole === 'moderator'
+            const sentTime = formatMessageTime(msg.created_at)
 
             return (
               <motion.div
@@ -685,6 +692,12 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                   )}
 
                   {/* Seen receipt — only on the last message you sent */}
+                  {sentTime && (
+                    <span className={`mt-0.5 px-1 text-[9px] leading-none text-[#999] ${isMe ? 'text-right' : 'text-left'}`}>
+                      {sentTime}
+                    </span>
+                  )}
+
                   {isMe && isLastSentByMe && seenBy.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 4 }}
