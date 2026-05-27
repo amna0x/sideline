@@ -31,31 +31,31 @@ The gallery below is curated for a preview of the app. — each image has a shor
 - Splash / Launch — app brand and loading state
 
   <div align="center">
-    <img src="client/public/screenshots/screenshot1.png" alt="Splash" style="max-width:260px; width:100%; height:auto;" />
+    <img src="client/public/screenshots/screenshot1.png" alt="Splash" width="280" />
   </div>
 
 - Login / Auth — email sign-in + guest mode for quick demos
 
   <div align="center">
-    <img src="client/public/screenshots/screenshot2.png" alt="Login" style="max-width:260px; width:100%; height:auto;" />
+    <img src="client/public/screenshots/screenshot2.png" alt="Login" width="280" />
   </div>
 
 - Home / Predict — active match, upcoming events, prediction card CTA
 
   <div align="center">
-    <img src="client/public/screenshots/screenshot3.png" alt="Home" style="max-width:260px; width:100%; height:auto;" />
+    <img src="client/public/screenshots/screenshot3.png" alt="Home" width="280" />
   </div>
 
 - Squad Chat — realtime squad chat with reactions and pinned controls
 
   <div align="center">
-    <img src="client/public/screenshots/screenshot4.png" alt="Squad chat" style="max-width:260px; width:100%; height:auto;" />
+    <img src="client/public/screenshots/screenshot4.png" alt="Squad chat" width="280" />
   </div>
 
 - Live Pulse — match temperature, tactical heatmap, and live indicators
 
   <div align="center">
-    <img src="client/public/screenshots/screenshot5.png" alt="Live pulse" style="max-width:260px; width:100%; height:auto;" />
+    <img src="client/public/screenshots/screenshot5.png" alt="Live pulse" width="280" />
   </div>
 
 Quick Start
