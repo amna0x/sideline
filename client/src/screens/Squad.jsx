@@ -225,8 +225,8 @@ export default function Squad() {
       <section
         className="px-4 pt-4 relative overflow-hidden flex flex-col"
         style={{
-          height: 'calc(100dvh - 5rem)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.75rem)'
+          height: 'calc(100dvh - 4.25rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
         }}
       >
         <ReactionBurst />
@@ -580,8 +580,8 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 mt-2" onPointerDown={() => SFX.unlock()}>
-      <div className="flex-1 overflow-y-auto space-y-1 px-1 pb-2">
+    <div className="flex-1 flex flex-col min-h-0 mt-1" onPointerDown={() => SFX.unlock()}>
+      <div className="flex-1 overflow-y-auto space-y-1 px-1 pb-1">
         {messages.length === 0 && (
           <div className="text-center py-6 text-[#bbb] text-sm">No messages yet — say something!</div>
         )}
@@ -880,7 +880,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
       </AnimatePresence>
 
       {/* Input */}
-      <div className="flex items-center gap-1.5 pt-2 shrink-0">
+      <div className="flex items-center gap-1.5 pt-1.5 shrink-0">
         <button onClick={() => { setShowStickers(!showStickers); setShowEmoji(false) }}
           className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${showStickers ? 'bg-[var(--sv-accent)] text-white' : 'text-[#999] hover:text-[#666]'}`}>
           <span className="material-symbols-outlined text-[20px]">sticky_note_2</span>
