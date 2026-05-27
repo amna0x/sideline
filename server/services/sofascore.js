@@ -1,4 +1,4 @@
-// Service for resolving player photos and team logos (badges) using open Wikipedia URLs to bypass hotlinking blocks.
+// Service for resolving player photos and team logos (badges) using stable public image URLs.
 
 const TEAM_MAP = {
   'borussia dortmund': 'https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg',
@@ -11,8 +11,8 @@ const TEAM_MAP = {
   'bayer 04 leverkusen': 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
   'bayer leverkusen': 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
   'leverkusen': 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
-  'rb leipzig': 'https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2020_logo.svg',
-  'leipzig': 'https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2020_logo.svg'
+  'rb leipzig': 'https://assets.bundesliga.com/tachyon/background/club/layered-wide/DFL-CLU-000017.png?crop=10,30,80,40&resize=3000,680',
+  'leipzig': 'https://assets.bundesliga.com/tachyon/background/club/layered-wide/DFL-CLU-000017.png?crop=10,30,80,40&resize=3000,680'
 };
 
 const PLAYER_MAP = {
