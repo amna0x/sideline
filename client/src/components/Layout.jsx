@@ -120,7 +120,7 @@ function TopBar({ title, points }) {
   const requestCount = incoming.length
 
   return (
-    <header className="app-topbar sticky top-3 z-40 mx-4 mt-3 mb-2 grid grid-cols-3 items-center px-4 h-16 text-white rounded-[28px] shadow-[0_14px_30px_var(--topbar-shadow)]">
+    <header className="app-topbar sticky top-3 z-40 mx-4 mt-3 mb-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 h-16 text-white rounded-[28px] shadow-[0_14px_30px_var(--topbar-shadow)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
         <span className="material-symbols-outlined absolute -top-11 left-16 text-[118px] text-white/[0.10] animate-float rotate-[-18deg]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
         <span className="material-symbols-outlined absolute -bottom-12 right-20 text-[94px] text-white/[0.065] animate-float rotate-[24deg] scale-x-125 scale-y-90" style={{ fontVariationSettings: "'FILL' 1", animationDelay: '0.8s' }}>star</span>
@@ -181,7 +181,7 @@ function TopBar({ title, points }) {
 
       {/* Title */}
       <div className="relative z-10 flex items-center justify-center min-w-0">
-        <span className="font-comic text-xl tracking-tight text-white truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">{title}</span>
+        <span className="font-comic text-[clamp(0.9rem,3.2vw,1.08rem)] tracking-tight text-[#f6e8db] truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">{title}</span>
       </div>
 
       {/* Profile dropdown (right) */}
@@ -210,7 +210,7 @@ function TopBar({ title, points }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-12 right-0 w-48 bg-white border border-[#e0e0e0] rounded-xl shadow-lg overflow-hidden z-50"
+              className="absolute top-12 right-0 w-48 bg-white border border-[#e0e0e0] rounded-lg shadow-lg overflow-hidden z-50"
             >
               <Link to="/profile" onClick={() => setProfileMenu(false)}
                 className="flex items-center gap-2 px-4 py-3 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5] transition-colors">
@@ -246,7 +246,7 @@ function TopBar({ title, points }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-12 right-0 w-72 bg-white border border-[#e0e0e0] rounded-xl shadow-lg overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
+              className="absolute top-12 right-0 w-72 bg-white border border-[#e0e0e0] rounded-lg shadow-lg overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
             >
               <div className="px-4 py-3 border-b border-[#f0f0f0] flex items-center justify-between">
                 <span className="font-comic text-sm text-[#1a1a1a]">Friend Requests</span>

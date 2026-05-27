@@ -29,7 +29,7 @@ export default function Predict() {
   }, [match?.id, Object.keys(submissions).length]) // re-fetch when user submits
 
   async function onSelect(p, opt) {
-    try { await submit(p, opt) }
+    try { return await submit(p, opt) }
     catch (e) {
       // Errors are now handled inside PredictionCard with friendly messages
       // Only show toast for unexpected errors
@@ -73,7 +73,7 @@ export default function Predict() {
                   prediction={p}
                   selected={submissions[p.id]}
                   onSelect={(opt) => onSelect(p, opt)}
-                  locked={!!submissions[p.id] || !!p.correct_answer}
+                    locked={!!p.correct_answer}
                 />
               </motion.div>
             ))}

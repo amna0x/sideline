@@ -23,12 +23,17 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
   async function handleSelect(opt) {
     try {
       setFeedback(null)
-      await onSelect?.(opt)
-      setLocalVotes((v) => v + 1)
+      const result = await onSelect?.(opt)
+      if (result?.submission_count != null) setLocalVotes(Number(result.submission_count) || 0)
+      if (result?.points_awarded > 0) {
+        setFeedback(`Vote recorded — +${Number(result.points_awarded).toLocaleString()} XP`)
+      } else if (result?.created === false) {
+        setFeedback('Vote updated')
+      }
     } catch (e) {
       const msg = e.message || ''
       if (msg.includes('already submitted') || msg.includes('400')) {
-        setFeedback('Already predicted — nice one!')
+        setFeedback('Vote updated')
       } else if (msg.includes('prediction closed') || msg.includes('closed')) {
         setFeedback('This prediction has closed')
       } else if (msg.includes('not signed in')) {
@@ -88,6 +93,12 @@ export default function PredictionCard({ prediction, selected, onSelect, locked 
               )
             })}
           </div>
+
+          {selected && !resolved && (
+            <p className="mt-3 text-center text-[11px] text-on-surface-variant font-label-caps tracking-wide">
+              Changed your mind? You can pick again until the prediction closes.
+            </p>
+          )}
 
           {/* Feedback message */}
           {feedback && (

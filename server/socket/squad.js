@@ -237,13 +237,18 @@ export function registerSquadHandlers(io) {
       const user = socket.data.user
       if (!user?.id) return socket.emit('squad:error', { message: 'auth required' })
 
-      const squadId = `${matchId}::${squadName.toLowerCase().trim()}`
+      const trimmedName = squadName.trim()
+      if (trimmedName.length > 8) {
+        return socket.emit('squad:error', { message: 'Squad names must be 8 characters or fewer' })
+      }
+
+      const squadId = `${matchId}::${trimmedName.toLowerCase()}`
 
       // Check if squad exists in DB, create if not
       let squadRow = await dbGetSquad(squadId).catch(() => null)
       if (!squadRow) {
         const inviteCode = genCode()
-        await dbCreateSquad(squadId, squadName.trim(), matchId, inviteCode, 'public', user.id).catch(() => {})
+        await dbCreateSquad(squadId, trimmedName, matchId, inviteCode, 'public', user.id).catch(() => {})
         await dbAddMember(squadId, user.id, 'admin').catch(() => {})
         inviteCodeCache.set(inviteCode, squadId)
       } else {
@@ -273,6 +278,7 @@ export function registerSquadHandlers(io) {
       socket.emit('squad:state', {
         id: squadId,
         name: dbSquad?.name || squadName.trim(),
+        // Preserve the display name exactly as created, but cap it at 8 chars on creation.
         matchId,
         inviteCode: canSeeInviteCode(dbSquad, roles, user.id) ? dbSquad?.invite_code || '' : '',
         inviteEnabled: !!dbSquad?.invite_enabled,
@@ -445,7 +451,7 @@ export function registerSquadHandlers(io) {
       }
     })
 
-    socket.on('squad:message', async ({ text, replyTo, msgType, stickerId }) => {
+    socket.on('squad:message', async ({ text, msgType, stickerId, replyTo }) => {
       const user = socket.data.user
       if (!user?.id) return
       const squadId = getSquadIdForSocket(socket)

@@ -142,8 +142,9 @@ export default function Squad() {
               <div className="flex-1 relative">
                 <input type="text" value={joinName} onChange={(e) => handleSearchInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleJoinAttempt(joinName)}
-                  placeholder="Squad name…" maxLength={24}
+                  placeholder="Squad name…" maxLength={8}
                   className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[var(--sv-accent)] focus:outline-none" />
+                <p className="mt-1 text-[10px] text-[#999]">8 characters max.</p>
                 {searchDropdown.length > 0 && joinName.trim() && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e0e0e0] rounded-xl shadow-lg z-20 overflow-hidden">
                     {searchDropdown.map((r) => (

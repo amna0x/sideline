@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { getActivePredictions, getUpcomingPredictions, getPrediction, submitPrediction, hasUserSubmitted, mode } from '../db/index.js'
+import { getActivePredictions, getUpcomingPredictions, getPrediction, submitPrediction, mode } from '../db/index.js'
 import { db as mem } from '../db/memory.js'
 import { query } from '../db/postgres.js'
 import { requireAuth } from '../middleware/auth.js'
@@ -63,10 +63,6 @@ r.post('/submit', writeLimiter, requireAuth, validate({ body: submitSchema }), a
     if (prediction.resolved_at) return res.status(400).json({ error: 'prediction already resolved' })
     if (new Date(prediction.closes_at) <= new Date()) return res.status(400).json({ error: 'prediction closed' })
 
-    if (await hasUserSubmitted(userId, prediction_id)) {
-      return res.status(400).json({ error: 'already submitted' })
-    }
-
     const speedBonus = speed_ms != null && speed_ms < 30000 ? 1.5 : 1
     const record = {
       user_id: userId, prediction_id, selected_option,
@@ -75,33 +71,53 @@ r.post('/submit', writeLimiter, requireAuth, validate({ body: submitSchema }), a
       speed_ms: speed_ms || null, speed_bonus: speedBonus
     }
 
-    const saved = await submitPrediction(record)
+    const { submission: saved, created } = await submitPrediction(record)
 
-    // Award +500 XP for voting/predicting
+    // Award +500 XP only the first time this user votes on this prediction.
     let newPointsTotal = 0
-    if (mode === 'postgres') {
-      const { rows } = await query(
-        'UPDATE users SET points_total = points_total + 500 WHERE id = $1 RETURNING points_total',
-        [userId]
-      )
+    if (created) {
+      if (mode === 'postgres') {
+        const { rows } = await query(
+          'UPDATE users SET points_total = points_total + 500 WHERE id = $1 RETURNING points_total',
+          [userId]
+        )
+        newPointsTotal = rows[0]?.points_total || 0
+      } else {
+        const u = mem.users.get(userId)
+        if (u) {
+          u.points_total = (u.points_total || 0) + 500
+          newPointsTotal = u.points_total
+        }
+      }
+    } else if (mode === 'postgres') {
+      const { rows } = await query('SELECT points_total FROM users WHERE id = $1', [userId])
       newPointsTotal = rows[0]?.points_total || 0
     } else {
-      const u = mem.users.get(userId)
-      if (u) {
-        u.points_total = (u.points_total || 0) + 500
-        newPointsTotal = u.points_total
-      }
+      newPointsTotal = mem.users.get(userId)?.points_total || 0
     }
 
-    // Increment submission count on the prediction (for display)
+    // Submission count tracks unique voters, so changes do not increase it.
+    let submissionCount = 0
     if (mode === 'memory') {
+      submissionCount = mem.user_predictions.filter((u) => u.prediction_id === prediction_id).length
       const p = mem.predictions.get(prediction_id)
-      if (p) p.submission_count = (p.submission_count || 0) + 1
-    } else if (mode === 'postgres') {
-      // No submission_count column — handled client-side
+      if (p) p.submission_count = submissionCount
+    } else {
+      const { rows } = await query(
+        'SELECT COUNT(*)::int AS count FROM user_predictions WHERE prediction_id = $1',
+        [prediction_id]
+      )
+      submissionCount = rows[0]?.count || 0
     }
 
-    res.json({ ok: true, submission: saved, new_points_total: newPointsTotal })
+    res.json({
+      ok: true,
+      submission: saved,
+      created,
+      points_awarded: created ? 500 : 0,
+      new_points_total: newPointsTotal,
+      submission_count: submissionCount
+    })
   } catch (e) { next(e) }
 })
 

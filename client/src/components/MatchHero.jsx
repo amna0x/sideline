@@ -59,7 +59,9 @@ function TeamLabel({ name, logoUrl, align = 'left' }) {
           name?.slice(0, 3).toUpperCase()
         )}
       </motion.div>
-      <span className="font-label-caps text-label-caps text-on-surface-variant mt-1.5 truncate max-w-[100px]">{name}</span>
+      <span className="font-comic text-sm text-[#f7ecdf] mt-1.5 text-center leading-tight max-w-[116px] whitespace-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.28)]">
+        {name}
+      </span>
     </div>
   )
 }

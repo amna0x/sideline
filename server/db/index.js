@@ -129,6 +129,24 @@ export async function getPrediction(id) {
 
 export async function submitPrediction(record) {
   if (mode === 'postgres') {
+    const { rows: existingRows } = await query(
+      'SELECT id FROM user_predictions WHERE user_id = $1 AND prediction_id = $2 LIMIT 1',
+      [record.user_id, record.prediction_id]
+    )
+    if (existingRows[0]) {
+      const { rows } = await query(
+        `UPDATE user_predictions
+         SET selected_option = $3,
+             speed_ms = $4,
+             speed_bonus = $5,
+             submitted_at = $6
+         WHERE user_id = $1 AND prediction_id = $2
+         RETURNING *`,
+        [record.user_id, record.prediction_id, record.selected_option,
+         record.speed_ms, record.speed_bonus, record.submitted_at]
+      )
+      return { submission: rows[0], created: false }
+    }
     const { rows } = await query(
       `INSERT INTO user_predictions (user_id, prediction_id, selected_option, speed_ms, speed_bonus, submitted_at)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -136,14 +154,20 @@ export async function submitPrediction(record) {
       [record.user_id, record.prediction_id, record.selected_option,
        record.speed_ms, record.speed_bonus, record.submitted_at]
     )
-    return rows[0]
+    return { submission: rows[0], created: true }
   }
   const existing = mem.user_predictions.find(
     (u) => u.user_id === record.user_id && u.prediction_id === record.prediction_id
   )
-  if (existing) throw Object.assign(new Error('already submitted'), { status: 400 })
+  if (existing) {
+    existing.selected_option = record.selected_option
+    existing.speed_ms = record.speed_ms
+    existing.speed_bonus = record.speed_bonus
+    existing.submitted_at = record.submitted_at
+    return { submission: existing, created: false }
+  }
   mem.user_predictions.push(record)
-  return record
+  return { submission: record, created: true }
 }
 
 export async function hasUserSubmitted(userId, predictionId) {

@@ -92,23 +92,20 @@ export function usePredictions(matchId) {
         }
       }
 
-      pushNotification({
-        type: 'xp',
-        title: 'VOTE RECORDED',
-        message: 'Earned +500 XP for voting!',
-        points: 500,
-        icon: '🪙',
-        duration: 4000
-      })
+      if (result?.points_awarded > 0) {
+        pushNotification({
+          type: 'xp',
+          title: 'VOTE RECORDED',
+          message: 'Earned +500 XP for voting!',
+          points: result.points_awarded,
+          icon: '🪙',
+          duration: 4000
+        })
+      }
 
       return result
     } catch (e) {
       const msg = e.message || ''
-      if (msg.includes('already submitted') || msg.includes('400')) {
-        // Mark as submitted locally so the card locks
-        setSubmissions((cur) => ({ ...cur, [prediction.id]: option }))
-        throw new Error('already submitted')
-      }
       if (msg.includes('closed') || msg.includes('prediction closed')) {
         throw new Error('prediction closed')
       }
