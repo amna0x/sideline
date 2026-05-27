@@ -40,6 +40,7 @@ export function useMatch() {
       }
     },
     'match:pulse': (zones) => setPulse(zones),
+    'demo:adidas_drop': (drop) => setPendingDrop(drop),
     'match:goal': (drop) => {
       // Only show a notification for goals, no full-screen overlay
       pushNotification({

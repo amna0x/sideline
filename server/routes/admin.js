@@ -6,6 +6,8 @@ import { db } from '../db/memory.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth } from '../middleware/auth.js'
 import { isAdmin } from './helpers.js'
+import { startDemoShowcase, stopDemoShowcase } from '../simulator/demo.js'
+import { getSquadForUser } from '../socket/squad.js'
 
 const r = Router()
 
@@ -14,6 +16,49 @@ const grantSchema = z.object({
   points: z.number().int().optional().default(0),
   vault_all: z.boolean().optional().default(false)
 }).strict()
+
+const demoStartSchema = z.object({
+  match_id: z.string().min(1).max(64).optional(),
+  squad_id: z.string().min(1).max(128).optional(),
+  speed: z.number().int().positive().max(240).optional(),
+  points: z.number().int().optional().default(25000)
+}).strict()
+
+r.post('/demo/start', requireAuth, validate({ body: demoStartSchema }), async (req, res, next) => {
+  try {
+    if (!isAdmin(req.user)) return res.status(403).json({ error: 'admin_only' })
+
+    const squad = req.body.squad_id
+      ? { id: req.body.squad_id }
+      : await getSquadForUser(req.user.id)
+
+    const demo = await startDemoShowcase(req.app.get('io'), {
+      userId: req.user.id,
+      matchId: req.body.match_id,
+      squadId: squad?.id || null,
+      speed: req.body.speed,
+      points: req.body.points
+    })
+
+    res.json({
+      ok: true,
+      running: true,
+      matchId: demo.matchId,
+      squadId: demo.squadId,
+      squadName: squad?.name || null,
+      squadMatchId: squad?.match_id || req.body.match_id || demo.matchId,
+      speed: demo.speed
+    })
+  } catch (e) { next(e) }
+})
+
+r.post('/demo/stop', requireAuth, async (req, res, next) => {
+  try {
+    if (!isAdmin(req.user)) return res.status(403).json({ error: 'admin_only' })
+    const stopped = stopDemoShowcase()
+    res.json({ ok: true, stopped })
+  } catch (e) { next(e) }
+})
 
 r.post('/grant', requireAuth, validate({ body: grantSchema }), async (req, res, next) => {
   try {

@@ -141,6 +141,7 @@ async function dbGetUserSquad(userId) {
   if (mode !== 'postgres') return null
   const { rows } = await query(
     `SELECT s.id, s.name, s.visibility, s.invite_code, sm.role,
+       s.match_id,
        (SELECT COUNT(*) FROM squad_members WHERE squad_id = s.id)::int as member_count
      FROM squad_members sm JOIN squads s ON s.id = sm.squad_id
      WHERE sm.user_id = $1 LIMIT 1`,

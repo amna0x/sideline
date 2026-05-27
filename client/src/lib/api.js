@@ -81,6 +81,10 @@ export const api = {
   // Share
   shareCard: (body) => request('/api/share/card', { method: 'POST', body: JSON.stringify(body) }),
 
+  // Admin demo
+  adminDemoStart: (body) => request('/api/admin/demo/start', { method: 'POST', body: JSON.stringify(body) }),
+  adminDemoStop: () => request('/api/admin/demo/stop', { method: 'POST' }),
+
   // Friends
   friends: () => request('/api/friends'),
   friendRequests: () => request('/api/friends/requests'),

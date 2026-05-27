@@ -60,6 +60,8 @@ _Non-obvious choices that future sessions should not relitigate._
 
 _Append a one-liner per session. Keep newest at top. Trim entries older than ~30 days._
 
+- _2026-05-27 (admin demo) — Added an admin-only demo start/stop flow that replays the match simulator, emits scripted squad chat/reaction events, triggers a demo Adidas drop overlay, and awards demo XP from Settings > Admin._
+
 - _2026-05-27 (squad chat) — Squad member strip now renders all members in a stable role/join order; chat avatars show at the start of each speaker block; timestamps only show on the latest message in each consecutive block._
 
 - _2026-05-27 (mobile nav) — Bottom nav now renders through a body portal so transformed route/page wrappers cannot make it scroll with content; safe-area bottom spacing preserves room above the fixed nav._
