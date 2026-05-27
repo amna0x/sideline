@@ -238,15 +238,15 @@ export function registerSquadHandlers(io) {
       if (!user?.id) return socket.emit('squad:error', { message: 'auth required' })
 
       const trimmedName = squadName.trim()
-      if (trimmedName.length > 8) {
-        return socket.emit('squad:error', { message: 'Squad names must be 8 characters or fewer' })
-      }
 
       const squadId = `${matchId}::${trimmedName.toLowerCase()}`
 
       // Check if squad exists in DB, create if not
       let squadRow = await dbGetSquad(squadId).catch(() => null)
       if (!squadRow) {
+        if (trimmedName.length > 8) {
+          return socket.emit('squad:error', { message: 'Squad names must be 8 characters or fewer' })
+        }
         const inviteCode = genCode()
         await dbCreateSquad(squadId, trimmedName, matchId, inviteCode, 'public', user.id).catch(() => {})
         await dbAddMember(squadId, user.id, 'admin').catch(() => {})
