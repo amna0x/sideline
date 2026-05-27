@@ -45,17 +45,6 @@ export default function Squad() {
   const [showManage, setShowManage] = useState(false)
   const [existingSquad, setExistingSquad] = useState(undefined) // undefined = loading, null = none, object = has squad
 
-  useEffect(() => {
-    const prevHtmlOverflow = document.documentElement.style.overflow
-    const prevBodyOverflow = document.body.style.overflow
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.documentElement.style.overflow = prevHtmlOverflow
-      document.body.style.overflow = prevBodyOverflow
-    }
-  }, [])
-
   const myRole = roles[userId] || 'member'
   const isAdmin = myRole === 'admin' || (squad?.createdBy === userId)
   const isMod = myRole === 'moderator'
@@ -236,7 +225,7 @@ export default function Squad() {
       <section
         className="squad-screen px-4 pt-4 relative overflow-hidden flex flex-col"
         style={{
-          height: 'calc(100dvh - 4.25rem)',
+          minHeight: 'calc(100dvh - 4.25rem)',
           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
         }}
       >
@@ -592,16 +581,17 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
 
   return (
     <div className="flex-1 flex flex-col min-h-0 mt-1" onPointerDown={() => SFX.unlock()}>
-      <div className="flex-1 overflow-y-auto space-y-1 px-1 pb-1">
+      <div className="flex-1 overflow-y-auto overscroll-contain space-y-1 px-1 pb-1">
         {messages.length === 0 && (
           <div className="text-center py-6 text-[#bbb] text-sm">No messages yet — say something!</div>
         )}
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => {
             const isMe = msg.user_id === userId
-            const showName = !isMe && (i === 0 || messages[i - 1]?.user_id !== msg.user_id)
-            const showAvatar = !isMe && (i === 0 || messages[i - 1]?.user_id !== msg.user_id)
-            const showTime = i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id
+            const isLastInBlock = i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id
+            const showName = !isMe && isLastInBlock
+            const showAvatar = !isMe && isLastInBlock
+            const showTime = isLastInBlock
             const isSticker = msg.msg_type === 'sticker'
             const seenBy = (msg.seen_by || []).filter((s) => s.userId !== msg.user_id)
             // Only show seen on the last message sent by me
