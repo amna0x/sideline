@@ -153,7 +153,22 @@ async function dbGetUserSquad(userId) {
 async function dbGetChatHistory(squadId, limit = 50) {
   if (mode !== 'postgres') return []
   const { rows } = await query(
-    `SELECT sm.*, u.avatar_url as user_avatar
+    `SELECT sm.*, u.avatar_url as user_avatar,
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'userId', ms.user_id,
+              'username', COALESCE(su.username, 'Member')
+            )
+            ORDER BY ms.seen_at
+          )
+          FROM message_seen ms
+          LEFT JOIN users su ON su.id = ms.user_id
+          WHERE ms.message_id = sm.id
+        ),
+        '[]'::json
+      ) AS seen_by
      FROM squad_messages sm
      LEFT JOIN users u ON u.id = sm.user_id
      WHERE sm.squad_id = $1
@@ -174,7 +189,8 @@ async function dbGetChatHistory(squadId, limit = 50) {
     reply_to_username: r.reply_to_username,
     created_at: r.created_at,
     edited_at: r.edited_at,
-    deleted_at: r.deleted_at
+    deleted_at: r.deleted_at,
+    seen_by: r.seen_by || []
   }))
 }
 
@@ -262,7 +278,7 @@ export function registerSquadHandlers(io) {
       }
 
       // Leave any previous squad socket rooms
-      leaveAllRooms(socket, io)
+      leaveAllRooms(socket)
 
       // Track live presence
       if (!liveMembers.has(squadId)) liveMembers.set(squadId, new Map())
@@ -326,7 +342,7 @@ export function registerSquadHandlers(io) {
         await dbRemoveMember(squadId, user.id).catch(() => {})
       }
 
-      leaveAllRooms(socket, io)
+      leaveAllRooms(socket)
       const members = await dbGetSquadMembers(squadId).catch(() => [])
       io.to(`squad:${squadId}`).emit('squad:member_left', { userId: user.id, memberCount: members.length })
       const squadRow = await dbGetSquad(squadId).catch(() => null)
@@ -608,7 +624,7 @@ export function registerSquadHandlers(io) {
       if (!squadRow) return socket.emit('squad:error', { message: 'Invalid or expired invite link' })
       const squadId = squadRow.id
 
-      leaveAllRooms(socket, io)
+      leaveAllRooms(socket)
       await dbAddMemberIfNotExists(squadId, user.id).catch(() => {})
 
       if (!liveMembers.has(squadId)) liveMembers.set(squadId, new Map())
@@ -674,7 +690,7 @@ export function registerSquadHandlers(io) {
     })
 
     socket.on('disconnect', () => {
-      leaveAllRooms(socket, io)
+      leaveAllRooms(socket)
       reactionCooldowns.delete(socket.id)
     })
   })
@@ -689,13 +705,11 @@ function getSquadIdForSocket(socket) {
   return null
 }
 
-function leaveAllRooms(socket, io) {
-  const user = socket.data.user
+function leaveAllRooms(socket) {
   for (const [squadId, members] of liveMembers) {
     if (members.has(socket.id)) {
       members.delete(socket.id)
       socket.leave(`squad:${squadId}`)
-      io.to(`squad:${squadId}`).emit('squad:member_left', { userId: user?.id, memberCount: members.size })
     }
   }
 }

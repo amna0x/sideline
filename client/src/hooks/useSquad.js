@@ -55,6 +55,38 @@ function normalizeChatMessage(msg) {
   }
 }
 
+function normalizeSquadMember(member) {
+  if (!member || typeof member !== 'object') return null
+  const userId = member.userId ? String(member.userId) : ''
+  if (!userId) return null
+  return {
+    userId,
+    username: String(member.username || 'Member'),
+    avatar_url: member.avatar_url || null
+  }
+}
+
+function normalizeSquadState(state) {
+  if (!state || typeof state !== 'object') return null
+  const members = Array.isArray(state.members)
+    ? state.members.map(normalizeSquadMember).filter(Boolean)
+    : []
+  const roles = state.roles && typeof state.roles === 'object' ? state.roles : {}
+
+  return {
+    ...state,
+    id: String(state.id || ''),
+    name: String(state.name || 'Squad'),
+    matchId: String(state.matchId || 'lobby'),
+    inviteCode: typeof state.inviteCode === 'string' ? state.inviteCode : '',
+    inviteEnabled: !!state.inviteEnabled,
+    visibility: state.visibility === 'private' ? 'private' : 'public',
+    members,
+    memberCount: Number.isFinite(Number(state.memberCount)) ? Number(state.memberCount) : members.length,
+    roles
+  }
+}
+
 export function useSquad() {
   const squad = useStore((s) => s.squad)
   const setSquad = useStore((s) => s.setSquad)
@@ -75,12 +107,14 @@ export function useSquad() {
       socketRef.current = s
 
       s.on('squad:state', (state) => {
-        setSquad(state)
-        setSquadMembers(state.members)
-        setRoles(state.roles || {})
+        const safeState = normalizeSquadState(state)
+        if (!safeState) return
+        setSquad(safeState)
+        setSquadMembers(safeState.members)
+        setRoles(safeState.roles)
         // Don't show notification on re-mount, only on fresh join
         if (!useStore.getState().squad) {
-          useStore.getState().pushNotification({ type: 'squad', title: `JOINED ${state.name}`, message: `${state.memberCount} members`, icon: '👥', duration: 3000 })
+          useStore.getState().pushNotification({ type: 'squad', title: `JOINED ${safeState.name}`, message: `${safeState.memberCount} members`, icon: '👥', duration: 3000 })
         }
       })
 
@@ -90,9 +124,27 @@ export function useSquad() {
       })
 
       s.on('squad:member_joined', (member) => {
-        useStore.setState((prev) => ({
-          squadMembers: [...prev.squadMembers.filter((m) => m.userId !== member.userId), member]
-        }))
+        const safeMember = normalizeSquadMember(member)
+        if (!safeMember) return
+        useStore.setState((prev) => {
+          const list = Array.isArray(prev.squadMembers) ? prev.squadMembers : []
+          const idx = list.findIndex((m) => m.userId === safeMember.userId)
+          if (idx === -1) {
+            return { squadMembers: [...list, safeMember] }
+          }
+
+          const existing = list[idx]
+          const merged = {
+            ...existing,
+            ...safeMember,
+            avatar_url: safeMember.avatar_url || existing?.avatar_url || null,
+            username: safeMember.username || existing?.username || 'Member'
+          }
+
+          const next = [...list]
+          next[idx] = merged
+          return { squadMembers: next }
+        })
       })
 
       s.on('squad:member_left', ({ userId, memberCount }) => {
@@ -104,8 +156,9 @@ export function useSquad() {
       s.on('squad:reaction_burst', (reaction) => addReaction(reaction))
 
       s.on('squad:chat_message', (msg) => {
-        useStore.getState().appendSquadChat(normalizeChatMessage(msg))
-        setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
+        const safeMsg = normalizeChatMessage(msg)
+        useStore.getState().appendSquadChat(safeMsg)
+        setTypingUsers((prev) => prev.filter((u) => u.userId !== safeMsg.user_id))
       })
 
       s.on('squad:message_seen', ({ messageId, userId: seenBy, username }) => {

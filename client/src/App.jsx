@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from './hooks/useAuth.js'
 import { useStore } from './store/index.js'
 import { applyTheme, loadTheme } from './lib/theme.js'
+import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 
 import Login from './screens/Login.jsx'
 import Home from './screens/Home.jsx'
@@ -39,33 +40,35 @@ export default function App() {
   }, [])
 
   return (
-    <>
-      <motion.div
-        key={location.pathname}
-        initial={{ y: 16, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.25 }}
-      >
-        <Routes location={location}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Protected session={session}><Home /></Protected>} />
-          <Route path="/predict" element={<Protected session={session}><Predict /></Protected>} />
-          <Route path="/squad" element={<Protected session={session}><Squad /></Protected>} />
-          <Route path="/squad/join/:code" element={<Protected session={session}><Squad /></Protected>} />
-          <Route path="/vault" element={<Protected session={session}><Vault /></Protected>} />
-          <Route path="/leaderboard" element={<Protected session={session}><Leaderboard /></Protected>} />
-          <Route path="/profile" element={<Protected session={session}><Profile /></Protected>} />
-          <Route path="/profile/:userId" element={<Protected session={session}><UserProfile /></Protected>} />
-          <Route path="/quiz" element={<Protected session={session}><Quiz /></Protected>} />
-          <Route path="/settings" element={<Protected session={session}><Settings /></Protected>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </motion.div>
-      <AdidasDropOverlay />
-      <AnimatePresence>
-        {showSplash && <SplashScreen />}
-      </AnimatePresence>
-    </>
+    <AppErrorBoundary resetKeys={[location.pathname, String(session !== null)]}>
+      <>
+        <motion.div
+          key={location.pathname}
+          initial={{ y: 16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25 }}
+        >
+          <Routes location={location}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Protected session={session}><Home /></Protected>} />
+            <Route path="/predict" element={<Protected session={session}><Predict /></Protected>} />
+            <Route path="/squad" element={<Protected session={session}><Squad /></Protected>} />
+            <Route path="/squad/join/:code" element={<Protected session={session}><Squad /></Protected>} />
+            <Route path="/vault" element={<Protected session={session}><Vault /></Protected>} />
+            <Route path="/leaderboard" element={<Protected session={session}><Leaderboard /></Protected>} />
+            <Route path="/profile" element={<Protected session={session}><Profile /></Protected>} />
+            <Route path="/profile/:userId" element={<Protected session={session}><UserProfile /></Protected>} />
+            <Route path="/quiz" element={<Protected session={session}><Quiz /></Protected>} />
+            <Route path="/settings" element={<Protected session={session}><Settings /></Protected>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </motion.div>
+        <AdidasDropOverlay />
+        <AnimatePresence>
+          {showSplash && <SplashScreen />}
+        </AnimatePresence>
+      </>
+    </AppErrorBoundary>
   )
 }
 

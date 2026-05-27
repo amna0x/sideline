@@ -44,6 +44,8 @@ export default function Squad() {
   const [searchDropdown, setSearchDropdown] = useState([])
   const [showManage, setShowManage] = useState(false)
   const [existingSquad, setExistingSquad] = useState(undefined) // undefined = loading, null = none, object = has squad
+  const safeSquadMembers = Array.isArray(squadMembers) ? squadMembers.filter((m) => m && m.userId) : []
+  const safeRooms = Array.isArray(rooms) ? rooms.filter((r) => r && typeof r.name === 'string' && r.name.trim()) : []
 
   const myRole = roles[userId] || 'member'
   const isAdmin = myRole === 'admin' || (squad?.createdBy === userId)
@@ -78,7 +80,7 @@ export default function Squad() {
     if (!name?.trim()) return
     const trimmed = name.trim()
     const matchId = match?.id || 'lobby'
-    const existing = rooms.find((r) => r.name.toLowerCase() === trimmed.toLowerCase())
+    const existing = safeRooms.find((r) => r.name.toLowerCase() === trimmed.toLowerCase())
     if (existing) {
       joinSquad(trimmed, matchId)
       setJoinName('')
@@ -99,7 +101,7 @@ export default function Squad() {
   function handleSearchInput(val) {
     setJoinName(val)
     if (val.trim().length >= 1) {
-      setSearchDropdown(rooms.filter((r) => r.name.toLowerCase().includes(val.toLowerCase())))
+      setSearchDropdown(safeRooms.filter((r) => r.name.toLowerCase().includes(val.toLowerCase())))
     } else {
       setSearchDropdown([])
     }
@@ -178,13 +180,13 @@ export default function Squad() {
             </div>
           </motion.div>
 
-          {rooms.length > 0 && (
+          {safeRooms.length > 0 && (
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
               <h2 className="font-comic text-xs text-[var(--sv-accent)] mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">groups</span> ACTIVE SQUADS
               </h2>
               <div className="space-y-2 pb-8">
-                {rooms.sort((a, b) => b.memberCount - a.memberCount).map((r) => (
+                {safeRooms.sort((a, b) => b.memberCount - a.memberCount).map((r) => (
                   <motion.button key={r.id} whileTap={{ scale: 0.98 }} onClick={() => joinSquad(r.name, match?.id || 'lobby')}
                     className="w-full bg-white border border-[#e0e0e0] rounded-xl p-3 flex items-center justify-between text-left">
                     <div>
@@ -199,7 +201,7 @@ export default function Squad() {
           )}
 
           {loadingRooms && <div className="text-center py-8"><span className="text-sm text-[#999]">Loading rooms…</span></div>}
-          {!loadingRooms && rooms.length === 0 && (
+          {!loadingRooms && safeRooms.length === 0 && (
             <div className="text-center py-8"><span className="text-sm text-[#999]">No active rooms — be the first!</span></div>
           )}
         </section>
@@ -237,7 +239,7 @@ export default function Squad() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-comic text-lg text-[var(--sv-accent)]">{squad.name}</h2>
-              <span className="text-xs text-[#999]">{squadMembers.length} watching · {squad.visibility === 'private' ? 'PRIVATE' : 'PUBLIC'}</span>
+              <span className="text-xs text-[#999]">{safeSquadMembers.length} watching · {squad.visibility === 'private' ? 'PRIVATE' : 'PUBLIC'}</span>
             </div>
             <div className="flex gap-1.5">
               <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowManage(true)}
@@ -264,7 +266,7 @@ export default function Squad() {
 
         {/* Members row */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 shrink-0">
-          {squadMembers.map((m) => (
+          {safeSquadMembers.map((m) => (
             <div key={m.userId} className="flex flex-col items-center min-w-[48px]">
               <div className={`w-10 h-10 rounded-full border-2 ${m.userId === userId ? 'border-[var(--sv-accent)]' : roles[m.userId] === 'admin' ? 'border-yellow-400' : roles[m.userId] === 'moderator' ? 'border-blue-400' : 'border-[#e0e0e0]'} p-0.5 flex items-center justify-center overflow-hidden`}>
                 <Avatar url={m.avatar_url} name={m.username} size={32} />
@@ -390,9 +392,9 @@ export default function Squad() {
 
               {/* Members list with actions */}
               <div className="p-4">
-                <label className="font-comic text-xs text-[#999] mb-2 block">MEMBERS ({squadMembers.length})</label>
+                <label className="font-comic text-xs text-[#999] mb-2 block">MEMBERS ({safeSquadMembers.length})</label>
                 <div className="space-y-2">
-                  {squadMembers.map((m) => {
+                  {safeSquadMembers.map((m) => {
                     const memberRole = roles[m.userId] || 'member'
                     const canKick = (isAdmin || isMod) && m.userId !== userId && memberRole !== 'admin'
                     const canPromote = isAdmin && m.userId !== userId && memberRole === 'member'
@@ -464,6 +466,37 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
   const chatContainerRef = useRef(null)
   const typingTimeout = useRef(null)
   const seenRef = useRef(new Set())
+  const pendingSeenRef = useRef(new Set())
+  const messagesRef = useRef(messages)
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  function canEmitSeen() {
+    if (typeof document === 'undefined') return true
+    const isVisible = document.visibilityState === 'visible'
+    const isFocused = typeof document.hasFocus === 'function' ? document.hasFocus() : true
+    return isVisible && isFocused
+  }
+
+  function flushSeenQueue() {
+    if (!onMarkSeen || !canEmitSeen()) return
+
+    const unseen = (messagesRef.current || []).filter((m) => {
+      if (!m || !m.id) return false
+      if (m.user_id === userId) return false
+      return !seenRef.current.has(m.id)
+    })
+
+    unseen.forEach((m) => pendingSeenRef.current.add(m.id))
+
+    for (const messageId of pendingSeenRef.current) {
+      seenRef.current.add(messageId)
+      onMarkSeen(messageId)
+    }
+    pendingSeenRef.current.clear()
+  }
 
   // Auto-scroll to bottom on new messages
   function scrollToBottom() {
@@ -474,12 +507,28 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
 
   useEffect(() => {
     scrollToBottom()
-    // Mark unseen messages as seen
-    if (onMarkSeen) {
-      const unseen = messages.filter((m) => m.user_id !== userId && !seenRef.current.has(m.id))
-      unseen.forEach((m) => { seenRef.current.add(m.id); onMarkSeen(m.id) })
-    }
+    if (!onMarkSeen) return
+
+    const unseen = messages.filter((m) => m && m.id && m.user_id !== userId && !seenRef.current.has(m.id))
+    unseen.forEach((m) => pendingSeenRef.current.add(m.id))
+
+    flushSeenQueue()
   }, [messages.length])
+
+  // Only mark messages as seen after user returns to the app/tab and focus.
+  useEffect(() => {
+    function onVisibilityOrFocus() {
+      flushSeenQueue()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityOrFocus)
+    window.addEventListener('focus', onVisibilityOrFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityOrFocus)
+      window.removeEventListener('focus', onVisibilityOrFocus)
+    }
+  }, [onMarkSeen, userId])
 
   // Handle iOS keyboard resize — scroll to bottom when keyboard opens
   useEffect(() => {
