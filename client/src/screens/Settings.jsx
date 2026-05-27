@@ -264,6 +264,7 @@ function AdminPanel() {
   const pushNotification = useStore((s) => s.pushNotification)
   const match = useStore((s) => s.match)
   const setMatch = useStore((s) => s.setMatch)
+  const setDrop = useStore((s) => s.setPendingDrop)
   const currentUser = useStore((s) => s.user)
   const currentPoints = useStore((s) => s.points)
   const setPoints = useStore((s) => s.setPoints)
@@ -272,6 +273,8 @@ function AdminPanel() {
   const [userResults, setUserResults] = useState([])
   const [xpAmount, setXpAmount] = useState('25000')
   const [demoRoom, setDemoRoom] = useState('')
+  const [demoActive, setDemoActive] = useState(false)
+  const [demoReward, setDemoReward] = useState(25000)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -298,6 +301,12 @@ function AdminPanel() {
     })
     return () => { if (socket) socket.off('demo:points_awarded') }
   }, [pushNotification, setPoints])
+
+  async function refreshMatch() {
+    let nextMatch = await api.liveMatch().catch(() => null)
+    if (!nextMatch) nextMatch = await api.upcomingMatch().catch(() => null)
+    setMatch(nextMatch)
+  }
 
   const selectedUser = targetUser || (targetQuery.trim() ? null : currentUser)
   const selectedName = selectedUser?.username || selectedUser?.profile?.username || selectedUser?.email || selectedUser?.id || 'Current user'
@@ -383,10 +392,23 @@ function AdminPanel() {
   async function startSimulator() {
     try {
       setBusy(true)
+      if (demoActive) {
+        await api.adminDemoStop()
+        if (currentUser?.id && demoReward) {
+          await api.adminGrant({ user_id: currentUser.id, points: -demoReward }).catch(() => {})
+        }
+        setDemoActive(false)
+        setDrop(null)
+        await refreshMatch()
+        pushNotification({ type: 'prediction', title: 'DEMO STOPPED', message: 'Demo reset and live data restored', icon: '⏹️', duration: 3500 })
+        return
+      }
+
+      const reward = 25000
       const r = await api.adminDemoStart({
         match_id: match?.id || 'm_dortmund_bayern_md12',
         squad_id: demoRoom.trim() || undefined,
-        points: 25000
+        points: reward
       })
       if (r?.matchId) {
         const socket = await getSocket()
@@ -397,6 +419,8 @@ function AdminPanel() {
         socket.emit('squad:join', { squadName: r.squadName, matchId: r.squadMatchId })
       }
       if (r?.matchId) setMatch({ id: r.matchId, home_team: 'Borussia Dortmund', away_team: 'FC Bayern München', home_score: 0, away_score: 0, minute: 0, status: 'live', stadium: 'Signal Iduna Park', matchday: 12 })
+      setDemoReward(Number(r?.reward || reward))
+      setDemoActive(true)
       pushNotification({ type: 'prediction', title: 'DEMO MODE', message: 'Replay, squad, vault, and drop script started', icon: '🚀', duration: 4000 })
     } catch (e) {
       pushNotification({ type: 'goal', title: 'ERROR', message: e.message, duration: 3000 })
@@ -504,8 +528,9 @@ function AdminPanel() {
           <div className="grid grid-cols-2 gap-2">
             <Btn label="🪙 +25K XP" onClick={grantBigXP} disabled={busy} />
             <Btn label="🗝️ All Vault" onClick={grantAllVault} disabled={busy} />
-            <Btn label="🚀 Simulator" onClick={startSimulator} disabled={busy} />
+            <Btn label={demoActive ? '⏹️ Reset Demo' : '🚀 Start Demo'} onClick={startSimulator} disabled={busy} tone={demoActive ? 'danger' : undefined} />
           </div>
+          <p className="text-[10px] text-[#999]">{demoActive ? 'Demo is running. Tap reset to stop simulator and restore live data.' : 'Demo is off.'}</p>
         </div>
       </Card>
     </div>

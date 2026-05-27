@@ -47,6 +47,7 @@ r.post('/demo/start', requireAuth, validate({ body: demoStartSchema }), async (r
       squadId: demo.squadId,
       squadName: squad?.name || null,
       squadMatchId: squad?.match_id || req.body.match_id || demo.matchId,
+      reward: req.body.points || 25000,
       speed: demo.speed
     })
   } catch (e) { next(e) }

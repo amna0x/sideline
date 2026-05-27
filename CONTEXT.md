@@ -60,6 +60,8 @@ _Non-obvious choices that future sessions should not relitigate._
 
 _Append a one-liner per session. Keep newest at top. Trim entries older than ~30 days._
 
+- _2026-05-27 (demo toggle) — Admin demo button is now a toggle: start launches the scripted match/squad/vault/drop showcase, reset stops the simulator, clears the drop overlay, reloads match state, and reverses the demo XP._
+
 - _2026-05-27 (admin demo) — Added an admin-only demo start/stop flow that replays the match simulator, emits scripted squad chat/reaction events, triggers a demo Adidas drop overlay, and awards demo XP from Settings > Admin._
 
 - _2026-05-27 (squad chat) — Squad member strip now renders all members in a stable role/join order; chat avatars show at the start of each speaker block; timestamps only show on the latest message in each consecutive block._

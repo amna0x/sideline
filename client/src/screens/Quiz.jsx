@@ -5,6 +5,8 @@ import Layout from '../components/Layout.jsx'
 import HeaderArtCard from '../components/HeaderArtCard.jsx'
 import { useMatch } from '../hooks/useMatch.js'
 import { api } from '../lib/api.js'
+import PlayerAvatar from '../components/PlayerAvatar.jsx'
+import { getPlayerAvatar } from '../lib/players.js'
 import { useStore } from '../store/index.js'
 
 const QUESTION_SECONDS = 20
@@ -107,14 +109,22 @@ export default function Quiz() {
               <div className="space-y-2">
                 {opts.map((opt) => {
                   const isSel = selected === opt
+                  const hasPhoto = !!getPlayerAvatar(opt)
                   return (
                     <button key={opt} onClick={() => reveal(opt)}
-                      className={`w-full text-left p-3 rounded border flex items-center justify-between transition-all ${
+                      className={`w-full text-left p-3 rounded border flex items-center gap-3 transition-all ${
                         isSel ? 'border-primary-container bg-primary-container/10 text-primary-container shadow-[inset_0_0_15px_rgba(216,207,188,0.1)]'
                               : 'border-[#565449] bg-background text-on-background hover:border-primary-container'
                       }`}>
-                      <span>{opt}</span>
-                      <span className="material-symbols-outlined text-[18px] text-primary-container">{isSel ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+                      {hasPhoto ? (
+                        <PlayerAvatar name={opt} size={38} className="shrink-0 border-2 border-white shadow-[0_6px_18px_rgba(0,0,0,0.12)]" />
+                      ) : (
+                        <span className="w-9 h-9 rounded-full bg-surface-container-highest border border-[#565449] flex items-center justify-center text-[10px] font-label-caps text-outline shrink-0">
+                          {opt.slice(0, 2)}
+                        </span>
+                      )}
+                      <span className="flex-1 text-lg font-medium">{opt}</span>
+                      <span className="material-symbols-outlined text-[18px] text-primary-container shrink-0">{isSel ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
                     </button>
                   )
                 })}

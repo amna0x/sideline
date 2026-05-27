@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import Layout from '../components/Layout.jsx'
 import MatchHero from '../components/MatchHero.jsx'
 import HeaderArtCard from '../components/HeaderArtCard.jsx'
+import PlayerAvatar from '../components/PlayerAvatar.jsx'
+import { getPlayerAvatar } from '../lib/players.js'
 import { useMatch } from '../hooks/useMatch.js'
 import { useStore } from '../store/index.js'
 
@@ -101,23 +103,36 @@ export default function Home() {
 
         <motion.section variants={fadeUp}>
           <SectionHeader icon="bolt" title="EVENT FEED" />
-          <div className="comic-panel divide-y divide-outline-variant/30">
+          <div className="comic-panel overflow-hidden shadow-[0_14px_30px_rgba(0,0,0,0.08)]">
             {events.slice(-6).reverse().map((e, i) => (
               <motion.div
                 key={i}
                 initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 px-4 py-3"
+                className="flex items-center gap-3 px-4 py-3 border-b border-white/70 last:border-b-0 bg-white/85"
               >
-                <span className="font-comic text-sm text-[var(--sv-accent)] w-10">{e.minute}'</span>
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{eventIcon(e.type)}</span>
-                <span className="text-sm text-on-surface flex-1 truncate">{e.player_name || e.type}</span>
-                <span className="font-label-caps text-[10px] text-outline">{e.team}</span>
+                <div className="w-10 h-10 rounded-full bg-[var(--sv-accent)]/10 border border-[var(--sv-accent)]/20 flex items-center justify-center shrink-0 overflow-hidden">
+                  {getPlayerAvatar(e.player_name) ? (
+                    <PlayerAvatar name={e.player_name} size={40} className="w-full h-full" />
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px] text-[var(--sv-accent)]">{eventIcon(e.type)}</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-comic text-sm text-[var(--sv-accent)] w-10 shrink-0">{e.minute}'</span>
+                    <span className="text-sm text-on-surface font-medium truncate">{e.player_name || eventLabel(e.type)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] font-label-caps tracking-wide">
+                    <span className={`px-2 py-0.5 rounded-full ${eventChipClass(e.type)} `}>{eventLabel(e.type)}</span>
+                    <span className={`px-2 py-0.5 rounded-full ${teamChipClass(e.team)}`}>{e.team || 'live'}</span>
+                  </div>
+                </div>
               </motion.div>
             ))}
             {events.length === 0 && (
-              <div className="px-4 py-8 text-center text-outline font-comic text-lg">No events yet — simulator idle</div>
+              <div className="px-4 py-8 text-center text-outline font-comic text-lg bg-white/85">No events yet — simulator idle</div>
             )}
           </div>
         </motion.section>
@@ -183,6 +198,35 @@ function eventIcon(t) {
     case 'substitution': return 'sync_alt'
     default: return 'circle'
   }
+}
+
+function eventLabel(type) {
+  switch (type) {
+    case 'goal': return 'GOAL'
+    case 'yellow_card': return 'YELLOW'
+    case 'red_card': return 'RED'
+    case 'corner': return 'CORNER'
+    case 'var': return 'VAR'
+    case 'substitution': return 'SUB'
+    default: return (type || 'EVENT').toUpperCase()
+  }
+}
+
+function eventChipClass(type) {
+  switch (type) {
+    case 'goal': return 'bg-[#ffefe7] text-[var(--sv-accent)]'
+    case 'yellow_card': return 'bg-[#fff5ce] text-[#8f6700]'
+    case 'red_card': return 'bg-[#ffe0e0] text-[#b42318]'
+    case 'var': return 'bg-[#e6f1ff] text-[#2457d6]'
+    case 'corner': return 'bg-[#edf6ee] text-[#2e6a32]'
+    default: return 'bg-[#f4f4f4] text-[#5c5c5c]'
+  }
+}
+
+function teamChipClass(team) {
+  if (team === 'home') return 'bg-[var(--sv-cyan)]/12 text-[var(--sv-cyan)]'
+  if (team === 'away') return 'bg-[var(--sv-accent)]/12 text-[var(--sv-accent)]'
+  return 'bg-[#f4f4f4] text-[#666]'
 }
 function Retry({ onClick }) {
   return <div className="px-4 mt-4">

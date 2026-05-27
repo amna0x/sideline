@@ -12,7 +12,8 @@ export default function PlayerAvatar({ name, size = 32, className = '' }) {
       <img
         src={url}
         alt={name}
-        loading="lazy"
+        loading="eager"
+        decoding="async"
         onError={() => setFailed(true)}
         style={dim}
         className={`rounded-full object-cover ${className}`}
