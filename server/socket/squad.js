@@ -104,7 +104,8 @@ async function dbGetSquadMembers(squadId) {
   const { rows } = await query(
     `SELECT sm.user_id, sm.role, u.username, u.avatar_url
      FROM squad_members sm JOIN users u ON u.id = sm.user_id
-     WHERE sm.squad_id = $1`,
+     WHERE sm.squad_id = $1
+     ORDER BY CASE sm.role WHEN 'admin' THEN 0 WHEN 'moderator' THEN 1 ELSE 2 END, sm.joined_at ASC, u.username ASC`,
     [squadId]
   )
   return rows

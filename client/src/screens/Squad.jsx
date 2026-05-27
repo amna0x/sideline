@@ -263,7 +263,7 @@ export default function Squad() {
 
         {/* Members row */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 shrink-0">
-          {squadMembers.slice(0, 8).map((m) => (
+          {squadMembers.map((m) => (
             <div key={m.userId} className="flex flex-col items-center min-w-[48px]">
               <div className={`w-10 h-10 rounded-full border-2 ${m.userId === userId ? 'border-[var(--sv-accent)]' : roles[m.userId] === 'admin' ? 'border-yellow-400' : roles[m.userId] === 'moderator' ? 'border-blue-400' : 'border-[#e0e0e0]'} p-0.5 flex items-center justify-center overflow-hidden`}>
                 <Avatar url={m.avatar_url} name={m.username} size={32} />
@@ -275,14 +275,6 @@ export default function Squad() {
               {roles[m.userId] === 'moderator' && <span className="text-[8px] text-blue-500">⭐</span>}
             </div>
           ))}
-          {squadMembers.length > 8 && (
-            <button onClick={() => setShowManage(true)} className="flex flex-col items-center min-w-[48px]">
-              <div className="w-10 h-10 rounded-full border-2 border-[#e0e0e0] flex items-center justify-center bg-[#f0f0f0]">
-                <span className="font-comic text-xs text-[#666]">+{squadMembers.length - 8}</span>
-              </div>
-              <span className="text-[9px] text-[#999] mt-0.5">more</span>
-            </button>
-          )}
         </div>
 
         {/* Reactions bar */}
@@ -597,7 +589,8 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
           {messages.map((msg, i) => {
             const isMe = msg.user_id === userId
             const showName = !isMe && (i === 0 || messages[i - 1]?.user_id !== msg.user_id)
-            const showAvatar = !isMe && (i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id)
+            const showAvatar = !isMe && (i === 0 || messages[i - 1]?.user_id !== msg.user_id)
+            const showTime = i === messages.length - 1 || messages[i + 1]?.user_id !== msg.user_id
             const isSticker = msg.msg_type === 'sticker'
             const seenBy = (msg.seen_by || []).filter((s) => s.userId !== msg.user_id)
             // Only show seen on the last message sent by me
@@ -692,7 +685,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                   )}
 
                   {/* Seen receipt — only on the last message you sent */}
-                  {sentTime && (
+                  {sentTime && showTime && (
                     <span className={`mt-0.5 px-1 text-[9px] leading-none text-[#999] ${isMe ? 'text-right' : 'text-left'}`}>
                       {sentTime}
                     </span>
