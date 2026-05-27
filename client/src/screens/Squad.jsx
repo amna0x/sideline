@@ -225,8 +225,8 @@ export default function Squad() {
       <section
         className="squad-screen px-4 pt-4 relative overflow-hidden flex flex-col"
         style={{
-          minHeight: 'calc(100dvh - 4.25rem)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
+          height: 'calc(100dvh - 5rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.75rem)'
         }}
       >
         <ReactionBurst />
@@ -581,7 +581,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
 
   return (
     <div className="flex-1 flex flex-col min-h-0 mt-1" onPointerDown={() => SFX.unlock()}>
-      <div className="flex-1 overflow-y-auto overscroll-contain space-y-1 px-1 pb-1">
+      <div className="flex-1 overflow-y-auto space-y-1 px-1 pb-2">
         {messages.length === 0 && (
           <div className="text-center py-6 text-[#bbb] text-sm">No messages yet — say something!</div>
         )}
