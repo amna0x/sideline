@@ -24,9 +24,9 @@ Features
 - Vault collectibles (mint hooks for special events)
 - Squad chat with emoji reactions and message moderation
 
-Screenshots
+App Preview
 -----------
-The gallery below is curated for a competition review — each image has a short caption explaining the context. Images are located in `client/public/screenshots/`. Replace the files there to update the gallery.
+The gallery below is curated for a preview of the app. — each image has a short caption explaining the context.
 
 - Splash / Launch — app brand and loading state
 
