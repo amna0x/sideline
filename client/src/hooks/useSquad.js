@@ -3,6 +3,58 @@ import { useStore } from '../store/index.js'
 import { getSocket } from '../lib/socket.js'
 import { requireSignedIn } from '../lib/guestGuard.js'
 
+function normalizeSeenBy(seenBy) {
+  if (!Array.isArray(seenBy)) return []
+  return seenBy
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      userId: String(entry.userId || ''),
+      username: String(entry.username || 'Member')
+    }))
+    .filter((entry) => entry.userId)
+}
+
+function normalizeChatMessage(msg) {
+  if (!msg || typeof msg !== 'object') {
+    return {
+      id: `fallback-${Date.now()}-${Math.random()}`,
+      squad_id: '',
+      user_id: '',
+      username: 'Member',
+      avatar_url: null,
+      message: '',
+      msg_type: 'text',
+      sticker_id: null,
+      reply_to_id: null,
+      reply_to_text: null,
+      reply_to_username: null,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+      deleted_at: null,
+      seen_by: []
+    }
+  }
+
+  return {
+    ...msg,
+    id: String(msg.id || `fallback-${Date.now()}-${Math.random()}`),
+    squad_id: msg.squad_id ? String(msg.squad_id) : '',
+    user_id: msg.user_id ? String(msg.user_id) : '',
+    username: String(msg.username || 'Member'),
+    avatar_url: msg.avatar_url || null,
+    message: typeof msg.message === 'string' ? msg.message : (msg.message == null ? '' : String(msg.message)),
+    msg_type: typeof msg.msg_type === 'string' ? msg.msg_type : 'text',
+    sticker_id: msg.sticker_id || null,
+    reply_to_id: msg.reply_to_id || null,
+    reply_to_text: typeof msg.reply_to_text === 'string' ? msg.reply_to_text : null,
+    reply_to_username: typeof msg.reply_to_username === 'string' ? msg.reply_to_username : null,
+    created_at: msg.created_at || new Date().toISOString(),
+    edited_at: msg.edited_at || null,
+    deleted_at: msg.deleted_at || null,
+    seen_by: normalizeSeenBy(msg.seen_by)
+  }
+}
+
 export function useSquad() {
   const squad = useStore((s) => s.squad)
   const setSquad = useStore((s) => s.setSquad)
@@ -33,7 +85,8 @@ export function useSquad() {
       })
 
       s.on('squad:chat_history', (messages) => {
-        useStore.getState().setSquadChat(messages)
+        const safeMessages = Array.isArray(messages) ? messages.map(normalizeChatMessage) : []
+        useStore.getState().setSquadChat(safeMessages)
       })
 
       s.on('squad:member_joined', (member) => {
@@ -51,7 +104,7 @@ export function useSquad() {
       s.on('squad:reaction_burst', (reaction) => addReaction(reaction))
 
       s.on('squad:chat_message', (msg) => {
-        useStore.getState().appendSquadChat(msg)
+        useStore.getState().appendSquadChat(normalizeChatMessage(msg))
         setTypingUsers((prev) => prev.filter((u) => u.userId !== msg.user_id))
       })
 

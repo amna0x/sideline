@@ -505,7 +505,9 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
       const last = messages[messages.length - 1]
       if (last?.user_id !== userId && last?.reply_to_username) {
         const myUsername = useStore.getState().user?.profile?.username || useStore.getState().user?.username
-        if (myUsername && last.reply_to_username.toLowerCase() === myUsername.toLowerCase()) {
+        const replyToUsername = typeof last.reply_to_username === 'string' ? last.reply_to_username : ''
+        const myName = typeof myUsername === 'string' ? myUsername : ''
+        if (myName && replyToUsername.toLowerCase() === myName.toLowerCase()) {
           SFX.play('receive')
           try { if (navigator.vibrate) navigator.vibrate(10) } catch (e) {}
         }
@@ -594,7 +596,8 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
             const showAvatar = !isMe && isLastInBlock
             const showTime = isLastInBlock
             const isSticker = msg.msg_type === 'sticker'
-            const seenBy = (msg.seen_by || []).filter((s) => s.userId !== msg.user_id)
+            const seenBy = (Array.isArray(msg.seen_by) ? msg.seen_by : [])
+              .filter((s) => s && typeof s === 'object' && s.userId !== msg.user_id)
             // Only show seen on the last message sent by me
             const isLastSentByMe = isMe && !messages.slice(i + 1).some((m) => m.user_id === userId)
             const myRole = roles[userId] || 'member'
@@ -622,7 +625,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                   {/* Reply preview */}
                   {msg.reply_to_text && (
                     <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/85' : 'border-[var(--sv-accent)] bg-[var(--surface-high)] text-[var(--text-fg)]'}`}>
-                      <span className="font-comic text-[var(--sv-accent)]">{msg.reply_to_username}</span>: {msg.reply_to_text.slice(0, 60)}
+                      <span className="font-comic text-[var(--sv-accent)]">{msg.reply_to_username || 'Member'}</span>: {String(msg.reply_to_text).slice(0, 60)}
                     </div>
                   )}
 
@@ -701,8 +704,8 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                       className="max-w-full truncate text-[9px] text-[#999] mt-0.5 text-right min-h-[1rem] leading-none"
                     >
                       {seenBy.length <= 3
-                        ? `Seen by ${seenBy.map((s) => s.username).join(', ')}`
-                        : `Seen by ${seenBy[0].username} and ${seenBy.length - 1} others`}
+                        ? `Seen by ${seenBy.map((s) => s.username || 'Member').join(', ')}`
+                        : `Seen by ${(seenBy[0]?.username || 'Member')} and ${seenBy.length - 1} others`}
                     </motion.div>
                   )}
                 </div>
@@ -723,7 +726,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                 <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} className="w-1.5 h-1.5 bg-[#999] rounded-full" />
                 <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} className="w-1.5 h-1.5 bg-[#999] rounded-full" />
               </span>
-              <span>{typingUsers.map((u) => u.username).join(', ')} typing</span>
+              <span>{typingUsers.map((u) => (u?.username || 'Member')).join(', ')} typing</span>
             </div>
           </motion.div>
         )}
