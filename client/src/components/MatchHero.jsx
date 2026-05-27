@@ -34,8 +34,8 @@ export default function MatchHero({ match }) {
             initial={{ scale: 2, opacity: 0, rotate: -5 }}
             animate={{ scale: 1, opacity: 1, rotate: 0 }}
             transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-            className="font-comic text-5xl text-center text-[#1a1a1a] tabular-nums"
-          >{match.home_score}–{match.away_score}</motion.div>
+            className="font-comic text-5xl text-center text-[#1a1a1a] tabular-nums tracking-tighter"
+          >{match.home_score}-{match.away_score}</motion.div>
           <div className="flex justify-end">
             <TeamLabel name={match.away_team} logoUrl={match.away_team_logo} align="right" />
           </div>
