@@ -226,7 +226,7 @@ export default function Squad() {
         className="squad-screen px-4 pt-4 relative overflow-hidden flex flex-col"
         style={{
           height: 'calc(100dvh - 5rem)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.75rem)'
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3rem)'
         }}
       >
         <ReactionBurst />
@@ -620,7 +620,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                 <div className={`max-w-[72%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   {/* Reply preview */}
                   {msg.reply_to_text && (
-                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/70' : 'border-[var(--sv-accent)] bg-[#e8e8e8] text-[#444]'}`}>
+                    <div className={`text-[10px] px-2.5 py-1 mb-0.5 rounded-lg border-l-2 ${isMe ? 'border-white/40 bg-white/10 text-white/85' : 'border-[var(--sv-accent)] bg-[var(--surface-high)] text-[var(--text-fg)]'}`}>
                       <span className="font-comic text-[var(--sv-accent)]">{msg.reply_to_username}</span>: {msg.reply_to_text.slice(0, 60)}
                     </div>
                   )}
