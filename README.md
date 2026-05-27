@@ -30,33 +30,33 @@ The gallery below is curated for a preview of the app. — each image has a shor
 
 - Splash / Launch — app brand and loading state
 
-  <p align="center">
-    <img src="client/public/screenshots/screenshot1.png" alt="Splash" width="420" />
-  </p>
+  <div align="center">
+    <img src="client/public/screenshots/screenshot1.png" alt="Splash" style="max-width:360px; width:100%; height:auto;" />
+  </div>
 
 - Login / Auth — email sign-in + guest mode for quick demos
 
-  <p align="center">
-    <img src="client/public/screenshots/screenshot2.png" alt="Login" width="420" />
-  </p>
+  <div align="center">
+    <img src="client/public/screenshots/screenshot2.png" alt="Login" style="max-width:360px; width:100%; height:auto;" />
+  </div>
 
 - Home / Predict — active match, upcoming events, prediction card CTA
 
-  <p align="center">
-    <img src="client/public/screenshots/screenshot3.png" alt="Home" width="640" />
-  </p>
+  <div align="center">
+    <img src="client/public/screenshots/screenshot3.png" alt="Home" style="max-width:360px; width:100%; height:auto;" />
+  </div>
 
 - Squad Chat — realtime squad chat with reactions and pinned controls
 
-  <p align="center">
-    <img src="client/public/screenshots/screenshot4.png" alt="Squad chat" width="640" />
-  </p>
+  <div align="center">
+    <img src="client/public/screenshots/screenshot4.png" alt="Squad chat" style="max-width:360px; width:100%; height:auto;" />
+  </div>
 
 - Live Pulse — match temperature, tactical heatmap, and live indicators
 
-  <p align="center">
-    <img src="client/public/screenshots/screenshot5.png" alt="Live pulse" width="640" />
-  </p>
+  <div align="center">
+    <img src="client/public/screenshots/screenshot5.png" alt="Live pulse" style="max-width:360px; width:100%; height:auto;" />
+  </div>
 
 Quick Start
 -----------
