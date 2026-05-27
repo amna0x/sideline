@@ -103,14 +103,14 @@ export default function Home() {
 
         <motion.section variants={fadeUp}>
           <SectionHeader icon="bolt" title="EVENT FEED" />
-          <div className="comic-panel overflow-hidden shadow-[0_14px_30px_rgba(0,0,0,0.08)]">
+          <div className="comic-panel overflow-hidden bg-surface-container-low border border-outline-variant/25 shadow-[0_14px_30px_rgba(0,0,0,0.08)]">
             {events.slice(-6).reverse().map((e, i) => (
               <motion.div
                 key={i}
                 initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 px-4 py-3 border-b border-white/70 last:border-b-0 bg-white/85"
+                className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/15 last:border-b-0 bg-transparent"
               >
                 <div className="w-10 h-10 rounded-full bg-[var(--sv-accent)]/10 border border-[var(--sv-accent)]/20 flex items-center justify-center shrink-0 overflow-hidden">
                   {getPlayerAvatar(e.player_name) ? (
@@ -132,7 +132,7 @@ export default function Home() {
               </motion.div>
             ))}
             {events.length === 0 && (
-              <div className="px-4 py-8 text-center text-outline font-comic text-lg bg-white/85">No events yet — simulator idle</div>
+              <div className="px-4 py-8 text-center text-outline font-comic text-lg bg-transparent">No events yet — simulator idle</div>
             )}
           </div>
         </motion.section>
