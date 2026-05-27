@@ -280,6 +280,15 @@ body {
   z-index: 0;
 }
 
+/* Squad screen needs stronger contrast on the default theme background */
+[data-theme="default"] .squad-screen .text-\[\#999\],
+[data-theme="default"] .squad-screen .text-\[\#666\],
+[data-theme="default"] .squad-screen .text-\[\#444\],
+[data-theme="default"] .squad-screen .text-\[\#bbb\] {
+  color: rgba(255,255,255,0.92) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+}
+
 /* === Theme: Default (Sideline Cyprus) — active via :root vars === */
 /* Football field bg only shows on default theme */
 [data-theme="spiderverse"] .mobile-frame::before,

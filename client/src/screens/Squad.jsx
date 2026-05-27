@@ -45,6 +45,17 @@ export default function Squad() {
   const [showManage, setShowManage] = useState(false)
   const [existingSquad, setExistingSquad] = useState(undefined) // undefined = loading, null = none, object = has squad
 
+  useEffect(() => {
+    const prevHtmlOverflow = document.documentElement.style.overflow
+    const prevBodyOverflow = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow
+      document.body.style.overflow = prevBodyOverflow
+    }
+  }, [])
+
   const myRole = roles[userId] || 'member'
   const isAdmin = myRole === 'admin' || (squad?.createdBy === userId)
   const isMod = myRole === 'moderator'
@@ -223,7 +234,7 @@ export default function Squad() {
   return (
     <Layout title={squad.name?.toUpperCase()}>
       <section
-        className="px-4 pt-4 relative overflow-hidden flex flex-col"
+        className="squad-screen px-4 pt-4 relative overflow-hidden flex flex-col"
         style={{
           height: 'calc(100dvh - 4.25rem)',
           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
@@ -853,7 +864,7 @@ function ChatArea({ messages, userId, roles = {}, onSend, onTyping, onMarkSeen, 
                     </>
                   )
                 })()}
-                <button onClick={closeMenu} className="w-full text-left px-4 py-3 rounded-2xl border border-[#e0e0e0] bg-[#fafafa] text-sm text-[#666]">Cancel</button>
+                <button onClick={closeMenu} className="w-full text-left px-4 py-3 rounded-2xl border border-[var(--line-subtle)] bg-[var(--surface-high)] text-sm text-[var(--text-fg)]">Cancel</button>
               </div>
             </motion.div>
           </motion.div>
