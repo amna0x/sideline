@@ -11,8 +11,8 @@ const TEAM_MAP = {
   'bayer 04 leverkusen': 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
   'bayer leverkusen': 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
   'leverkusen': 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
-  'rb leipzig': 'https://assets.bundesliga.com/tachyon/background/club/layered-wide/DFL-CLU-000017.png?crop=10,30,80,40&resize=3000,680',
-  'leipzig': 'https://assets.bundesliga.com/tachyon/background/club/layered-wide/DFL-CLU-000017.png?crop=10,30,80,40&resize=3000,680'
+  'rb leipzig': 'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/RB_Leipzig_2014_logo.svg/1280px-RB_Leipzig_2014_logo.svg.png',
+  'leipzig': 'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/RB_Leipzig_2014_logo.svg/1280px-RB_Leipzig_2014_logo.svg.png'
 };
 
 const PLAYER_MAP = {
