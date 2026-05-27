@@ -1,8 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth.js'
 import { forgotPassword, confirmForgotPassword } from '../lib/cognito.js'
+
+const PENDING_SIGNUP_KEY = 'sideline.pending-signup'
+
+function loadPendingSignup() {
+  try {
+    const raw = sessionStorage.getItem(PENDING_SIGNUP_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function savePendingSignup(payload) {
+  try {
+    sessionStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(payload))
+  } catch {}
+}
+
+function clearPendingSignup() {
+  try {
+    sessionStorage.removeItem(PENDING_SIGNUP_KEY)
+  } catch {}
+}
 
 export default function Login() {
   const { signIn, signUp, signInAsGuest, confirmSignUp, resendConfirmation } = useAuth()
@@ -15,11 +38,22 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [pendingSignup, setPendingSignup] = useState(null)
+
+  useEffect(() => {
+    const pending = loadPendingSignup()
+    if (!pending?.email) return
+    setPendingSignup(pending)
+    setEmail(pending.email)
+    setUsername(pending.username || '')
+    setMode('confirm')
+    setError('Check your inbox and spam/junk folder for the verification code.')
+  }, [])
 
   function friendlyError(err) {
     const msg = err?.message || String(err)
     if (msg.includes('UsernameExistsException') || msg.includes('already exists')) {
-      return 'An account with this email already exists. Try logging in instead.'
+      return 'An account with this email already exists or is waiting for verification. Check your inbox and spam/junk folder, or use Resend Code.'
     }
     if (msg.includes('InvalidPasswordException')) {
       return 'Password must be at least 8 characters.'
@@ -61,13 +95,19 @@ export default function Login() {
       } else if (mode === 'signup') {
         const result = await signUp(email, password, username || email.split('@')[0])
         if (result?.userConfirmed) {
+          clearPendingSignup()
           await signIn(email, password)
           nav('/', { replace: true })
         } else {
+          const pending = { email, username: username || email.split('@')[0] }
+          setPendingSignup(pending)
+          savePendingSignup(pending)
           setMode('confirm')
+          setError('Check your inbox and spam/junk folder for the verification code.')
         }
       } else if (mode === 'confirm') {
         await confirmSignUp(email, code.trim())
+        clearPendingSignup()
         await signIn(email, password)
         nav('/', { replace: true })
       } else if (mode === 'forgot') {
@@ -96,6 +136,17 @@ export default function Login() {
     setError(null)
     try { await resendConfirmation(email); setError('Code sent to your email') }
     catch (err) { setError(friendlyError(err)) }
+  }
+
+  async function onUseDifferentEmail() {
+    clearPendingSignup()
+    setPendingSignup(null)
+    setMode('signup')
+    setEmail('')
+    setUsername('')
+    setPassword('')
+    setCode('')
+    setError(null)
   }
 
   const titles = {
@@ -131,10 +182,35 @@ export default function Login() {
             </div>
           )}
 
+          {pendingSignup?.email && mode !== 'confirm' && (
+            <div className="mb-5 rounded-2xl border border-[#f2d9a6] bg-[#fff8e8] p-4">
+              <p className="font-comic text-xs uppercase tracking-widest text-[#9a6a00]">Verification pending</p>
+              <p className="mt-1 text-sm text-[#5f4a18]">
+                We already created an account for <span className="font-semibold">{pendingSignup.email}</span>. Please check your inbox and spam/junk folder for the code.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => setMode('confirm')} className="px-3 py-2 rounded-full bg-[var(--sv-accent)] text-white text-xs font-comic">
+                  Continue verification
+                </button>
+                <button type="button" onClick={onUseDifferentEmail} className="px-3 py-2 rounded-full border border-[#e0c98d] text-xs font-comic text-[#7a5a12]">
+                  Use a different email
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Mode header for non-tabbed modes */}
           {mode !== 'login' && mode !== 'signup' && (
             <div className="mb-5 flex items-center gap-2">
-              <button type="button" onClick={() => { setMode('login'); setError(null); setCode(''); setPassword('') }}
+              <button type="button" onClick={() => {
+                if (mode === 'confirm') {
+                  setMode('signup')
+                } else {
+                  setMode('login')
+                }
+                setError(null)
+                setCode('')
+              }}
                 className="text-[#666] hover:text-[#1a1a1a] -ml-1">
                 <span className="material-symbols-outlined text-[20px]">arrow_back</span>
               </button>
@@ -183,6 +259,11 @@ export default function Login() {
               <Field label={mode === 'reset' ? 'RESET CODE' : 'CONFIRMATION CODE'} icon="mark_email_read">
                 <input value={code} onChange={(e) => setCode(e.target.value)} required pattern="[0-9]{6}" placeholder="123456"
                   className="w-full bg-[#f8f8f8] border border-[#e0e0e0] rounded-xl p-3 text-[#1a1a1a] placeholder-[#bbb] focus:outline-none focus:border-[var(--sv-accent)] transition-colors tracking-widest text-center font-comic" />
+                {mode === 'confirm' && (
+                  <p className="text-xs text-[#777] leading-relaxed">
+                    Check your inbox and spam/junk folders. If the code expired or never arrived, resend it from here.
+                  </p>
+                )}
                 {mode === 'confirm' && (
                   <button type="button" onClick={onResend} className="text-xs font-comic text-[var(--sv-accent)] mt-2">RESEND CODE</button>
                 )}
