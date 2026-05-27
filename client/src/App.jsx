@@ -79,7 +79,8 @@ function SplashScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      className="fixed inset-y-0 left-1/2 z-[200] flex w-full max-w-full -translate-x-1/2 items-center justify-center bg-[#f8f8f8] shadow-[0_0_40px_rgba(0,0,0,0.1)] sm:max-w-[480px] lg:max-w-[420px]"
+      style={{ backgroundColor: 'var(--surface-bg, #f8f8f8)' }}
+      className="fixed inset-y-0 left-1/2 z-[200] flex w-full max-w-full -translate-x-1/2 items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.1)] sm:max-w-[480px] lg:max-w-[420px]"
     >
       <motion.div
         initial={{ y: 16, opacity: 0, scale: 0.94 }}
@@ -88,7 +89,9 @@ function SplashScreen() {
         transition={{ type: 'spring', damping: 22, stiffness: 260 }}
         className="flex flex-col items-center"
       >
-        <img src="/icon-192.png" alt="" className="w-24 h-24 rounded-3xl shadow-[0_12px_36px_rgba(223,91,48,0.22)]" />
+        <div className="w-24 h-24 flex items-center justify-center rounded-[2rem] bg-gradient-to-br from-[var(--sv-accent)] to-[var(--sv-purple)] text-white shadow-lg">
+          <span className="material-symbols-outlined text-[56px] fill-icon">sports_soccer</span>
+        </div>
         <h1 className="mt-5 font-comic text-3xl text-[#1a1a1a] tracking-tight">Sideline</h1>
         <div className="mt-3 h-1 w-20 rounded-full bg-[var(--sv-accent)]" />
       </motion.div>

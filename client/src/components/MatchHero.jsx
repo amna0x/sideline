@@ -60,15 +60,15 @@ function TeamLabel({ name, logoUrl, align = 'left' }) {
       <motion.div
         whileHover={{ scale: 1.1, rotate: align === 'right' ? 3 : -3 }}
         whileTap={{ scale: 0.95 }}
-        className="w-14 h-14 rounded-full bg-black/20 border-2 border-white/10 flex items-center justify-center font-comic text-lg text-[#f7ecdf] shadow-comic-sm overflow-hidden backdrop-blur-sm"
+        className="w-14 h-14 rounded-full bg-black/5 border-2 border-[#e0e0e0] flex items-center justify-center font-comic text-lg text-[#1a1a1a] shadow-comic-sm overflow-hidden backdrop-blur-sm"
       >
         {logoUrl && !imageFailed ? (
           <img src={logoUrl} alt={name} className="w-9 h-9 object-contain" />
         ) : (
-          <span className="text-[18px] leading-none text-[#ffd9c7] drop-shadow-[0_1px_4px_rgba(0,0,0,0.35)]">{badge}</span>
+          <span className="text-[18px] leading-none text-[#1a1a1a]">{badge}</span>
         )}
       </motion.div>
-      <span className="font-comic text-sm text-[#f7ecdf] mt-1.5 text-center leading-tight max-w-[116px] whitespace-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.28)]">
+      <span className="font-comic text-sm text-[#1a1a1a] mt-1.5 text-center leading-tight max-w-[116px] whitespace-normal">
         {name}
       </span>
     </div>
