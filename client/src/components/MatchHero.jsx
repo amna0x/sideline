@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
 export default function MatchHero({ match }) {
@@ -46,17 +47,25 @@ export default function MatchHero({ match }) {
 }
 
 function TeamLabel({ name, logoUrl, align = 'left' }) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [logoUrl])
+
+  const badge = initials(name)
+
   return (
     <div className={`flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
       <motion.div
         whileHover={{ scale: 1.1, rotate: align === 'right' ? 3 : -3 }}
         whileTap={{ scale: 0.95 }}
-        className="w-14 h-14 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center font-comic text-lg text-primary-container shadow-comic-sm overflow-hidden"
+        className="w-14 h-14 rounded-full bg-black/20 border-2 border-white/10 flex items-center justify-center font-comic text-lg text-[#f7ecdf] shadow-comic-sm overflow-hidden backdrop-blur-sm"
       >
-        {logoUrl ? (
+        {logoUrl && !imageFailed ? (
           <img src={logoUrl} alt={name} className="w-9 h-9 object-contain" />
         ) : (
-          name?.slice(0, 3).toUpperCase()
+          <span className="text-[18px] leading-none text-[#ffd9c7] drop-shadow-[0_1px_4px_rgba(0,0,0,0.35)]">{badge}</span>
         )}
       </motion.div>
       <span className="font-comic text-sm text-[#f7ecdf] mt-1.5 text-center leading-tight max-w-[116px] whitespace-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.28)]">
@@ -64,6 +73,13 @@ function TeamLabel({ name, logoUrl, align = 'left' }) {
       </span>
     </div>
   )
+}
+
+function initials(name) {
+  if (!name) return 'TM'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase()
 }
 
 function SkeletonHero() {
