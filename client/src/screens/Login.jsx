@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth.js'
@@ -20,6 +20,11 @@ export default function Login() {
   const normalizedEmail = email.trim().toLowerCase()
   const pendingEmail = pendingSignup?.email?.trim().toLowerCase() || ''
   const showPendingNotice = mode === 'login' && pendingEmail && normalizedEmail && pendingEmail === normalizedEmail
+
+  function isUnverifiedAccountError(err) {
+    const msg = err?.message || String(err)
+    return msg.includes('UsernameExistsException') || msg.includes('already exists') || msg.includes('UserNotConfirmedException') || msg.includes('User is not confirmed')
+  }
 
   function friendlyError(err) {
     const msg = err?.message || String(err)
@@ -79,15 +84,26 @@ export default function Login() {
         }
         nav('/', { replace: true })
       } else if (mode === 'signup') {
-        const result = await signUp(email, password, username || email.split('@')[0])
-        if (result?.userConfirmed) {
-          await signIn(email, password)
-          nav('/', { replace: true })
-        } else {
+        try {
+          const result = await signUp(email, password, username || email.split('@')[0])
+          if (result?.userConfirmed) {
+            await signIn(email, password)
+            nav('/', { replace: true })
+            return
+          }
           const pending = { email, username: username || email.split('@')[0] }
           setPendingSignup(pending)
           setMode('confirm')
           setError('Check your inbox and spam/junk folder for the verification code.')
+        } catch (err) {
+          if (isUnverifiedAccountError(err)) {
+            const pending = { email, username: username || email.split('@')[0] }
+            setPendingSignup(pending)
+            setMode('confirm')
+            setError('This email is not verified yet. Check your inbox and spam/junk folder for the code, or resend it below.')
+            return
+          }
+          throw err
         }
       } else if (mode === 'confirm') {
         await confirmSignUp(email, code.trim())
