@@ -77,27 +77,36 @@ function SplashScreen() {
     <motion.div
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.35 }}
+      exit={{ opacity: 0, scale: 1.1 }}
+      transition={{ duration: 0.4, ease: 'easeInOut' }}
       style={{ backgroundColor: 'var(--surface-bg, #f8f8f8)' }}
       className="fixed inset-y-0 left-1/2 z-[200] flex w-full max-w-full -translate-x-1/2 items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.1)] sm:max-w-[480px] lg:max-w-[420px]"
     >
-      <motion.div
-        initial={{ y: 16, opacity: 0, scale: 0.94 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: -10, opacity: 0, scale: 0.98 }}
-        transition={{ type: 'spring', damping: 22, stiffness: 260 }}
-        className="flex flex-col items-center"
-      >
-        <img 
-          src="/icon-logo.png" 
-          alt="Sideline" 
-          className="w-28 h-28 object-contain rounded-[2rem]" 
-          style={{ filter: 'drop-shadow(0 12px 32px color-mix(in srgb, var(--sv-accent) 45%, transparent))' }}
+      <div className="flex flex-col items-center">
+        <motion.div
+          initial={{ scale: 0, rotate: -15 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', damping: 14, stiffness: 220, delay: 0.1 }}
+        >
+          <img src="/icon-192.png" alt="Sideline" className="w-24 h-24 rounded-3xl shadow-[0_12px_36px_rgba(223,91,48,0.22)]" />
+        </motion.div>
+        
+        <motion.h1 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.35, ease: 'easeOut' }}
+          className="mt-5 font-comic text-3xl text-[#1a1a1a] tracking-tight"
+        >
+          Sideline
+        </motion.h1>
+        
+        <motion.div 
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 80, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.5, ease: 'easeOut' }}
+          className="mt-3 h-1 rounded-full bg-[var(--sv-accent)]" 
         />
-        <h1 className="mt-5 font-comic text-3xl text-[#1a1a1a] tracking-tight">Sideline</h1>
-        <div className="mt-3 h-1 w-20 rounded-full bg-[var(--sv-accent)]" />
-      </motion.div>
+      </div>
     </motion.div>
   )
 }
